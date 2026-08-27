@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AULA GLOBAL 360 · Simulador y Evaluador Experto</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="app">
+    
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo"><span>✨</span> AULA GLOBAL 360</div>
+            <div class="logo-sub">Evaluación Diagnóstica HMB<br>Batería Validada (5-11 años)</div>
+        </div>
+
+        <div class="sidebar-section">
+            <div class="sidebar-label">Componente a evaluar</div>
+            <div class="skill-grid">
+                <button class="skill-btn active" data-skill="auto" onclick="selectSkill(this, 'Automática', '')">
+                    <span class="ico">🔍</span><span class="lbl">Detección Automática</span>
+                </button>
+                <button class="skill-btn" data-skill="locomocion" onclick="selectSkill(this, 'Correr', 'avatar_correr.mp4')">
+                    <span class="ico">🏃</span><span class="lbl">Locomoción (Marcha, Carrera, Salto)</span>
+                </button>
+                <button class="skill-btn" data-skill="manipulacion" onclick="selectSkill(this, 'Lanzar / Atrapar', 'avatar_lanzar.mp4')">
+                    <span class="ico">⚽</span><span class="lbl">Manipulación (Lanzar, Atrapar)</span>
+                </button>
+                <button class="skill-btn" data-skill="estabilidad" onclick="selectSkill(this, 'Equilibrio', 'avatar_equilibrio.mp4')">
+                    <span class="ico">🧘</span><span class="lbl">Estabilidad y Equilibrio</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="sidebar-divider"></div>
+
+        <div class="sidebar-label" style="padding:0 20px">Preferencias del Maestro</div>
+        <div style="padding: 0 20px; display: flex; flex-direction: column;">
+            
+            <select id="prefFormat" class="pref-select">
+                <option value="Cuento Motor">📖 Cuento Motor</option>
+                <option value="Circuito de Estaciones">🎯 Circuito de Estaciones</option>
+                <option value="Retos Cooperativos">🤝 Retos Cooperativos</option>
+                <option value="Juego Libre Dirigido">🏃 Juego Libre Dirigido</option>
+            </select>
+            
+            <select id="prefPedagogy" class="pref-select">
+                <option value="Descubrimiento Guiado">🧠 Descubrimiento Guiado</option>
+                <option value="Resolución de Problemas">💡 Resolución de Problemas</option>
+                <option value="Asignación de Tareas">📋 Asignación de Tareas</option>
+            </select>
+
+            <div class="sidebar-label" style="margin-top: 10px; margin-bottom: 5px;">Materiales Disponibles</div>
+            <div class="mat-grid">
+                <label><input type="checkbox" value="Conos" class="mat-check" checked> Conos</label>
+                <label><input type="checkbox" value="Aros" class="mat-check" checked> Aros</label>
+                <label><input type="checkbox" value="Cuerdas" class="mat-check"> Cuerdas</label>
+                <label><input type="checkbox" value="Balones" class="mat-check"> Balones</label>
+                <label><input type="checkbox" value="Colchonetas" class="mat-check"> Colchonetas</label>
+            </div>
+        </div>
+
+        <div class="sidebar-divider"></div>
+
+        <div class="sidebar-label" style="padding:0 20px">Modos de Operación</div>
+        <div class="mode-btns">
+            <button class="mode-btn active" data-mode="diagnostico" onclick="selectMode(this)">
+                📊 Análisis Individual
+            </button>
+            <button class="mode-btn" style="color: #FDE68A; border-color: #D97706; font-weight: bold;" data-mode="grupal" onclick="selectMode(this)">
+                👨‍👩‍👧‍👦 Análisis Grupal (Salón)
+            </button>
+        </div>
+
+        <div class="sidebar-footer">
+            Motor: Simulación (Offline)<br>
+            Criterios: González Palacio & Montoya Grisales
+        </div>
+    </aside>
+
+    <main class="main">
+        <div class="topbar">
+            <button class="menu-btn" onclick="toggleSidebar()">
+                <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+            </button>
+            <div class="topbar-title">Análisis Biomecánico</div>
+            <span class="topbar-badge" id="modeBadge">MODO: INDIVIDUAL</span>
+        </div>
+
+        <div class="keybar">
+            <label>🔑 Modo:</label>
+            <input type="password" id="apiKey" placeholder="Cualquier texto..." value="MODO SIMULADO">
+            <button onclick="saveKey()">Conectar Offline</button>
+            <span class="key-ok" id="keyOk">✓ Activa</span>
+        </div>
+
+        <div class="group-panel" id="groupPanel" style="display: none;">
+            <span style="font-size: 20px;">🎒</span>
+            <div id="groupSetup">
+                <label style="font-size: 12px; font-weight: bold; color: #B45309;">¿A cuántos estudiantes vas a evaluar?</label>
+                <input type="number" id="totalStudents" min="1" max="50" value="30">
+                <button onclick="startGroupMode()">Iniciar Registro</button>
+            </div>
+            
+            <div class="group-progress" id="groupProgress">
+                <span class="group-text" id="groupCounterText">Evaluando: 0 de 30</span>
+                <progress id="groupProgressBar" max="30" value="0"></progress>
+                <button class="btn-finish-group" id="btnFinishGroup" onclick="generateGroupPlan()">Generar Planeación</button>
+            </div>
+        </div>
+
+        <div class="upload-wrapper">
+            <div class="upload-header">
+                <span class="sidebar-label" style="margin-bottom:0; color:var(--muted); font-weight:bold;">1. Evidencia del Estudiante actual</span>
+                <button class="help-btn" onclick="openModal()">📸 Reglas de Grabación</button>
+            </div>
+            <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+                <div class="uz-icon">🎬</div>
+                <div class="uz-title">Haz clic para subir un video o imagen</div>
+                <div class="uz-sub">MP4, MOV, JPG, PNG</div>
+            </div>
+            <input type="file" id="fileInput" accept="video/*,image/*" style="display:none" onchange="handleFile(event)">
+        </div>
+
+        <div class="chat-scroll" id="chatScroll">
+            <div class="msg bot">
+                <div class="msg-av">✨</div>
+                <div class="bubble">
+                    <strong>¡Hola! Soy AULA GLOBAL 360 (Versión Offline / Simulada).</strong><br><br>
+                    Antes de subir un video, revisa la sección <strong>"Preferencias del Maestro"</strong> en el menú lateral. Al generar la clase, te daré un <strong>paso a paso exacto</strong> (con medidas y guiones) para que apliques la clase fácilmente.
+                </div>
+            </div>
+        </div>
+
+        <div class="input-row">
+            <div class="input-wrap">
+                <textarea id="userInput" placeholder="Observaciones (ej. 'Este estudiante salta con un solo pie')..." onkeydown="handleKey(event)"></textarea>
+            </div>
+            <button class="send-btn" id="sendBtn" onclick="sendMsg()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+            </button>
+        </div>
+    </main>
+
+    <aside class="right-panel" id="rightPanel">
+        <div class="right-header">
+            <span class="icon-3d">🧬</span> Visualización Anatómica 3D
+        </div>
+        
+        <div class="sim-container">
+            <div class="video-box">
+                <div class="video-box-header">
+                    <span>EVIDENCIA DEL ESTUDIANTE</span>
+                    <div class="status-dot" id="studentStatus"></div>
+                </div>
+                <div class="player-area">
+                    <div class="placeholder-text" id="studentPlaceholder">
+                        <span style="font-size: 24px;">📥</span>
+                        Esperando carga de video...
+                    </div>
+                    <video id="studentVideoPlayer" style="display:none;" autoplay loop muted playsinline></video>
+                    <img id="studentImgPreview" style="display:none;" />
+                </div>
+            </div>
+
+            <div class="video-box">
+                <div class="video-box-header">
+                    <span id="avatarTitle">CGI BIOMECÁNICO: AUTO</span>
+                    <div class="status-dot active"></div>
+                </div>
+                <div class="player-area" style="background: #0F172A;">
+                    <div class="avatar-placeholder" id="avatarPlaceholder">
+                        <div class="avatar-scanner"></div>
+                        <span style="font-size: 32px; color: #38BDF8; margin-bottom: 10px;">🤖</span>
+                        <span style="color: white; font-weight: 600; font-size: 14px;">Modelo CGI Maduro</span>
+                        <span style="color: #64748B; font-size: 11px; margin-top: 4px;">Selecciona una habilidad para cargar</span>
+                    </div>
+                    <video id="avatarVideoPlayer" style="display:none; width: 100%; height: 100%; object-fit: cover; z-index: 5; position: absolute;" autoplay loop muted playsinline></video>
+                </div>
+            </div>
+        </div>
+    </aside>
+</div>
+
+<div class="modal-overlay" id="recordingModal" onclick="closeModalOnOutside(event)">
+    <div class="modal-content">
+        <div class="modal-header">
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+            <h2 class="modal-title">📸 Paso a paso para grabar</h2>
+        </div>
+        
+        <div class="modal-body">
+            <div class="step-container">
+                <div class="step-row">
+                    <div class="step-num">1</div>
+                    <div class="step-content">
+                        <h4>La Regla de los 5 Segundos</h4>
+                        <p>No satures tu celular. Empieza a grabar 1 segundo antes de que el niño se mueva y corta justo al terminar el movimiento.</p>
+                    </div>
+                </div>
+                <div class="step-row">
+                    <div class="step-num">2</div>
+                    <div class="step-content">
+                        <h4>Distancia y Encuadre Completo</h4>
+                        <p>Ubícate a una distancia de 3 a 4 metros para capturar el cuerpo entero del estudiante (desde la cabeza hasta los pies) durante todo el trayecto.</p>
+                    </div>
+                </div>
+                <div class="step-row">
+                    <div class="step-num">3</div>
+                    <div class="step-content">
+                        <h4>Plano Fijo a la Altura de la Cadera</h4>
+                        <p>Mantén la cámara a la altura del ombligo/cadera del niño sin moverte en exceso para facilitar el análisis biomecánico de las articulaciones.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar-label" style="color: var(--text); font-weight: bold; margin-bottom: 12px;">Ángulos recomendados según la habilidad:</div>
+            <div class="angle-grid">
+                <div class="angle-card">
+                    <div class="angle-icon">🏃</div>
+                    <h5>Locomoción (Carrera / Salto)</h5>
+                    <p><strong>Plano Sagital (Lateral/Perfil):</strong> Permite observar la fase de vuelo, inclinación del tronco y braceo alterno.</p>
+                </div>
+                <div class="angle-card">
+                    <div class="angle-icon">⚽</div>
+                    <h5>Manipulación y Estabilidad</h5>
+                    <p><strong>Plano Frontal y Diagonal:</strong> Permite evaluar la simetría de hombros, punto de suelta y base de sustentación.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let apiKey = '';
+    let selectedSkill = 'auto';
+    let selectedMode = 'diagnostico';
+    let capturedFrames = [];
+    let isLoading = false;
+    let globalDidacticaData = null; 
+    let globalDiagnosticoData = null; // Para descargar el reporte individual
+    
+    // VARIABLES PARA EL MODO GRUPAL
+    let isGroupActive = false;
+    let targetStudents = 30;
+    let evaluatedStudents = 0;
+    let groupErrorsMemory = [];
+
+    const chat = document.getElementById('chatScroll');
+
+    function toggleSidebar() {
+        document.getElementById('sidebar').classList.toggle('open');
+        document.getElementById('sidebarOverlay').classList.toggle('active');
+    }
+
+    function openModal() { document.getElementById('recordingModal').style.display = 'flex'; }
+    function closeModal() { document.getElementById('recordingModal').style.display = 'none'; }
+    function closeModalOnOutside(event) { if (event.target === document.getElementById('recordingModal')) closeModal(); }
+
+    function selectSkill(el, skillName, videoFileName) {
+        document.querySelectorAll('.skill-btn').forEach(b => b.classList.remove('active'));
+        el.classList.add('active');
+        selectedSkill = el.dataset.skill;
+        document.getElementById('avatarTitle').textContent = `CGI BIOMECÁNICO: ${skillName.toUpperCase()}`;
+        
+        const avatarVid = document.getElementById('avatarVideoPlayer');
+        const avatarPlc = document.getElementById('avatarPlaceholder');
+
+        if(videoFileName) {
+            avatarVid.src = videoFileName; 
+            avatarVid.style.display = 'block';
+            avatarPlc.style.display = 'none';
+            avatarVid.play().catch(e => {
+                avatarVid.style.display = 'none';
+                avatarPlc.style.display = 'flex';
+                avatarPlc.querySelector('span:nth-child(3)').textContent = `Simulando Patrón: ${skillName}`;
+            });
+        } else {
+            avatarVid.style.display = 'none';
+            avatarPlc.style.display = 'flex';
+            avatarPlc.querySelector('span:nth-child(3)').textContent = `Selecciona una habilidad`;
+        }
+        
+        if(window.innerWidth <= 1024) { toggleSidebar(); }
+    }
+
+    function selectMode(el) {
+        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+        el.classList.add('active');
+        selectedMode = el.dataset.mode;
+        
+        const modeBadge = document.getElementById('modeBadge');
+        const groupPanel = document.getElementById('groupPanel');
+
+        if(selectedMode === 'grupal') {
+            modeBadge.textContent = `MODO: GRUPAL`;
+            modeBadge.style.background = '#FEF3C7';
+            modeBadge.style.color = '#D97706';
+            groupPanel.style.display = 'flex';
+        } else {
+            modeBadge.textContent = `MODO: INDIVIDUAL`;
+            modeBadge.style.background = 'var(--tag-bg)';
+            modeBadge.style.color = 'var(--tag-color)';
+            groupPanel.style.display = 'none';
+            isGroupActive = false;
+            document.getElementById('groupSetup').style.display = 'block';
+            document.getElementById('groupProgress').style.display = 'none';
+        }
+        
+        if(window.innerWidth <= 1024) { toggleSidebar(); }
+    }
+
+    function startGroupMode() {
+        let val = parseInt(document.getElementById('totalStudents').value);
+        if(val < 1) val = 1;
+        targetStudents = val;
+        evaluatedStudents = 0;
+        groupErrorsMemory = []; 
+        isGroupActive = true;
+
+        document.getElementById('groupSetup').style.display = 'none';
+        document.getElementById('groupProgress').style.display = 'flex';
+        
+        updateGroupUI();
+        addMsg('bot', `🎒 <strong>Registro Grupal Iniciado.</strong><br>Sube el video del Estudiante 1 y presiona enviar. Guardaré sus datos en la memoria.`);
+    }
+
+    function updateGroupUI() {
+        document.getElementById('groupCounterText').textContent = `Evaluando: ${evaluatedStudents} de ${targetStudents}`;
+        document.getElementById('groupProgressBar').max = targetStudents;
+        document.getElementById('groupProgressBar').value = evaluatedStudents;
+
+        const btnFinish = document.getElementById('btnFinishGroup');
+        if(evaluatedStudents > 0) {
+            btnFinish.style.display = 'inline-block';
+        }
+        
+        if(evaluatedStudents >= targetStudents && targetStudents > 0) {
+            btnFinish.textContent = "✅ Grupo Completo - Generar Planeación";
+            btnFinish.style.background = "#059669";
+            addMsg('bot', `🎉 ¡Has evaluado a los ${targetStudents} estudiantes! Haz clic en el botón verde de arriba para generar la Planeación Consolidada.`);
+        }
+    }
+
+    function saveKey() {
+        apiKey = 'modo-offline';
+        const keyOk = document.getElementById('keyOk');
+        keyOk.textContent = "✓ Modo Simulado Activo";
+        keyOk.style.display = 'inline';
+        setTimeout(() => keyOk.style.display = 'none', 3000);
+    }
+
+    function handleKey(e) {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMsg(); }
+    }
+
+    function addMsg(role, content, isHtml = false) {
+        const wrap = document.createElement('div');
+        wrap.className = `msg ${role}`;
+        if(role === 'bot'){ wrap.innerHTML = `<div class="msg-av">✨</div>`; }
+        
+        const bub = document.createElement('div');
+        bub.className = 'bubble';
+        if (isHtml) bub.innerHTML = content;
+        else bub.textContent = content;
+        wrap.appendChild(bub);
+        
+        if(role === 'user'){ wrap.innerHTML += `<div class="msg-av">TÚ</div>`; }
+
+        chat.appendChild(wrap);
+        chat.scrollTop = chat.scrollHeight;
+        return bub;
+    }
+
+    function showTyping() {
+        const wrap = document.createElement('div');
+        wrap.className = 'msg bot';
+        wrap.id = 'typing';
+        wrap.innerHTML = `<div class="msg-av">✨</div><div class="bubble"><div class="typing"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>`;
+        chat.appendChild(wrap);
+        chat.scrollTop = chat.scrollHeight;
+    }
+    
+    function removeTyping() { 
+        const t = document.getElementById('typing'); 
+        if (t) t.remove(); 
+    }
+
+    async function handleFile(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        const uz = document.getElementById('uploadZone');
+        const videoPlayer = document.getElementById('studentVideoPlayer');
+        const imgPreview = document.getElementById('studentImgPreview');
+        const placeholder = document.getElementById('studentPlaceholder');
+        const statusDot = document.getElementById('studentStatus');
+
+        uz.innerHTML = `<div class="uz-icon">⏳</div><div class="uz-title">Procesando archivo...</div>`;
+        
+        try {
+            const fileUrl = URL.createObjectURL(file);
+            placeholder.style.display = 'none';
+            statusDot.classList.add('active');
+
+            if (file.type.startsWith('video/')) {
+                imgPreview.style.display = 'none';
+                videoPlayer.src = fileUrl;
+                videoPlayer.style.display = 'block';
+            } else if (file.type.startsWith('image/')) {
+                videoPlayer.style.display = 'none';
+                imgPreview.src = fileUrl;
+                imgPreview.style.display = 'block';
+            }
+
+            capturedFrames = await extractFrames(file);
+            uz.innerHTML = `<div class="uz-icon">✅</div><div class="uz-title">Archivo en memoria listo para analizar</div>`;
+        } catch (e) {
+            uz.innerHTML = `<div class="uz-icon">❌</div><div class="uz-title">Error al procesar</div>`;
+            statusDot.classList.remove('active');
+        }
+    }
+
+    async function extractFrames(file) {
+        return new Promise((resolve) => {
+            if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = e => resolve([{ data: e.target.result.split(',')[1], mime: file.type }]);
+                reader.readAsDataURL(file);
+                return;
+            }
+            const video = document.createElement('video');
+            video.src = URL.createObjectURL(file);
+            video.muted = true;
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const frames = [];
+            video.addEventListener('loadedmetadata', () => {
+                const dur = Math.min(video.duration, 15);
+                const times = [0.2, dur * 0.5, dur * 0.85];
+                canvas.width = 640; canvas.height = 360;
+                let done = 0;
+                times.forEach((t, i) => {
+                    const v2 = document.createElement('video');
+                    v2.src = video.src; v2.muted = true;
+                    v2.addEventListener('seeked', () => {
+                        ctx.drawImage(v2, 0, 0, 640, 360);
+                        frames[i] = { data: canvas.toDataURL('image/jpeg', 0.8).split(',')[1], mime: 'image/jpeg' };
+                        done++;
+                        if (done === times.length) resolve(frames.filter(Boolean));
+                    });
+                    v2.currentTime = t;
+                });
+            });
+            video.load();
+        });
+    }
+
+    function renderDiagnostico(data) {
+        globalDiagnosticoData = data; // Guardamos para exportar
+        let rows = '';
+        data.criterios.forEach(c => {
+            const badge = c.puntaje === 1 ? `<span class="badge-1">✓ Lo hace</span>` : `<span class="badge-0">✗ No lo hace</span>`;
+            rows += `<tr><td>${c.criterio}</td><td>${badge}</td></tr>`;
+        });
+
+        return `
+        <div class="diag-header">${data.habilidad.toUpperCase()}</div>
+        <div class="diag-stage">Estadio Detectado: <strong>${data.estadio_gallahue}</strong></div>
+        <div class="diag-table-container">
+            <table class="diag-table">
+                <thead><tr><th>Criterio Biomecánico (Batería Validada)</th><th>Puntuación</th></tr></thead>
+                <tbody>${rows}</tbody>
+            </table>
+        </div>
+        <br>
+        <strong>🔍 Diagnóstico General:</strong><br>
+        <span style="color:var(--muted); font-size:13.5px;">${data.diagnostico_general}</span>
+        
+        <button class="help-btn" style="background: #E2E8F0; color: #1E293B; border: 1px solid #CBD5E1; width: 100%; justify-content: center; font-size: 13px; padding: 10px; border-radius: 8px; margin-top: 15px;" onclick="exportDiagnosticoToWord()">
+            📥 Descargar Reporte del Estudiante (Para Padres/Historial)
+        </button>
+        `;
+    }
+
+    // Nueva función para descargar solo el diagnóstico del estudiante
+    function exportDiagnosticoToWord() {
+        if(!globalDiagnosticoData) return;
+        const d = globalDiagnosticoData;
+        const hoy = new Date().toLocaleDateString('es-CO');
+
+        let filasCriterios = "";
+        d.criterios.forEach(c => {
+            let estado = c.puntaje === 1 ? "LOGRADO" : "EN PROCESO";
+            filasCriterios += `<tr><td style="padding: 8px; border: 1px solid #000;">${c.criterio}</td><td style="padding: 8px; border: 1px solid #000; text-align: center;"><strong>${estado}</strong></td></tr>`;
+        });
+
+        const docHtml = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+        <head><meta charset='utf-8'><title>Reporte Biomecánico</title><style>body { font-family: 'Arial', sans-serif; font-size: 11pt; } h1 { text-align: center; color: #1E293B; font-size: 16pt; } .sub { text-align: center; color: #64748B; margin-bottom: 20px;} table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }</style></head>
+        <body>
+            <h1>REPORTE DE DESARROLLO MOTOR</h1>
+            <div class="sub">Generado por Aula Global 360 - Fecha: ${hoy}</div>
+            
+            <p><strong>Habilidad Evaluada:</strong> ${d.habilidad.toUpperCase()}</p>
+            <p><strong>Estadio Motor Detectado (Gallahue):</strong> ${d.estadio_gallahue}</p>
+            
+            <table>
+                <tr style="background-color: #E2E8F0;">
+                    <th style="padding: 8px; border: 1px solid #000;">Criterio Biomecánico Evaluado</th>
+                    <th style="padding: 8px; border: 1px solid #000;">Estado</th>
+                </tr>
+                ${filasCriterios}
+            </table>
+            
+            <h3>Observación del Docente / Sistema:</h3>
+            <p style="border: 1px solid #CCC; padding: 10px; background-color: #F8FAFC;">${d.diagnostico_general}</p>
+            <br><br>
+            <p>______________________________________<br>Firma del Docente Titular</p>
+        </body></html>`;
+
+        const blob = new Blob(['﻿', docHtml], { type: 'application/msword' });
+        const url = URL.createObjectURL(blob);
+        const downloadLink = document.createElement("a");
+        downloadLink.href = url;
+        downloadLink.download = `Reporte_Estudiante_AulaGlobal.doc`;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+    }
+
+    function renderDidactica(data) {
+        globalDidacticaData = data; 
+        return `
+        <div class="didactic-preview">
+            <h3>📖 Unidad Didáctica Generada</h3>
+            <p>Se ha estructurado la planeación adaptada al formato <strong>"${data.formato_elegido}"</strong>.<br>
+            <em>Incluye guía paso a paso, medidas espaciales y el "Lenguaje del Profe".</em></p>
+            <button class="help-btn" style="background: #059669; color: white; border: none; width: 100%; justify-content: center; font-size: 14px; padding: 12px; border-radius: 8px;" onclick="exportToWord()">
+                📄 Descargar Planeación de Clase Completa (.doc)
+            </button>
+        </div>
+        `;
+    }
+
+    function exportToWord() {
+        if(!globalDidacticaData) return;
+        const d = globalDidacticaData;
+        const hoy = new Date().toLocaleDateString('es-CO');
+
+        const formatearTexto = (texto) => {
+            if(typeof texto === 'string') {
+                return texto.replace(/\n/g, '<br>');
+            }
+            return texto || '';
+        };
+
+        const docHtml = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Planeación Aula Global 360</title><style>body { font-family: 'Arial', sans-serif; font-size: 11pt; } table { width: 100%; border-collapse: collapse; margin-bottom: 15px;} th, td { border: 1px solid black; padding: 8px; text-align: left; vertical-align: top;} .header-cell { background-color: #E2E8F0; font-weight: bold; text-align: center;} .title-cell { background-color: #CBD5E1; font-weight: bold; text-align: center; font-size: 12pt;} h1 { text-align: center; font-size: 16pt; color: #1E293B; } .highlight { color: #0284C7; font-weight: bold; } .alert { background-color: #FEF2F2; border-left: 4px solid #DC2626; padding: 10px; margin: 10px 0; } .tips { background-color: #F0FDF4; border-left: 4px solid #059669; padding: 10px; margin: 10px 0; }</style></head><body>
+        <h1>Unidad didáctica<br>${formatearTexto(d.tema)}</h1>
+        <table><tr><td colspan="4" class="title-cell">FORMATO - PLANEACIÓN DE CLASE PARA DOCENTE TITULAR</td></tr><tr><td colspan="2"><strong>Clase nº:</strong> 1</td><td colspan="2"><strong>Fecha:</strong> ${hoy}</td></tr><tr><td colspan="2"><strong>Área:</strong> Educación Física</td><td colspan="2"><strong>Grado:</strong> ${d.grado_sugerido}</td></tr><tr><td colspan="2"><strong>Formato:</strong> <span class="highlight">${d.formato_elegido}</span></td><td colspan="2"><strong>Metodología:</strong> <span class="highlight">${d.metodologia_elegida}</span></td></tr><tr><td colspan="4"><strong>Material y su distribución:</strong> ${formatearTexto(d.materiales)}</td></tr></table>
+        
+        <div class="alert"><strong>⚠️ PREVENCIÓN Y SEGURIDAD:</strong><br>${formatearTexto(d.alertas_seguridad)}</div>
+        <div class="tips"><strong>🗣️ EL LENGUAJE DEL PROFE (Tips para corregir):</strong><br>${formatearTexto(d.frases_retroalimentacion)}</div>
+
+        <table><tr><td class="header-cell">Pregunta problematizadora</td></tr><tr><td>${formatearTexto(d.pregunta_problematizadora)}</td></tr></table>
+        <table><tr><td colspan="3" class="title-cell">Estándares básicos de competencias del ciclo</td></tr><tr><td width="33%"><strong>Motriz:</strong><br>${formatearTexto(d.estandares.motriz)}</td><td width="33%"><strong>Expresivo – corporal:</strong><br>${formatearTexto(d.estandares.expresivo)}</td><td width="33%"><strong>Axiológica – corporal:</strong><br>${formatearTexto(d.estandares.axiologico)}</td></tr></table>
+        <table><tr><td class="header-cell">Objetivo Biomecánico de la Clase</td></tr><tr><td>${formatearTexto(d.objetivo_clase)}</td></tr></table>
+        
+        <table><tr><td colspan="3" class="title-cell">GUÍA PASO A PASO PARA EL DOCENTE (DESARROLLO DE LA CLASE)</td></tr>
+        <tr><td class="header-cell">Parte inicial – Activación (10 min)</td><td class="header-cell">Parte central - Construcción (30 min)</td><td class="header-cell">Parte Final - Aplicación (10 min)</td></tr>
+        <tr><td>${formatearTexto(d.actividades.fase_inicial)}</td><td>
+        <strong>1. Distribución del Espacio (Montaje):</strong><br>${formatearTexto(d.actividades.distribucion_espacial)}<br><br>
+        <strong>2. Guion / Instrucción al Estudiante:</strong><br>${formatearTexto(d.actividades.guion_docente)}<br><br>
+        <strong>3. Desarrollo y Corrección:</strong><br>${formatearTexto(d.actividades.desarrollo_central)}
+        </td><td>${formatearTexto(d.actividades.fase_final)}</td></tr></table>
+        
+        <table><tr><td><strong>Adaptaciones de Inclusión:</strong><br>${formatearTexto(d.inclusion)}</td></tr><tr><td><strong>Evaluación:</strong><br>${formatearTexto(d.evaluacion_sugerida)}</td></tr></table></body></html>`;
+
+        const blob = new Blob(['﻿', docHtml], { type: 'application/msword' });
+        const url = URL.createObjectURL(blob);
+        const downloadLink = document.createElement("a");
+        downloadLink.href = url;
+        downloadLink.download = `Planeacion_AulaGlobal360.doc`;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+    }
+
+    // Función para obtener las preferencias del docente
+    function getTeacherPreferences() {
+        const format = document.getElementById('prefFormat').value;
+        const pedagogy = document.getElementById('prefPedagogy').value;
+        const matChecks = document.querySelectorAll('.mat-check:checked');
+        let materials = Array.from(matChecks).map(cb => cb.value).join(", ");
+        if (!materials) materials = "Ninguno (Uso del propio cuerpo o marcas en el piso con tiza/cinta)";
+        return { format, pedagogy, materials };
+    }
+
+    // Generador de Narrativa y Distribución Espacial dinámica según formato
+    function generarContenidoEspecifico(format, materials, fallosText) {
+        let distribucion = "";
+        let guion = "";
+        
+        if(format === "Cuento Motor") {
+            distribucion = `- Dibuja con tiza o usa cinta para hacer un gran círculo de 5 metros de diámetro en el centro del patio.
+- Ubica los materiales (${materials}) dentro del círculo, separados exactamente por 1 metro de distancia entre sí, formando 'islas'.`;
+            guion = `*(Leer con entusiasmo a los niños):* "¡Atención exploradores espaciales! Nuestra nave ha aterrizado en un planeta desconocido. El suelo está hecho de lava pegajosa. Para llegar a la base secreta, debemos cruzar pisando únicamente las islas mágicas (${materials}). ¡Pero cuidado! La gravedad aquí es extraña, así que para no caer, debemos asegurarnos de [insertar corrección, ej: mover el brazo contrario a la pierna que pisa]. ¡Adelante!"`;
+        } else if (format === "Circuito de Estaciones") {
+            distribucion = `- Estación 1: Ubicada en la esquina derecha. Coloca los primeros elementos de (${materials}) en línea recta, con una separación de 2 metros entre cada uno.
+- Estación 2: A 5 metros de la Estación 1. Crea una zona de zig-zag.
+- El espacio total requerido es un rectángulo libre de obstáculos de al menos 10x5 metros.`;
+            guion = `*(Explicación clara):* "Chicos, hoy tenemos un circuito de entrenamiento Ninja. En la primera estación, van a cruzar los obstáculos, pero mi único objetivo hoy como su Sensei es observar cómo ubican su cuerpo. Cuando lleguen al elemento, quiero que pausen 1 segundo, acomoden su postura y avancen."`;
+        } else {
+            distribucion = `- Delimita un cuadrado de 8x8 metros usando referencias del patio.
+- Esparce los materiales (${materials}) de manera aleatoria por todo el cuadrado, asegurando que haya al menos 1.5 metros de espacio libre alrededor de cada objeto para evitar choques al correr o lanzar.`;
+            guion = `*(Instrucción del Reto):* "Equipo, el reto de hoy es trabajar juntos para recolectar/superar los obstáculos del área. Tienen 3 minutos. La única regla de oro para que el punto cuente es que deben realizar el movimiento corrigiendo este detalle específico: ${fallosText}."`;
+        }
+
+        return { distribucion, guion };
+    }
+
+    async function callGemini(userText) {
+        isLoading = true;
+        document.getElementById('sendBtn').disabled = true;
+        showTyping();
+
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        removeTyping();
+
+        const mockResponse = {
+            "habilidad": selectedSkill === 'auto' ? "HABILIDAD DETECTADA (Simulación)" : selectedSkill.toUpperCase() + " (Simulación)",
+            "estadio_gallahue": "Elemental",
+            "criterios": [
+                {"criterio": "Fase de vuelo evidente durante el patrón.", "puntaje": Math.random() > 0.5 ? 1 : 0},
+                {"criterio": "Brazos en oposición a las piernas.", "puntaje": 0},
+                {"criterio": "Postura del tronco adecuada y controlada.", "puntaje": 1},
+                {"criterio": "Aterrizaje suave o absorción del impacto.", "puntaje": 0}
+            ],
+            "diagnostico_general": "El estudiante muestra un desarrollo en proceso. Se evidencian fallos mecánicos principalmente en la coordinación asimétrica (oposición de brazos) y en la absorción del impacto al caer."
+        };
+
+        if(selectedMode === 'diagnostico') {
+            addMsg('bot', renderDiagnostico(mockResponse), true);
+            
+            let fallos = mockResponse.criterios.filter(c => c.puntaje === 0).map(c => c.criterio);
+            if(fallos.length === 0) fallos.push("Falta de fluidez general"); 
+            const fallosText = fallos.join(", ");
+
+            showTyping();
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            removeTyping();
+
+            const prefs = getTeacherPreferences();
+            const contenido = generarContenidoEspecifico(prefs.format, prefs.materials, fallosText);
+
+            const mockDidacticaIndividual = {
+                "tema": "Corrección Activa: " + selectedSkill.toUpperCase(),
+                "grado_sugerido": "Adaptable al nivel",
+                "edades_sugeridas": "5 a 11 años",
+                "habilidad_detectada": fallosText,
+                "formato_elegido": prefs.format,
+                "metodologia_elegida": prefs.pedagogy,
+                "materiales": prefs.materials,
+                
+                // NUEVAS ADICIONES PARA EL DOCENTE
+                "alertas_seguridad": "Asegúrese de que el piso esté completamente seco. Al usar " + prefs.materials + ", mantenga una distancia mínima de 1.5 metros entre el estudiante y cualquier pared o columna para evitar colisiones durante la corrección del movimiento.",
+                "frases_retroalimentacion": `En lugar de decir 'lo estás haciendo mal' o usar términos técnicos, dígale al niño:
+- Para la postura: 'Imagina que tienes un hilo mágico en la cabeza que te jala hacia las nubes'.
+- Para brazos en oposición: 'Imagina que tu brazo derecho está amarrado a tu pierna izquierda con un resorte invisible'.
+- Para el aterrizaje: 'Cae suavemente como si fueras un gato ninja, ¡que no se escuchen tus pies!'`,
+                
+                "pregunta_problematizadora": "¿Cómo podemos utilizar nuestro cuerpo de forma eficiente para que el movimiento no nos canse tanto?",
+                "estandares": { "motriz": "Ejecuto desplazamientos corrigiendo la postura.", "expresivo": "Manifiesto seguridad al intentar nuevos retos.", "axiologico": "Comprendo la importancia de realizar el movimiento correctamente para no lastimarme." },
+                "indicadores": { "conocer": "Identifica qué debe ajustar en su cuerpo.", "hacer": "Aplica la corrección durante el juego.", "ser": "Muestra disposición para repetir tras la retroalimentación." },
+                "objetivo_clase": `Corregir los fallos biomecánicos específicos detectados (${fallosText}) mediante un formato de ${prefs.format}.`,
+                
+                "actividades": { 
+                    "fase_inicial": `Calentamiento (10 min): Ambientación enfocada en la temática. El estudiante interactúa libremente con los materiales (${prefs.materials}) desplazándose por el espacio para entrar en calor y aumentar la frecuencia cardíaca.`, 
+                    "distribucion_espacial": contenido.distribucion,
+                    "guion_docente": contenido.guion,
+                    "desarrollo_central": `Usando la metodología de ${prefs.pedagogy}, el docente observará al estudiante intentar el recorrido. Detendrá la actividad a los 2 minutos, utilizará las 'Frases de Retroalimentación' (El Lenguaje del Profe) para darle el tip al niño, y le pedirá que repita el ejercicio aplicando el ajuste en su cuerpo.`,
+                    "fase_final": "Vuelta a la calma (10 min): Estiramiento guiado sentados en el piso. El docente pregunta: '¿Qué sentiste en tus piernas/brazos al hacerlo como gato ninja?'" 
+                },
+                "inclusion": "Para estudiantes con movilidad reducida: Reducir todas las distancias a la mitad. Permitir que el estudiante realice el recorrido caminando a paso lento o con acompañamiento físico del docente. Priorizar siempre la participación y la sonrisa por encima de la técnica.",
+                "tarea_extracurricular": "Practicar el gesto motor frente a un espejo en casa durante 5 minutos diarios.",
+                "evaluacion_sugerida": "Observación formativa. El docente verificará visualmente si, tras darle la instrucción con lenguaje sencillo, el estudiante logra aplicar la corrección de: " + fallosText + "."
+            };
+
+            addMsg('bot', renderDidactica(mockDidacticaIndividual), true);
+
+        } 
+        else if (selectedMode === 'grupal' && isGroupActive) {
+            let fallos = mockResponse.criterios.filter(c => c.puntaje === 0).map(c => c.criterio);
+            if(fallos.length === 0) fallos.push("Falta de fluidez general"); 
+            
+            groupErrorsMemory.push(...fallos);
+            evaluatedStudents++;
+            
+            updateGroupUI();
+            
+            addMsg('bot', `<span style="color:#D97706; font-weight:bold;">🎒 Estudiante ${evaluatedStudents} registrado.</span><br>Se detectaron ${fallos.length} fallos simulados. Sube el siguiente video.`, true);
+        }
+
+        isLoading = false;
+        document.getElementById('sendBtn').disabled = false;
+        capturedFrames = [];
+        document.getElementById('uploadZone').innerHTML = `<div class="uz-icon">🎬</div><div class="uz-title">Subir nuevo video</div>`;
+    }
+
+    async function generateGroupPlan() {
+        if(groupErrorsMemory.length === 0) {
+            alert("No has evaluado a ningún estudiante todavía.");
+            return;
+        }
+
+        isLoading = true;
+        showTyping();
+
+        await new Promise(resolve => setTimeout(resolve, 2500));
+
+        const fallosUnicos = [...new Set(groupErrorsMemory)].join(", ");
+        removeTyping();
+
+        const prefs = getTeacherPreferences();
+        const contenido = generarContenidoEspecifico(prefs.format, prefs.materials, "los patrones deficientes del grupo");
+
+        const mockDidactica = {
+            "tema": "Corrección Grupal Biomecánica",
+            "grado_sugerido": "Segundo a Cuarto de Primaria",
+            "edades_sugeridas": "7 a 9 años",
+            "habilidad_detectada": fallosUnicos,
+            "formato_elegido": prefs.format,
+            "metodologia_elegida": prefs.pedagogy,
+            "materiales": prefs.materials,
+            
+            "alertas_seguridad": "Debido a que es una actividad grupal, establezca un sistema de señales (ej. silbato = 'estatuas'). Asegúrese de que haya al menos 2 metros de separación entre grupos de trabajo para evitar colisiones masivas.",
+            "frases_retroalimentacion": `Diríjase al grupo usando metáforas visuales:
+- '¡Brazos de robot!' (si la falla es en los brazos).
+- '¡Aterrizaje de pluma!' (si el impacto es muy fuerte).
+- '¡Troncos de árbol firme!' (para mejorar la postura).`,
+
+            "pregunta_problematizadora": "¿Cómo podemos superar los obstáculos ayudándonos entre todos y coordinando nuestro cuerpo?",
+            "estandares": { "motriz": "Controlo de forma global la realización de movimientos.", "expresivo": "Expreso emociones a través del cuerpo.", "axiologico": "Respeto las reglas del grupo." },
+            "indicadores": { "conocer": "Identifica la importancia de la postura.", "hacer": `Mejora las barreras de: ${fallosUnicos}.`, "ser": "Participa activamente en equipo." },
+            "objetivo_clase": `Corregir de forma masiva los patrones biomecánicos deficientes detectados en el salón utilizando un enfoque de ${prefs.format}.`,
+            
+            "actividades": { 
+                "fase_inicial": "Calentamiento (10 min): Juego de persecución tradicional modificado ('La lleva'). El docente caminará por el área observando las posturas generales del grupo mientras corren.", 
+                "distribucion_espacial": contenido.distribucion,
+                "guion_docente": contenido.guion,
+                "desarrollo_central": `Se divide al salón en subgrupos de 4 a 5 estudiantes. Mediante la técnica de ${prefs.pedagogy}, el docente planteará el reto y rotará por cada grupo. Utilizará las 'Frases de Retroalimentación' para hacer correcciones generales en voz alta sin detener la fluidez del juego.`,
+                "fase_final": "Vuelta a la calma (10 min): Círculo de la palabra. Cada grupo menciona qué fue lo más difícil de coordinar con su cuerpo hoy." 
+            },
+            "inclusion": "Si en el grupo hay estudiantes con necesidades educativas especiales: Asignarles roles de co-liderazgo (ej. el juez que verifica quién tiene 'aterrizaje de pluma'). Explicar las instrucciones usando apoyos visuales y permitir pausas frecuentes.",
+            "tarea_extracurricular": "Practicar en familia caminar sobre una línea imaginaria.",
+            "evaluacion_sugerida": "Lista de chequeo simple (Logrado / No Logrado) aplicada al grupo mientras resuelven el circuito o cuento motor."
+        };
+
+        addMsg('bot', renderDidactica(mockDidactica), true);
+        
+        isGroupActive = false;
+        document.getElementById('groupSetup').style.display = 'block';
+        document.getElementById('groupProgress').style.display = 'none';
+        
+        isLoading = false;
+    }
+
+    function sendMsg() {
+        if (isLoading) return;
+        const val = document.getElementById('userInput').value.trim();
+        const hasFrames = capturedFrames.length > 0;
+
+        if (!val && !hasFrames) { 
+            addMsg('bot', 'Por favor, sube un archivo de video/imagen para el estudiante actual.'); 
+            return; 
+        }
+
+        if (val) addMsg('user', val);
+        document.getElementById('userInput').value = '';
+        callGemini(val);
+    }
+</script>
+
+</body>
+</html>
