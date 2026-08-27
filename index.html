@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AULA GLOBAL 360 · Simulador y Evaluador Experto</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="app">
+    
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo"><span>✨</span> AULA GLOBAL 360</div>
+            <div class="logo-sub">Evaluación Diagnóstica HMB<br>Batería Validada (5-11 años)</div>
+        </div>
+
+        <div class="sidebar-section">
+            <div class="sidebar-label">Componente a evaluar</div>
+            <div class="skill-grid">
+                <button class="skill-btn active" data-skill="auto" onclick="selectSkill(this, 'Automática', '')">
+                    <span class="ico">🔍</span><span class="lbl">Detección Automática</span>
+                </button>
+                <button class="skill-btn" data-skill="locomocion" onclick="selectSkill(this, 'Correr', 'avatar_correr.mp4')">
+                    <span class="ico">🏃</span><span class="lbl">Locomoción (Marcha, Carrera, Salto)</span>
+                </button>
+                <button class="skill-btn" data-skill="manipulacion" onclick="selectSkill(this, 'Lanzar / Atrapar', 'avatar_lanzar.mp4')">
+                    <span class="ico">⚽</span><span class="lbl">Manipulación (Lanzar, Atrapar)</span>
+                </button>
+                <button class="skill-btn" data-skill="estabilidad" onclick="selectSkill(this, 'Equilibrio', 'avatar_equilibrio.mp4')">
+                    <span class="ico">🧘</span><span class="lbl">Estabilidad y Equilibrio</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="sidebar-divider"></div>
+
+        <div class="sidebar-label" style="padding:0 20px">Preferencias del Maestro</div>
+        <div style="padding: 0 20px; display: flex; flex-direction: column;">
+            
+            <select id="prefFormat" class="pref-select">
+                <option value="Cuento Motor">📖 Cuento Motor</option>
+                <option value="Circuito de Estaciones">🎯 Circuito de Estaciones</option>
+                <option value="Retos Cooperativos">🤝 Retos Cooperativos</option>
+                <option value="Juego Libre Dirigido">🏃 Juego Libre Dirigido</option>
+            </select>
+            
+            <select id="prefPedagogy" class="pref-select">
+                <option value="Descubrimiento Guiado">🧠 Descubrimiento Guiado</option>
+                <option value="Resolución de Problemas">💡 Resolución de Problemas</option>
+                <option value="Asignación de Tareas">📋 Asignación de Tareas</option>
+            </select>
+
+            <div class="sidebar-label" style="margin-top: 10px; margin-bottom: 5px;">Materiales Disponibles</div>
+            <div class="mat-grid">
+                <label><input type="checkbox" value="Conos" class="mat-check" checked> Conos</label>
+                <label><input type="checkbox" value="Aros" class="mat-check" checked> Aros</label>
+                <label><input type="checkbox" value="Cuerdas" class="mat-check"> Cuerdas</label>
+                <label><input type="checkbox" value="Balones" class="mat-check"> Balones</label>
+                <label><input type="checkbox" value="Colchonetas" class="mat-check"> Colchonetas</label>
+            </div>
+        </div>
+
+        <div class="sidebar-divider"></div>
+
+        <div class="sidebar-label" style="padding:0 20px">Modos de Operación</div>
+        <div class="mode-btns">
+            <button class="mode-btn active" data-mode="diagnostico" onclick="selectMode(this)">
+                📊 Análisis Individual
+            </button>
+            <button class="mode-btn" style="color: #FDE68A; border-color: #D97706; font-weight: bold;" data-mode="grupal" onclick="selectMode(this)">
+                👨‍👩‍👧‍👦 Análisis Grupal (Salón)
+            </button>
+        </div>
+
+        <div class="sidebar-footer">
+            Motor: Simulación (Offline)<br>
+            Criterios: González Palacio & Montoya Grisales
+        </div>
+    </aside>
+
+    <main class="main">
+        <div class="topbar">
+            <button class="menu-btn" onclick="toggleSidebar()">
+                <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+            </button>
+            <div class="topbar-title">Análisis Biomecánico</div>
+            <span class="topbar-badge" id="modeBadge">MODO: INDIVIDUAL</span>
+        </div>
+
+        <div class="keybar">
+            <label>🔑 Modo:</label>
+            <input type="password" id="apiKey" placeholder="Cualquier texto..." value="MODO SIMULADO">
+            <button onclick="saveKey()">Conectar Offline</button>
+            <span class="key-ok" id="keyOk">✓ Activa</span>
+        </div>
+
+        <div class="group-panel" id="groupPanel" style="display: none;">
+            <span style="font-size: 20px;">🎒</span>
+            <div id="groupSetup">
+                <label style="font-size: 12px; font-weight: bold; color: #B45309;">¿A cuántos estudiantes vas a evaluar?</label>
+                <input type="number" id="totalStudents" min="1" max="50" value="30">
+                <button onclick="startGroupMode()">Iniciar Registro</button>
+            </div>
+            
+            <div class="group-progress" id="groupProgress">
+                <span class="group-text" id="groupCounterText">Evaluando: 0 de 30</span>
+                <progress id="groupProgressBar" max="30" value="0"></progress>
+                <button class="btn-finish-group" id="btnFinishGroup" onclick="generateGroupPlan()">Generar Planeación</button>
+            </div>
+        </div>
+
+        <div class="upload-wrapper">
+            <div class="upload-header">
+                <span class="sidebar-label" style="margin-bottom:0; color:var(--muted); font-weight:bold;">1. Evidencia del Estudiante actual</span>
+                <button class="help-btn" onclick="openModal()">📸 Reglas de Grabación</button>
+            </div>
+            <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+                <div class="uz-icon">🎬</div>
+                <div class="uz-title">Haz clic para subir un video o imagen</div>
+                <div class="uz-sub">MP4, MOV, JPG, PNG</div>
+            </div>
+            <input type="file" id="fileInput" accept="video/*,image/*" style="display:none" onchange="handleFile(event)">
+        </div>
+
+        <div class="chat-scroll" id="chatScroll">
+            <div class="msg bot">
+                <div class="msg-av">✨</div>
+                <div class="bubble">
+                    <strong>¡Hola! Soy AULA GLOBAL 360 (Versión Offline / Simulada).</strong><br><br>
+                    Antes de subir un video, revisa la sección <strong>"Preferencias del Maestro"</strong> en el menú lateral. Al generar la clase, te daré un <strong>paso a paso exacto</strong> (con medidas y guiones) para que apliques la clase fácilmente.
+                </div>
+            </div>
+        </div>
+
+        <div class="input-row">
+            <div class="input-wrap">
+                <textarea id="userInput" placeholder="Observaciones (ej. 'Este estudiante salta con un solo pie')..." onkeydown="handleKey(event)"></textarea>
+            </div>
+            <button class="send-btn" id="sendBtn" onclick="sendMsg()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+            </button>
+        </div>
+    </main>
+
+    <aside class="right-panel" id="rightPanel">
+        <div class="right-header">
+            <span class="icon-3d">🧬</span> Visualización Anatómica 3D
+        </div>
+        
+        <div class="sim-container">
+            <div class="video-box">
+                <div class="video-box-header">
+                    <span>EVIDENCIA DEL ESTUDIANTE</span>
+                    <div class="status-dot" id="studentStatus"></div>
+                </div>
+                <div class="player-area">
+                    <div class="placeholder-text" id="studentPlaceholder">
+                        <span style="font-size: 24px;">📥</span>
+                        Esperando carga de video...
+                    </div>
+                    <video id="studentVideoPlayer" style="display:none;" autoplay loop muted playsinline></video>
+                    <img id="studentImgPreview" style="display:none;" />
+                </div>
+            </div>
+
+            <div class="video-box">
+                <div class="video-box-header">
+                    <span id="avatarTitle">CGI BIOMECÁNICO: AUTO</span>
+                    <div class="status-dot active"></div>
+                </div>
+                <div class="player-area" style="background: #0F172A;">
+                    <div class="avatar-placeholder" id="avatarPlaceholder">
+                        <div class="avatar-scanner"></div>
+                        <span style="font-size: 32px; color: #38BDF8; margin-bottom: 10px;">🤖</span>
+                        <span style="color: white; font-weight: 600; font-size: 14px;">Modelo CGI Maduro</span>
+                        <span style="color: #64748B; font-size: 11px; margin-top: 4px;">Selecciona una habilidad para cargar</span>
+                    </div>
+                    <video id="avatarVideoPlayer" style="display:none; width: 100%; height: 100%; object-fit: cover; z-index: 5; position: absolute;" autoplay loop muted playsinline></video>
+                </div>
+            </div>
+        </div>
+    </aside>
+</div>
+
+<div class="modal-overlay" id="recordingModal" onclick="closeModalOnOutside(event)">
+    <div class="modal-content">
+        <div class="modal-header">
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+            <h2 class="modal-title">📸 Paso a paso para grabar</h2>
+        </div>
+        
+        <div class="modal-body">
+            <div class="step-container">
+                <div class="step-row">
+                    <div class="step-num">1</div>
+                    <div class="step-content">
+                        <h4>La Regla de los 5 Segundos</h4>
+                        <p>No satures tu celular. Empieza a grabar 1 segundo antes de que el niño se mueva y corta justo al terminar el movimiento.</p>
+                    </div>
+                </div>
+                <div class="step-row">
+                    <div class="step-num">2</div>
+                    <div class="step-content">
+                        <h4>Distancia y Encuadre Completo</h4>
+                        <p>Ubícate a una distancia de 3 a 4 metros para capturar el cuerpo entero del estudiante (desde la cabeza hasta los pies) durante todo el trayecto.</p>
+                    </div>
+                </div>
+                <div class="step-row">
+                    <div class="step-num">3</div>
+                    <div class="step-content">
+                        <h4>Plano Fijo a la Altura de la Cadera</h4>
+                        <p>Mantén la cámara a la altura del ombligo/cadera del niño sin moverte en exceso para facilitar el análisis biomecánico de las articulaciones.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar-label" style="color: var(--text); font-weight: bold; margin-bottom: 12px;">Ángulos recomendados según la habilidad:</div>
+            <div class="angle-grid">
+                <div class="angle-card">
+                    <div class="angle-icon">🏃</div>
+                    <h5>Locomoción (Carrera / Salto)</h5>
+                    <p><strong>Plano Sagital (Lateral/Perfil):</strong> Permite observar la fase de vuelo, inclinación del tronco y braceo alterno.</p>
+                </div>
+                <div class="angle-card">
+                    <div class="angle-icon">⚽</div>
+                    <h5>Manipulación y Estabilidad</h5>
+                    <p><strong>Plano Frontal y Diagonal:</strong> Permite evaluar la simetría de hombros, punto de suelta y base de sustentación.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>

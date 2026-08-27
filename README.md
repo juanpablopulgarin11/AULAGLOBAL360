@@ -1,6 +1,10 @@
-# AulaGlobal360
+# AulaGlobal360 🏃‍♂️✨
 
-**AULA GLOBAL 360** es una plataforma interactiva de evaluación diagnóstica de Habilidades Motrices Básicas (HMB) y generador de planeaciones pedagógicas para docentes de Educación Física en preescolar y primaria (5 a 11 años).
+**AULA GLOBAL 360** es una plataforma web interactiva de evaluación diagnóstica de Habilidades Motrices Básicas (HMB) y generador de planeaciones pedagógicas para docentes de Educación Física en preescolar y primaria (5 a 11 años).
+
+🌐 **Demo en Vivo (GitHub Pages):** [https://alejandrogomezmesa1.github.io/AulaGlobal360/](https://alejandrogomezmesa1.github.io/AulaGlobal360/)
+
+---
 
 ## 🌟 Características Principales
 
@@ -14,17 +18,19 @@
   - Reporte biomecánico del estudiante (para padres e historial con firma docente).
   - Planeación de clase completa (con distribución espacial con medidas, guion docente *"El Lenguaje del Profe"*, prevención y adaptaciones de inclusión).
 
-## 🚀 Uso Rápido
-
-1. Abre `Aula_Global_360.html` en cualquier navegador web moderno.
-2. Selecciona la habilidad motriz y tus preferencias de clase en el menú lateral.
-3. Sube un video o imagen del estudiante (o usa el modo simulado).
-4. Obtén el diagnóstico biomecánico y descarga la planeación de clase o reporte en Word.
-
 ## 📁 Estructura del Proyecto
 
 ```
-├── Aula_Global_360.html   # Interfaz principal de la aplicación
-├── styles.css             # Hoja de estilos desacoplada y responsive
-└── README.md              # Documentación del proyecto
+├── index.html        # Punto de entrada principal (renderizado por GitHub Pages)
+├── script.js          # Lógica interactiva, procesamiento de video y análisis
+├── styles.css         # Hoja de estilos desacoplada y responsive
+├── .nojekyll          # Desactiva Jekyll en GitHub Pages para carga directa
+└── README.md          # Documentación del proyecto
 ```
+
+## 🚀 Uso Rápido
+
+1. Abre `index.html` en cualquier navegador moderno o visita el enlace de [GitHub Pages](https://alejandrogomezmesa1.github.io/AulaGlobal360/).
+2. Selecciona la habilidad motriz y tus preferencias de clase en el menú lateral.
+3. Sube un video o imagen del estudiante (o usa el modo simulado).
+4. Obtén el diagnóstico biomecánico y descarga la planeación de clase o reporte en Word.
