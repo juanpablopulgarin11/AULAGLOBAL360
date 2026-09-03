@@ -81,7 +81,7 @@
                     <option value="Asignación de Tareas" selected>📋 Asignación de Tareas</option>
                 </select>
 
-                <!-- PERSONALIZACIÓN TEMPORAL Y CURRICULAR DE LA CLASE -->
+                <!-- PERSONALIZACIÓN TEMPORAL Y CURRICULAR DEL PERÍODO -->
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                     <div>
                         <label class="input-sublabel">Período (Máx 4):</label>
@@ -93,7 +93,7 @@
                         </select>
                     </div>
                     <div>
-                        <label class="input-sublabel">Duración:</label>
+                        <label class="input-sublabel">Duración Clase:</label>
                         <select id="prefDuration" class="pref-select">
                             <option value="45">⏱️ 45 Min</option>
                             <option value="50" selected>⏱️ 50 Min</option>
@@ -104,34 +104,18 @@
                     </div>
                 </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                    <div>
-                        <label class="input-sublabel">N° de Clase:</label>
-                        <select id="prefClassNum" class="pref-select">
-                            <option value="1" selected>Clase 1</option>
-                            <option value="2">Clase 2</option>
-                            <option value="3">Clase 3</option>
-                            <option value="4">Clase 4</option>
-                            <option value="5">Clase 5</option>
-                            <option value="6">Clase 6</option>
-                            <option value="7">Clase 7</option>
-                            <option value="8">Clase 8</option>
-                            <option value="9">Clase 9</option>
-                            <option value="10">Clase 10</option>
-                            <option value="11">Clase 11</option>
-                            <option value="12">Clase 12</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="input-sublabel">Total Clases:</label>
-                        <select id="prefTotalClasses" class="pref-select">
-                            <option value="4">4 Clases</option>
-                            <option value="6">6 Clases</option>
-                            <option value="8">8 Clases</option>
-                            <option value="10">10 Clases</option>
-                            <option value="12" selected>12 Clases</option>
-                        </select>
-                    </div>
+                <div>
+                    <label class="input-sublabel">Cantidad de Clases por Período (Máx 12):</label>
+                    <select id="prefTotalClasses" class="pref-select">
+                        <option value="1">1 Clase (Sesión Individual)</option>
+                        <option value="2">2 Clases (Secuencia Corta)</option>
+                        <option value="3">3 Clases (Fase de Iniciación)</option>
+                        <option value="4">4 Clases (Microciclo)</option>
+                        <option value="6">6 Clases (Medio Período)</option>
+                        <option value="8">8 Clases (Bimestre Pedagógico)</option>
+                        <option value="10">10 Clases (Progresión Amplia)</option>
+                        <option value="12" selected>12 Clases (Período Completo · Máx)</option>
+                    </select>
                 </div>
 
                 <div class="input-sublabel" style="margin-top: 4px;">Materiales Disponibles:</div>
