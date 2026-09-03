@@ -1247,7 +1247,7 @@ function exportToWord() {
                 </td>
             </tr>
             <tr>
-                <td colspan="4" class="hdr-main">ESTÁNDARES BÁSICOS DE COMPETENCIAS (MEN COLOMBIA)</td>
+                <td colspan="4" class="hdr-main">LINEAMIENTOS CURRICULARES / ORIENTACIONES PEDAGÓGICAS</td>
             </tr>
             <tr>
                 <td class="hdr-sub" style="width:33%;">Motriz:</td>
@@ -1258,12 +1258,6 @@ function exportToWord() {
                 <td>${d.estandares.motriz}</td>
                 <td colspan="2">${d.estandares.expresivo_corporal}</td>
                 <td>${d.estandares.axilogica_corporal}</td>
-            </tr>
-            <tr>
-                <td colspan="4" class="hdr-main">LINEAMIENTOS CURRICULARES / ORIENTACIONES PEDAGÓGICAS</td>
-            </tr>
-            <tr>
-                <td colspan="4">${d.lineamientos}</td>
             </tr>
             <tr>
                 <td colspan="4" class="hdr-main">INDICADORES DE DESEMPEÑO</td>
