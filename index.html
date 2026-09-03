@@ -62,14 +62,14 @@
 
         <div class="sidebar-divider"></div>
 
-        <!-- PREFERENCIAS PEDAGÓGICAS -->
+        <!-- PREFERENCIAS PEDAGÓGICAS Y DE CLASE -->
         <div class="sidebar-section">
             <div class="sidebar-label">3. Preferencias del Maestro</div>
             <div style="padding: 0 16px; display: flex; flex-direction: column; gap: 8px;">
                 <label class="input-sublabel">Formato Didáctico:</label>
                 <select id="prefFormat" class="pref-select">
                     <option value="Cuento Motor">📖 Cuento Motor</option>
-                    <option value="Circuito de Estaciones">🎯 Circuito de Estaciones</option>
+                    <option value="Circuito de Estaciones" selected>🎯 Circuito de Estaciones</option>
                     <option value="Retos Cooperativos">🤝 Retos Cooperativos</option>
                     <option value="Juego Libre Dirigido">🏃 Juego Libre Dirigido</option>
                 </select>
@@ -78,8 +78,61 @@
                 <select id="prefPedagogy" class="pref-select">
                     <option value="Descubrimiento Guiado">🧠 Descubrimiento Guiado</option>
                     <option value="Resolución de Problemas">💡 Resolución de Problemas</option>
-                    <option value="Asignación de Tareas">📋 Asignación de Tareas</option>
+                    <option value="Asignación de Tareas" selected>📋 Asignación de Tareas</option>
                 </select>
+
+                <!-- PERSONALIZACIÓN TEMPORAL Y CURRICULAR DE LA CLASE -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <div>
+                        <label class="input-sublabel">Período (Máx 4):</label>
+                        <select id="prefPeriod" class="pref-select">
+                            <option value="1" selected>Período 1</option>
+                            <option value="2">Período 2</option>
+                            <option value="3">Período 3</option>
+                            <option value="4">Período 4</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="input-sublabel">Duración:</label>
+                        <select id="prefDuration" class="pref-select">
+                            <option value="45">⏱️ 45 Min</option>
+                            <option value="50" selected>⏱️ 50 Min</option>
+                            <option value="55">⏱️ 55 Min</option>
+                            <option value="60">⏱️ 60 Min</option>
+                            <option value="90">⏱️ 90 Min</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <div>
+                        <label class="input-sublabel">N° de Clase:</label>
+                        <select id="prefClassNum" class="pref-select">
+                            <option value="1" selected>Clase 1</option>
+                            <option value="2">Clase 2</option>
+                            <option value="3">Clase 3</option>
+                            <option value="4">Clase 4</option>
+                            <option value="5">Clase 5</option>
+                            <option value="6">Clase 6</option>
+                            <option value="7">Clase 7</option>
+                            <option value="8">Clase 8</option>
+                            <option value="9">Clase 9</option>
+                            <option value="10">Clase 10</option>
+                            <option value="11">Clase 11</option>
+                            <option value="12">Clase 12</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="input-sublabel">Total Clases:</label>
+                        <select id="prefTotalClasses" class="pref-select">
+                            <option value="4">4 Clases</option>
+                            <option value="6">6 Clases</option>
+                            <option value="8">8 Clases</option>
+                            <option value="10">10 Clases</option>
+                            <option value="12" selected>12 Clases</option>
+                        </select>
+                    </div>
+                </div>
 
                 <div class="input-sublabel" style="margin-top: 4px;">Materiales Disponibles:</div>
                 <div class="mat-grid">

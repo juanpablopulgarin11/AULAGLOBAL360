@@ -802,14 +802,40 @@ function renderDiagnosticoHTML(data, studentNum = null) {
     `;
 }
 
+// HELPER DE GRADO Y CICLO PEDAGÓGICO MEN
+function getGradeAndCycle(gradeVal) {
+    const map = {
+        '5_anos': { grado: 'Transición / Preescolar (5 años)', ciclo: 'Preescolar / Inicial' },
+        '6_anos': { grado: 'Grado 1º de Primaria (6 años)', ciclo: 'Básica Primaria (Ciclo 1)' },
+        '7_anos': { grado: 'Grado 2º de Primaria (7 años)', ciclo: 'Básica Primaria (Ciclo 1)' },
+        '8_anos': { grado: 'Grado 3º de Primaria (8 años)', ciclo: 'Básica Primaria (Ciclo 1)' },
+        '9_11_anos': { grado: 'Grado 4º - 5º (9 a 11 años)', ciclo: 'Básica Primaria (Ciclo 2)' }
+    };
+    return map[gradeVal] || { grado: 'Grado 3º de Primaria (8 años)', ciclo: 'Básica Primaria (Ciclo 1)' };
+}
+
 // GENERACIÓN DE UNIDAD DIDÁCTICA Y PLAN DE CLASE (FORMATO INSTITUCIONAL MEN)
 function generateDidacticPlan(diagnosticoData, prefs, isGroup = false) {
     const skill = diagnosticoData.habilidad_detectada || 'Desarrollo Motor';
     const format = (prefs && prefs.format) ? prefs.format : 'Circuito de Estaciones';
-    const pedagogy = (prefs && prefs.pedagogy) ? prefs.pedagogy : 'Aprendizaje Basado en Retos Lúdicos';
-    const materials = (prefs && prefs.materials) ? prefs.materials : 'Conos, platillos, balones, pañoletas, lazos y tizas de colores';
+    const pedagogy = (prefs && prefs.pedagogy) ? prefs.pedagogy : 'Asignación de Tareas';
+    const materials = (prefs && prefs.materials) ? prefs.materials : 'Aros, Conos y recursos corporales';
+    const totalMin = (prefs && prefs.duration) ? parseInt(prefs.duration) : 50;
+    const period = (prefs && prefs.period) ? prefs.period : '1';
+    const classNum = (prefs && prefs.classNum) ? prefs.classNum : '1';
+    const totalClasses = (prefs && prefs.totalClasses) ? prefs.totalClasses : '12';
     const anio = new Date().getFullYear();
-    const grado = diagnosticoData.edad_calibrada || 'Primero, segundo y tercero de primaria';
+
+    const gradeSelectEl = document.getElementById('gradeSelect');
+    const gradeVal = gradeSelectEl ? gradeSelectEl.value : '7_anos';
+    const gradeInfo = getGradeAndCycle(gradeVal);
+    const grado = isGroup ? 'Salón Completo (Heterogéneo)' : gradeInfo.grado;
+    const ciclo = isGroup ? 'Básica Primaria' : gradeInfo.ciclo;
+
+    // Cálculo proporcional exacto de tiempos por fases de sesión
+    const initMin = Math.max(5, Math.round(totalMin * 0.20));
+    const finalMin = Math.max(5, Math.round(totalMin * 0.20));
+    const centralMin = totalMin - initMin - finalMin;
 
     let distribucion = "";
     let guion = "";
@@ -818,7 +844,7 @@ function generateDidacticPlan(diagnosticoData, prefs, isGroup = false) {
         distribucion = `Delimitar un círculo central de 6 metros de radio usando ${materials}. Cada estación representa una base o planeta motriz donde los estudiantes ejecutan la dinámica aplicando la corrección sin detener la fluidez del movimiento.`;
         guion = `*(Con entusiasmo pedagógico):* "¡Tripulantes espaciales! Nuestra nave ha entrado en una nueva dimensión motriz. Para activar los propulsores sin perder el equilibrio, debemos movernos con pasos ligeros, brazos activos a 90 grados y mirada siempre al frente. ¡Aterrizaje suave en 3, 2, 1... acción!"`;
     } else if (format === "Circuito de Estaciones") {
-        distribucion = `Montaje de 4 estaciones consecutivas en cuadrilátero (10x8 metros). Estación 1: Activación e impulsión coordinada; Estación 2: Coordinación segmentaria y ritmo; Estación 3: Precisión y trayectoria con elementos; Estación 4: Desaceleración, balance y control de apoyos.`;
+        distribucion = `Montaje de 4 estaciones consecutivas en cuadrilátero (10x8 metros) usando ${materials}. Estación 1: Activación e impulsión coordinada; Estación 2: Coordinación segmentaria y ritmo; Estación 3: Precisión y trayectoria con elementos; Estación 4: Desaceleración, balance y control de apoyos.`;
         guion = `*(Explicación técnica en lenguaje sencillo):* "Equipo: en cada estación nos enfocaremos en un detalle específico de nuestro cuerpo. Cuando escuchen el silbato, congelen la postura un instante para verificar su apoyo y luego roten con energía a la siguiente estación."`;
     } else {
         distribucion = `Espacio libre delimitado de 12x12 metros usando ${materials}. Zonas seguras perimetrales de 2 metros para evitar colisiones durante los desplazamientos y aceleraciones.`;
@@ -829,14 +855,14 @@ function generateDidacticPlan(diagnosticoData, prefs, isGroup = false) {
     const preguntaProblematizadora = `¿Qué acciones puedo realizar con mi cuerpo y cómo optimizo mis patrones de ${skill.toLowerCase()} para interactuar de forma armónica, segura y eficiente en mi entorno escolar y cotidiano?`;
 
     // Objetivos
-    const objetivoGeneral = `Fortalecer y perfeccionar los patrones básicos de movimiento vinculados a la ${skill} y las capacidades sociomotrices a través de experiencias lúdicas, cooperativas y de exploración corporal.`;
+    const objetivoGeneral = `Fortalecer y perfeccionar los patrones básicos de movimiento vinculados a la ${skill} y las capacidades sociomotrices a través de experiencias lúdicas, cooperativas y de exploración corporal (Sesión ${classNum} de ${totalClasses}).`;
     const objetivosEspecificos = [
         `Identificar las fases biomecánicas y la alineación segmentaria correcta en la ejecución de ${skill}.`,
         `Ejecutar secuencias motrices coordinadas aplicando la postura y apoyos adecuados en situaciones de juego individual y grupal.`,
         `Fomentar la cooperación activa, el respeto por las normas y el cuidado de sí mismo y de los demás en dinámicas de clase.`
     ];
 
-    // Estándares Básicos de Competencias (MEN Colombia)
+    // Orientaciones Pedagógicas y Competencias (MEN Colombia)
     const estandares = {
         motriz: `Identifica y controla los segmentos corporales en movimientos realizados en diferentes alturas, trayectorias y con diversos elementos.`,
         expresivo_corporal: `Reconoce su cuerpo y demuestra sus posibilidades motrices para la interacción en el aula de clase, el patio escolar y el hogar.`,
@@ -852,11 +878,11 @@ function generateDidacticPlan(diagnosticoData, prefs, isGroup = false) {
         ser: `Participo y me integro con entusiasmo en las actividades individuales y grupales, procurando generar un ambiente de respeto, compañerismo y sana convivencia.`
     };
 
-    // Secuencia de Actividades (50 minutos)
+    // Secuencia de Actividades adaptada dinámicamente al tiempo total
     const actividades = {
-        fase_inicial: `<strong>Instrucciones previas y Saludo:</strong> Se realiza un conversatorio con los estudiantes acerca de su salud, estado de ánimo y acuerdos de convivencia. Se socializa el objetivo pedagógico de la clase.<br><br><strong>Activación Dinámica y Motriz:</strong> Juego de activación lúdica ("El semáforo motriz" / "Osos y ardillas") con movilidad articular progresiva (tobillos, rodillas, cadera y cintura escapular) para preparar la cadena cinética y elevar la temperatura corporal.`,
-        desarrollo_central: `<strong>1. Montaje y Distribución Espacial:</strong><br>${distribucion}<br><br><strong>2. Guion / Consigna Pedagógica:</strong><br><em>${guion}</em><br><br><strong>3. Desarrollo del Formato (${format}):</strong><br>Aplicación de la metodología de ${pedagogy}. Se organizan subgrupos equitativos para recorrer las estaciones/retos de ${skill}. El docente acompaña el proceso brindando retroalimentación inmediata ("El Lenguaje del Profe") para afianzar la alineación postural y los apoyos sin detener el flujo lúdico de la sesión.`,
-        fase_final: `<strong>Juego de Vuelta a la Calma:</strong> Dinámica suave de control respiratorio y relajación miofascial ("La marioneta de algodón"). Estiramiento guiado de los principales grupos musculares en posición sedente.<br><br><strong>Conversatorio Grupal y Metacognición:</strong> ¿Cómo se sintieron durante los juegos? ¿Qué sensaciones corporales experimentaron al ajustar la técnica de ${skill}? Cierre con felicitación y hábitos de hidratación.`
+        fase_inicial: `<strong>Instrucciones previas y Saludo (${initMin} min):</strong> Se realiza un conversatorio con los estudiantes acerca de su salud, estado de ánimo y acuerdos de convivencia. Se socializa el objetivo pedagógico de la sesión.<br><br><strong>Activación Dinámica y Motriz:</strong> Juego de activación lúdica ("El semáforo motriz" / "Osos y ardillas") con movilidad articular progresiva (tobillos, rodillas, cadera y cintura escapular) para preparar la cadena cinética y elevar la temperatura corporal.`,
+        desarrollo_central: `<strong>1. Montaje y Distribución Espacial:</strong><br>${distribucion}<br><br><strong>2. Guion / Consigna Pedagógica:</strong><br><em>${guion}</em><br><br><strong>3. Desarrollo del Formato (${format} - ${centralMin} min):</strong><br>Aplicación de la metodología de ${pedagogy}. Se organizan subgrupos equitativos para recorrer las estaciones/retos de ${skill}. El docente acompaña el proceso brindando retroalimentación inmediata ("El Lenguaje del Profe") para afianzar la alineación postural y los apoyos sin detener el flujo lúdico de la sesión.`,
+        fase_final: `<strong>Juego de Vuelta a la Calma (${finalMin} min):</strong> Dinámica suave de control respiratorio y relajación miofascial ("La marioneta de algodón"). Estiramiento guiado de los principales grupos musculares en posición sedente.<br><br><strong>Conversatorio Grupal y Metacognición:</strong> ¿Cómo se sintieron durante los juegos? ¿Qué sensaciones corporales experimentaron al ajustar la técnica de ${skill}? Cierre con felicitación y hábitos de hidratación.`
     };
 
     const frasesProfe = (diagnosticoData.frases_profe && diagnosticoData.frases_profe.length)
@@ -870,13 +896,15 @@ function generateDidacticPlan(diagnosticoData, prefs, isGroup = false) {
     return {
         institucion: "INSTITUCIÓN EDUCATIVA / COLEGIO",
         area: "Educación Física, Recreación y Deportes",
-        ciclo: "Básica Primaria (Ciclo 1)",
+        ciclo: ciclo,
         grado: grado,
-        periodo: "1",
+        periodo: period,
+        numero_clase: classNum,
+        total_clases: totalClasses,
         docente: "Docente Titular de Educación Física",
         anio: anio.toString(),
         jornada: "Mañana / Única",
-        duracion_clase: "50 Minutos",
+        duracion_clase: `${totalMin} Minutos`,
         lugar: "Patio del colegio, coliseo y cancha de primaria",
         tema: `Habilidades Motrices Básicas (Patrón: ${skill}) y Capacidades Sociomotrices`,
         formato: format,
@@ -890,10 +918,10 @@ function generateDidacticPlan(diagnosticoData, prefs, isGroup = false) {
         indicadores: indicadores,
         actividades: actividades,
         duraciones: {
-            inicial: "10 minutos",
-            central: "30 minutos",
-            final: "10 minutos",
-            total: "50 minutos"
+            inicial: `${initMin} minutos`,
+            central: `${centralMin} minutos`,
+            final: `${finalMin} minutos`,
+            total: `${totalMin} minutos`
         },
         tarea_extracurricular: `Compartir y repasar en casa con la familia una variante del juego de ${skill} practicado hoy, fortaleciendo la integración familiar y los hábitos de vida activa.`,
         evaluacion: `Evaluación formativa continua: Observación directa del empleo de los patrones básicos de movimiento (${skill}) en situaciones lúdicas dirigidas y espontáneas; participación activa, seguimiento de acuerdos de convivencia y cooperación con los compañeros.`,
@@ -920,8 +948,9 @@ function renderDidacticaHTML(didactica) {
                 <div>
                     <div class="diag-title">FORMATO INSTITUCIONAL · PLANEACIÓN DE CLASE</div>
                     <div class="diag-meta"><strong>${didactica.tema}</strong> | Grado: <strong>${didactica.grado}</strong></div>
+                    <div style="font-size:11px; color:var(--muted); margin-top:2px;">Período ${didactica.periodo} · <strong>Clase ${didactica.numero_clase} de ${didactica.total_clases}</strong></div>
                 </div>
-                <span class="stage-badge stage-maduro">50 Minutos</span>
+                <span class="stage-badge stage-maduro">⏱️ ${didactica.duracion_clase}</span>
             </div>
 
             <!-- PREGUNTA PROBLEMATIZADORA Y OBJETIVOS -->
@@ -948,13 +977,13 @@ function renderDidacticaHTML(didactica) {
             <!-- SECUENCIA DIDÁCTICA -->
             <div style="display:flex; flex-direction:column; gap:8px; font-size:12px; color:var(--text); margin-bottom:12px;">
                 <div style="background:#FFFFFF; border:1px solid #E2E8F0; padding:8px; border-radius:6px;">
-                    <strong>🔥 Parte Inicial (10 min):</strong> ${didactica.actividades.fase_inicial}
+                    <strong>🔥 Parte Inicial (${didactica.duraciones.inicial}):</strong> ${didactica.actividades.fase_inicial}
                 </div>
                 <div style="background:#FFFFFF; border:1px solid #E2E8F0; padding:8px; border-radius:6px;">
-                    <strong>⚡ Parte Central (30 min):</strong> ${didactica.actividades.desarrollo_central}
+                    <strong>⚡ Parte Central (${didactica.duraciones.central}):</strong> ${didactica.actividades.desarrollo_central}
                 </div>
                 <div style="background:#FFFFFF; border:1px solid #E2E8F0; padding:8px; border-radius:6px;">
-                    <strong>🧘 Parte Final (10 min):</strong> ${didactica.actividades.fase_final}
+                    <strong>🧘 Parte Final (${didactica.duraciones.final}):</strong> ${didactica.actividades.fase_final}
                 </div>
             </div>
 
@@ -1200,10 +1229,10 @@ function exportToWord() {
                 <td colspan="4" class="hdr-sub" style="font-size:10pt;">${d.institucion}</td>
             </tr>
             <tr>
-                <td><strong>ÁREA:</strong> ${d.area}</td>
-                <td><strong>CICLO:</strong> ${d.ciclo}</td>
-                <td><strong>GRADO:</strong> ${d.grado}</td>
-                <td><strong>PERÍODO:</strong> ${d.periodo}</td>
+                <td style="width:28%;"><strong>ÁREA:</strong> ${d.area}</td>
+                <td style="width:26%;"><strong>CICLO:</strong> ${d.ciclo}</td>
+                <td style="width:26%;"><strong>GRADO:</strong> ${d.grado}</td>
+                <td style="width:20%;"><strong>PERÍODO:</strong> ${d.periodo}</td>
             </tr>
             <tr>
                 <td><strong>DOCENTE:</strong> ${d.docente}</td>
@@ -1212,7 +1241,7 @@ function exportToWord() {
                 <td><strong>DURACIÓN:</strong> ${d.duracion_clase}</td>
             </tr>
             <tr>
-                <td colspan="4"><strong>TEMA:</strong> ${d.tema}</td>
+                <td colspan="4"><strong>TEMA:</strong> ${d.tema} · <em>(Clase ${d.numero_clase} de ${d.total_clases} del Período ${d.periodo})</em></td>
             </tr>
             <tr>
                 <td colspan="2"><strong>LUGAR / INSTALACIÓN:</strong> ${d.lugar}</td>
@@ -1274,15 +1303,15 @@ function exportToWord() {
             </tr>
         </table>
 
-        <!-- TABLA 3: DESCRIPCIÓN DE LA ACTIVIDAD (SECUENCIA DE 50 MINUTOS) -->
+        <!-- TABLA 3: DESCRIPCIÓN DE LA ACTIVIDAD (SECUENCIA DIDÁCTICA) -->
         <table>
             <tr>
-                <td colspan="3" class="hdr-main">DESCRIPCIÓN DE LA ACTIVIDAD (SECUENCIA DIDÁCTICA)</td>
+                <td colspan="3" class="hdr-main">DESCRIPCIÓN DE LA ACTIVIDAD (SECUENCIA DIDÁCTICA - ${d.duracion_clase.toUpperCase()})</td>
             </tr>
             <tr>
-                <td class="hdr-sub" style="width:25%;">PARTE INICIAL<br><span style="font-size:8.5pt; font-weight:normal;">(Activación de saberes)</span></td>
-                <td class="hdr-sub" style="width:50%;">PARTE CENTRAL<br><span style="font-size:8.5pt; font-weight:normal;">(Construcción / Formato: ${d.formato})</span></td>
-                <td class="hdr-sub" style="width:25%;">PARTE FINAL<br><span style="font-size:8.5pt; font-weight:normal;">(Aplicación y Metacognición)</span></td>
+                <td class="hdr-sub" style="width:25%;">PARTE INICIAL<br><span style="font-size:8.5pt; font-weight:normal;">(Activación de saberes · ${d.duraciones.inicial})</span></td>
+                <td class="hdr-sub" style="width:50%;">PARTE CENTRAL<br><span style="font-size:8.5pt; font-weight:normal;">(Construcción / Formato: ${d.formato} · ${d.duraciones.central})</span></td>
+                <td class="hdr-sub" style="width:25%;">PARTE FINAL<br><span style="font-size:8.5pt; font-weight:normal;">(Aplicación y Metacognición · ${d.duraciones.final})</span></td>
             </tr>
             <tr>
                 <td>${d.actividades.fase_inicial}</td>
@@ -1358,7 +1387,7 @@ function exportToWord() {
 
     </body></html>`;
 
-    downloadDocFile(docHtml, `Planeacion_Clase_Institucional_${d.formato.replace(/\s+/g, '_')}.doc`);
+    downloadDocFile(docHtml, `Planeacion_Periodo${d.periodo}_Clase${d.numero_clase}_${d.formato.replace(/\s+/g, '_')}.doc`);
 }
 
 function downloadDocFile(htmlContent, fileName) {
@@ -1373,9 +1402,13 @@ function downloadDocFile(htmlContent, fileName) {
 }
 
 function getTeacherPreferences() {
-    const format = document.getElementById('prefFormat').value;
-    const pedagogy = document.getElementById('prefPedagogy').value;
+    const format = document.getElementById('prefFormat') ? document.getElementById('prefFormat').value : 'Circuito de Estaciones';
+    const pedagogy = document.getElementById('prefPedagogy') ? document.getElementById('prefPedagogy').value : 'Asignación de Tareas';
+    const duration = document.getElementById('prefDuration') ? document.getElementById('prefDuration').value : '50';
+    const period = document.getElementById('prefPeriod') ? document.getElementById('prefPeriod').value : '1';
+    const classNum = document.getElementById('prefClassNum') ? document.getElementById('prefClassNum').value : '1';
+    const totalClasses = document.getElementById('prefTotalClasses') ? document.getElementById('prefTotalClasses').value : '12';
     const checkedMats = Array.from(document.querySelectorAll('.mat-check:checked')).map(cb => cb.value);
-    const materials = checkedMats.length ? checkedMats.join(', ') : 'Recursos corporales y marcas de tiza en el piso';
-    return { format, pedagogy, materials };
+    const materials = checkedMats.length ? checkedMats.join(', ') : 'Aros, Conos y recursos corporales';
+    return { format, pedagogy, duration, period, classNum, totalClasses, materials };
 }
