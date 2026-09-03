@@ -84,13 +84,13 @@ function updateKeyStatus(hasKey) {
 function selectSkill(btnEl, skillCode, skillName) {
     document.querySelectorAll('.skill-btn').forEach(b => b.classList.remove('active'));
     btnEl.classList.add('active');
-    
+
     selectedSkill = skillCode;
     selectedSkillName = skillName;
-    
+
     document.getElementById('currentSkillSubtitle').textContent = `(${skillName})`;
     document.getElementById('mainHeaderTitle').textContent = `Análisis: ${skillName}`;
-    
+
     updateCGIModel(skillCode);
 
     if (window.innerWidth <= 1080) {
@@ -125,7 +125,7 @@ function selectMode(btnEl) {
     document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
     btnEl.classList.add('active');
     selectedMode = btnEl.dataset.mode;
-    
+
     const modeBadge = document.getElementById('modeBadge');
     const groupPanel = document.getElementById('groupPanel');
 
@@ -141,7 +141,7 @@ function selectMode(btnEl) {
         groupPanel.style.display = 'none';
         isGroupActive = false;
     }
-    
+
     if (window.innerWidth <= 1080) { toggleSidebar(); }
 }
 
@@ -226,7 +226,7 @@ async function handleFile(event) {
             videoPlayer.src = fileUrl;
             videoPlayer.style.display = 'block';
             videoPlayer.play();
-            
+
             document.getElementById('fpsCounter').textContent = 'FPS: 30 (HD)';
             document.getElementById('frameDensity').textContent = 'Extrayendo 6 fases...';
 
@@ -327,7 +327,7 @@ function extractIntelligentVideoKeyframes(file, maxFrames = 6) {
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
                 const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
                 const b64 = dataUrl.split(',')[1];
-                
+
                 frames.push({
                     time: `${samplePoints[currentIndex].t.toFixed(1)}s`,
                     phase: samplePoints[currentIndex].phase,
@@ -366,8 +366,8 @@ function renderKeyframeStrip(frames) {
         const card = document.createElement('div');
         card.className = 'keyframe-card';
         card.innerHTML = `
-            <img src="${f.previewUrl}" alt="Fotograma ${idx+1}">
-            <div class="keyframe-tag">#${idx+1} · ${f.time}</div>
+            <img src="${f.previewUrl}" alt="Fotograma ${idx + 1}">
+            <div class="keyframe-tag">#${idx + 1} · ${f.time}</div>
         `;
         keyframeStrip.appendChild(card);
     });
@@ -377,7 +377,7 @@ function renderKeyframeStrip(frames) {
 function addMsg(role, contentHTML) {
     const wrap = document.createElement('div');
     wrap.className = `msg ${role}`;
-    
+
     const avatar = document.createElement('div');
     avatar.className = 'msg-av';
     avatar.textContent = role === 'bot' ? '✨' : 'TÚ';
@@ -468,7 +468,7 @@ async function sendMsg() {
 // LLAMADA A GEMINI VISION (MULTIMODAL)
 async function callGeminiVision(skill, grade, obsText, frames) {
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-    
+
     const sysPrompt = `Eres un Biomecánico Deportivo y Docente Experto en Desarrollo Motor Infantil especializado en la evaluación de Habilidades Motrices Básicas (HMB).
 Debes analizar visualmente los fotogramas del estudiante según los estadios de Gallahue (Inicial, Elemental, Maduro) y la batería validada de González Palacio & Montoya Grisales / TGMD-3.
 
@@ -501,7 +501,7 @@ DEBES RESPONDER EXCLUSIVAMENTE CON UN OBJETO JSON VÁLIDO CON LA SIGUIENTE ESTRU
 }`;
 
     const parts = [{ text: `Analiza los siguientes ${frames.length} fotogramas del movimiento del niño y evalúa con rigor biomecánico:` }];
-    
+
     frames.forEach(f => {
         parts.push({
             inlineData: {
@@ -691,7 +691,7 @@ function handleDiagnosisOutput(data, teacherPrefs) {
     if (!isGroupActive) {
         // Modo individual: Mostrar reporte individual completo + Unidad didáctica individual
         addMsg('bot', renderDiagnosticoHTML(data, null), true);
-        
+
         // Generar unidad didáctica individual
         const didactica = generateDidacticPlan(data, teacherPrefs, false);
         addMsg('bot', renderDidacticaHTML(didactica), true);
@@ -802,84 +802,172 @@ function renderDiagnosticoHTML(data, studentNum = null) {
     `;
 }
 
-// GENERACIÓN DE UNIDAD DIDÁCTICA Y PLAN DE CLASE
+// GENERACIÓN DE UNIDAD DIDÁCTICA Y PLAN DE CLASE (FORMATO INSTITUCIONAL MEN)
 function generateDidacticPlan(diagnosticoData, prefs, isGroup = false) {
     const skill = diagnosticoData.habilidad_detectada || 'Desarrollo Motor';
-    const format = prefs.format;
-    const pedagogy = prefs.pedagogy;
-    const materials = prefs.materials;
+    const format = (prefs && prefs.format) ? prefs.format : 'Circuito de Estaciones';
+    const pedagogy = (prefs && prefs.pedagogy) ? prefs.pedagogy : 'Aprendizaje Basado en Retos Lúdicos';
+    const materials = (prefs && prefs.materials) ? prefs.materials : 'Conos, platillos, balones, pañoletas, lazos y tizas de colores';
+    const anio = new Date().getFullYear();
+    const grado = diagnosticoData.edad_calibrada || 'Primero, segundo y tercero de primaria';
 
     let distribucion = "";
     let guion = "";
 
     if (format === "Cuento Motor") {
-        distribucion = `Delimitar un círculo central de 6 metros de radio usando ${materials}. Cada estación representa un planeta motriz donde los estudiantes aplican la corrección sin detener la marcha.`;
-        guion = `*(Con entusiasmo):* "¡Tripulantes espaciales! Nuestra nave ha entrado en la zona de asteroides. Para no activar las trampas sónicas del suelo, debemos movernos con pies ligeros y brazos firmes a 90 grados. ¡Aterrizaje de pluma en 3, 2, 1... despegue!"`;
+        distribucion = `Delimitar un círculo central de 6 metros de radio usando ${materials}. Cada estación representa una base o planeta motriz donde los estudiantes ejecutan la dinámica aplicando la corrección sin detener la fluidez del movimiento.`;
+        guion = `*(Con entusiasmo pedagógico):* "¡Tripulantes espaciales! Nuestra nave ha entrado en una nueva dimensión motriz. Para activar los propulsores sin perder el equilibrio, debemos movernos con pasos ligeros, brazos activos a 90 grados y mirada siempre al frente. ¡Aterrizaje suave en 3, 2, 1... acción!"`;
     } else if (format === "Circuito de Estaciones") {
-        distribucion = `Montaje de 4 estaciones consecutivas en cuadrilátero (10x8 metros). Estación 1: Impulsión reactiva; Estación 2: Coordinación rítmica; Estación 3: Precisión de suelta; Estación 4: Desaceleración y equilibrio sobre colchonetas.`;
-        guion = `*(Explicación técnica en lenguaje sencillo):* "Equipo: en cada estación nos enfocaremos en un solo detalle del cuerpo. Cuando suene el silbato, congelen la postura 1 segundo para verificar su apoyo y luego avancen."`;
+        distribucion = `Montaje de 4 estaciones consecutivas en cuadrilátero (10x8 metros). Estación 1: Activación e impulsión coordinada; Estación 2: Coordinación segmentaria y ritmo; Estación 3: Precisión y trayectoria con elementos; Estación 4: Desaceleración, balance y control de apoyos.`;
+        guion = `*(Explicación técnica en lenguaje sencillo):* "Equipo: en cada estación nos enfocaremos en un detalle específico de nuestro cuerpo. Cuando escuchen el silbato, congelen la postura un instante para verificar su apoyo y luego roten con energía a la siguiente estación."`;
     } else {
-        distribucion = `Espacio libre delimitado de 12x12 metros usando ${materials}. Zonas seguras perimetrales de 2 metros para evitar colisiones durante la aceleración.`;
-        guion = `*(Reto cooperativo):* "El reto de hoy consiste en trasladar todos los materiales al centro sin que se caiga ninguno. La regla de oro es que cada relevo debe realizarse con la postura corregida."`;
+        distribucion = `Espacio libre delimitado de 12x12 metros usando ${materials}. Zonas seguras perimetrales de 2 metros para evitar colisiones durante los desplazamientos y aceleraciones.`;
+        guion = `*(Reto cooperativo grupal):* "El reto de hoy consiste en completar las secuencias de trabajo en equipo sin que ningún elemento toque el suelo. La regla de oro es que cada relevo debe realizarse con la postura corregida y apoyando siempre a los compañeros."`;
     }
 
+    // Pregunta Problematizadora contextualizada
+    const preguntaProblematizadora = `¿Qué acciones puedo realizar con mi cuerpo y cómo optimizo mis patrones de ${skill.toLowerCase()} para interactuar de forma armónica, segura y eficiente en mi entorno escolar y cotidiano?`;
+
+    // Objetivos
+    const objetivoGeneral = `Fortalecer y perfeccionar los patrones básicos de movimiento vinculados a la ${skill} y las capacidades sociomotrices a través de experiencias lúdicas, cooperativas y de exploración corporal.`;
+    const objetivosEspecificos = [
+        `Identificar las fases biomecánicas y la alineación segmentaria correcta en la ejecución de ${skill}.`,
+        `Ejecutar secuencias motrices coordinadas aplicando la postura y apoyos adecuados en situaciones de juego individual y grupal.`,
+        `Fomentar la cooperación activa, el respeto por las normas y el cuidado de sí mismo y de los demás en dinámicas de clase.`
+    ];
+
+    // Estándares Básicos de Competencias (MEN Colombia)
+    const estandares = {
+        motriz: `Identifica y controla los segmentos corporales en movimientos realizados en diferentes alturas, trayectorias y con diversos elementos.`,
+        expresivo_corporal: `Reconoce su cuerpo y demuestra sus posibilidades motrices para la interacción en el aula de clase, el patio escolar y el hogar.`,
+        axilogica_corporal: `Dispone de múltiples posibilidades de movimiento y las aplica cotidianamente a través de juegos y ejercicios en su contexto, cuidando su bienestar y el de sus compañeros.`
+    };
+
+    const lineamientos = `Desarrollo del pensamiento motriz, integración de la corporeidad, hábitos de vida saludable y formación en valores a través de la lúdica y la resolución de retos motores (Lineamientos Curriculares MEN Colombia).`;
+
+    // Indicadores de Desempeño
+    const indicadores = {
+        saber: `Exploro e identifico los conceptos y componentes biomecánicos de ${skill} mediante actividades lúdicas y reflexivas.`,
+        hacer: `Controlo y ejecuto en forma coordinada las fases de ${skill} con y sin ayuda de elementos en diferentes trayectorias y velocidades.`,
+        ser: `Participo y me integro con entusiasmo en las actividades individuales y grupales, procurando generar un ambiente de respeto, compañerismo y sana convivencia.`
+    };
+
+    // Secuencia de Actividades (50 minutos)
+    const actividades = {
+        fase_inicial: `<strong>Instrucciones previas y Saludo:</strong> Se realiza un conversatorio con los estudiantes acerca de su salud, estado de ánimo y acuerdos de convivencia. Se socializa el objetivo pedagógico de la clase.<br><br><strong>Activación Dinámica y Motriz:</strong> Juego de activación lúdica ("El semáforo motriz" / "Osos y ardillas") con movilidad articular progresiva (tobillos, rodillas, cadera y cintura escapular) para preparar la cadena cinética y elevar la temperatura corporal.`,
+        desarrollo_central: `<strong>1. Montaje y Distribución Espacial:</strong><br>${distribucion}<br><br><strong>2. Guion / Consigna Pedagógica:</strong><br><em>${guion}</em><br><br><strong>3. Desarrollo del Formato (${format}):</strong><br>Aplicación de la metodología de ${pedagogy}. Se organizan subgrupos equitativos para recorrer las estaciones/retos de ${skill}. El docente acompaña el proceso brindando retroalimentación inmediata ("El Lenguaje del Profe") para afianzar la alineación postural y los apoyos sin detener el flujo lúdico de la sesión.`,
+        fase_final: `<strong>Juego de Vuelta a la Calma:</strong> Dinámica suave de control respiratorio y relajación miofascial ("La marioneta de algodón"). Estiramiento guiado de los principales grupos musculares en posición sedente.<br><br><strong>Conversatorio Grupal y Metacognición:</strong> ¿Cómo se sintieron durante los juegos? ¿Qué sensaciones corporales experimentaron al ajustar la técnica de ${skill}? Cierre con felicitación y hábitos de hidratación.`
+    };
+
+    const frasesProfe = (diagnosticoData.frases_profe && diagnosticoData.frases_profe.length)
+        ? diagnosticoData.frases_profe
+        : [
+            "¡Aterriza suave como gato ninja!",
+            "¡Brazos firmes a 90 grados y mirada al frente!",
+            "¡Siente la impulsión desde tus pies!"
+        ];
+
     return {
-        tema: `Unidad Didáctica Biomecánica: Perfeccionamiento de ${skill}`,
+        institucion: "INSTITUCIÓN EDUCATIVA / COLEGIO",
+        area: "Educación Física, Recreación y Deportes",
+        ciclo: "Básica Primaria (Ciclo 1)",
+        grado: grado,
+        periodo: "1",
+        docente: "Docente Titular de Educación Física",
+        anio: anio.toString(),
+        jornada: "Mañana / Única",
+        duracion_clase: "50 Minutos",
+        lugar: "Patio del colegio, coliseo y cancha de primaria",
+        tema: `Habilidades Motrices Básicas (Patrón: ${skill}) y Capacidades Sociomotrices`,
         formato: format,
         metodologia: pedagogy,
         materiales: materials,
-        grado_sugerido: diagnosticoData.edad_calibrada || 'Primaria (5-11 años)',
-        estadio_prevalente: diagnosticoData.estadio_gallahue,
-        objetivo_clase: `Optimizar la eficiencia de la cadena cinética y corregir los patrones de ${skill} mediante dinámicas lúdicas basadas en ${pedagogy}.`,
-        distribucion_espacial: distribucion,
-        guion_docente: guion,
-        alertas_seguridad: `Asegurar suelo seco y libre de humedad. Mantener separación mínima de 2 metros entre estudiantes al correr o saltar. Usar colchonetas en las zonas de aterrizaje de impacto.`,
-        frases_clave: diagnosticoData.frases_profe || [
-            "¡Aterriza como gato ninja!",
-            "¡Brazos de robot a 90 grados!"
-        ],
-        actividades: {
-            fase_inicial: "Calentamiento y Activación Dinámica (10 min): Desplazamientos articulares lúdicos ('El semáforo motriz'). Elevación progresiva de la temperatura corporal con movilidad de tobillos, rodillas y cintura escapular.",
-            desarrollo_central: `Desarrollo Central (${format}) (30 min): Aplicación de la metodología de ${pedagogy}. Se forman subgrupos de trabajo. El docente rota por cada estación utilizando las consignas verbales para corregir en caliente sin detener el flujo lúdico.`,
-            fase_final: "Vuelta a la Calma y Círculo de Reflexión (10 min): Estiramiento miofascial guiado en el suelo. Pregunta metacognitiva: '¿Qué sintió tu cuerpo al aterrizar más suave?'"
+        pregunta_problematizadora: preguntaProblematizadora,
+        objetivo_general: objetivoGeneral,
+        objetivos_especificos: objetivosEspecificos,
+        estandares: estandares,
+        lineamientos: lineamientos,
+        indicadores: indicadores,
+        actividades: actividades,
+        duraciones: {
+            inicial: "10 minutos",
+            central: "30 minutos",
+            final: "10 minutos",
+            total: "50 minutos"
         },
-        inclusion: "Para estudiantes con necesidades educativas especiales o movilidad diversa: Adaptar las distancias a la mitad, permitir apoyos con cuerdas guía o compañeros tutores, y priorizar la participación placentera por encima de la velocidad.",
-        evaluacion_sugerida: "Evaluación Formativa Continua mediante lista de chequeo biomecánica de 3 criterios clave."
+        tarea_extracurricular: `Compartir y repasar en casa con la familia una variante del juego de ${skill} practicado hoy, fortaleciendo la integración familiar y los hábitos de vida activa.`,
+        evaluacion: `Evaluación formativa continua: Observación directa del empleo de los patrones básicos de movimiento (${skill}) en situaciones lúdicas dirigidas y espontáneas; participación activa, seguimiento de acuerdos de convivencia y cooperación con los compañeros.`,
+        metodos_ensenanza: `Mando directo pedagógico por asignación de tareas, descubrimiento guiado y aprendizaje cooperativo.`,
+        estilo_ensenanza: `Estilo lúdico-participativo y resolución de problemas motores basado en ${pedagogy}.`,
+        adaptaciones_piar: `Ajustes Razonables (DUA / PIAR): Adaptación de distancias, alturas y ritmos de ejecución según las necesidades del estudiante; uso de compañeros tutores; variación del tamaño y textura de los móviles; pausas activas y priorización de la vivencia placentera del movimiento.`,
+        reflexion_pedagogica: `El error motriz se concibe como una oportunidad clave para la autorregulación y la toma de conciencia del esquema corporal, fortaleciendo la autoconfianza del estudiante.`,
+        retroalimentacion_tips: frasesProfe,
+        video_profundizacion: "https://aulaglobal360.edu.co/recursos/pedagogia-hmb",
+        bibliografia: "Ministerio de Educación Nacional de Colombia (MEN). Orientaciones Pedagógicas para la Educación Física, Recreación y Deporte. / Gallahue, D. L., & Ozmun, J. C. (2012). Understanding Motor Development."
     };
 }
 
-// RENDERIZADOR HTML DE UNIDAD DIDÁCTICA
+// RENDERIZADOR HTML DE UNIDAD DIDÁCTICA EN EL CHAT
 function renderDidacticaHTML(didactica) {
     globalDidacticaData = didactica;
+
+    const objEspHTML = didactica.objetivos_especificos.map(o => `<li>${o}</li>`).join('');
+    const frasesHTML = didactica.retroalimentacion_tips.map(f => `<li>"${f}"</li>`).join('');
 
     return `
         <div class="diag-card" style="border-left-color: var(--accent2);">
             <div class="diag-header-bar">
                 <div>
-                    <div class="diag-title">${didactica.tema}</div>
-                    <div class="diag-meta">Formato: <strong>${didactica.formato}</strong> | Metodología: <strong>${didactica.metodologia}</strong></div>
+                    <div class="diag-title">FORMATO INSTITUCIONAL · PLANEACIÓN DE CLASE</div>
+                    <div class="diag-meta"><strong>${didactica.tema}</strong> | Grado: <strong>${didactica.grado}</strong></div>
                 </div>
-                <span class="stage-badge stage-maduro">Planeación Lista</span>
+                <span class="stage-badge stage-maduro">50 Minutos</span>
             </div>
 
-            <p style="font-size:12.5px; color:var(--muted); margin-bottom:12px;"><strong>🎯 Objetivo:</strong> ${didactica.objetivo_clase}</p>
+            <!-- PREGUNTA PROBLEMATIZADORA Y OBJETIVOS -->
+            <div style="background:#F8FAFC; border:1px solid #E2E8F0; padding:10px 12px; border-radius:6px; font-size:12px; margin-bottom:12px;">
+                <div style="font-weight:700; color:#0369A1; margin-bottom:4px;">❓ Pregunta Problematizadora:</div>
+                <div style="font-style:italic; margin-bottom:8px;">${didactica.pregunta_problematizadora}</div>
+                <div style="font-weight:700; color:var(--text); margin-bottom:2px;">🎯 Objetivo General:</div>
+                <div>${didactica.objetivo_general}</div>
+            </div>
 
-            <div style="background:#F0FDF4; border-left:3px solid var(--accent2); padding:10px 14px; border-radius:6px; font-size:12px; margin-bottom:12px;">
-                <strong>📍 Montaje y Distribución Espacial:</strong><br>
-                ${didactica.distribucion_espacial}
-                <div style="margin-top:6px; color:var(--accent2); font-style:italic;">
-                    <strong>Guion del Profe:</strong> ${didactica.guion_docente}
+            <!-- INDICADORES SABER, HACER, SER -->
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:8px; margin-bottom:12px; font-size:11.5px;">
+                <div style="background:#EFF6FF; border-left:3px solid #3B82F6; padding:8px; border-radius:4px;">
+                    <strong>🧠 Saber (Cognitivo):</strong><br>${didactica.indicadores.saber}
+                </div>
+                <div style="background:#F0FDF4; border-left:3px solid #10B981; padding:8px; border-radius:4px;">
+                    <strong>🏃 Hacer (Procedimental):</strong><br>${didactica.indicadores.hacer}
+                </div>
+                <div style="background:#FEF3C7; border-left:3px solid #F59E0B; padding:8px; border-radius:4px;">
+                    <strong>❤️ Ser (Actitudinal):</strong><br>${didactica.indicadores.ser}
                 </div>
             </div>
 
+            <!-- SECUENCIA DIDÁCTICA -->
             <div style="display:flex; flex-direction:column; gap:8px; font-size:12px; color:var(--text); margin-bottom:12px;">
-                <div><strong>🔥 Fase Inicial (10 min):</strong> ${didactica.actividades.fase_inicial}</div>
-                <div><strong>⚡ Desarrollo Central (30 min):</strong> ${didactica.actividades.desarrollo_central}</div>
-                <div><strong>🧘 Fase Final (10 min):</strong> ${didactica.actividades.fase_final}</div>
+                <div style="background:#FFFFFF; border:1px solid #E2E8F0; padding:8px; border-radius:6px;">
+                    <strong>🔥 Parte Inicial (10 min):</strong> ${didactica.actividades.fase_inicial}
+                </div>
+                <div style="background:#FFFFFF; border:1px solid #E2E8F0; padding:8px; border-radius:6px;">
+                    <strong>⚡ Parte Central (30 min):</strong> ${didactica.actividades.desarrollo_central}
+                </div>
+                <div style="background:#FFFFFF; border:1px solid #E2E8F0; padding:8px; border-radius:6px;">
+                    <strong>🧘 Parte Final (10 min):</strong> ${didactica.actividades.fase_final}
+                </div>
+            </div>
+
+            <!-- EL LENGUAJE DEL PROFE -->
+            <div class="profe-cue-box" style="margin-bottom:14px;">
+                <div style="font-weight:700; margin-bottom:4px;">🗣️ El Lenguaje del Profe (Retroalimentación Inmediata):</div>
+                <ul style="padding-left:18px; line-height:1.5; font-size:12px;">
+                    ${frasesHTML}
+                </ul>
             </div>
 
             <button class="btn-export-plan" onclick="exportToWord()">
-                📄 Descargar Planeación de Clase Completa (.doc para Docente Titular)
+                📄 Descargar Planeación de Clase Completa (.doc Formato Institucional)
             </button>
         </div>
     `;
@@ -940,12 +1028,12 @@ function generateGroupPlan() {
 
         // Generar la didáctica adaptada al grupo
         const didacticaGrupal = generateDidacticPlan({
-            habilidad_detectada: 'Corrección Masiva del Salón',
-            edad_calibrada: 'Grupo Completo',
+            habilidad_detectada: 'Corrección Colectiva del Salón',
+            edad_calibrada: 'Grupo Completo (5-11 años)',
             estadio_gallahue: 'Elemental Prevalente',
             frases_profe: [
                 "¡Codos pegados en 90 grados para que el equipo vuele!",
-                "¡Que no se escuche ningún aterrizaje en el patio!"
+                "¡Que no se escuche ningún aterrizaje brusco en el patio!"
             ]
         }, teacherPrefs, true);
 
@@ -955,7 +1043,7 @@ function generateGroupPlan() {
     }, 1200);
 }
 
-// EXPORTACIÓN A MICROSOFT WORD (.DOC)
+// EXPORTACIÓN A MICROSOFT WORD (.DOC) - FORMATO INSTITUCIONAL
 function exportDiagnosticoToWord() {
     if (!globalDiagnosticoData) return;
     const d = globalDiagnosticoData;
@@ -974,21 +1062,21 @@ function exportDiagnosticoToWord() {
     const docHtml = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
     <head><meta charset='utf-8'><title>Reporte Biomecánico Aula Global 360</title>
     <style>
-        body { font-family: 'Arial', sans-serif; font-size: 11pt; color: #1E293B; }
+        body { font-family: 'Calibri', 'Arial', sans-serif; font-size: 11pt; color: #1E293B; line-height: 1.3; }
         h1 { text-align: center; color: #0284C7; font-size: 16pt; margin-bottom: 4px; }
         .sub { text-align: center; color: #64748B; font-size: 10pt; margin-bottom: 20px; }
         table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
         th { background-color: #E2E8F0; padding: 8px; border: 1px solid #000; text-align: left; }
-        .badge { display: inline-block; padding: 4px 8px; background-color: #E0F2FE; font-weight: bold; border-radius: 4px; }
+        td { padding: 6px 8px; border: 1px solid #000; }
     </style></head>
     <body>
         <h1>INFORME DE EVALUACIÓN BIOMECÁNICA HMB</h1>
         <div class="sub">Plataforma AULA GLOBAL 360 · Batería Validada · Fecha: ${hoy}</div>
 
         <table>
-            <tr><td colspan="2" style="background:#F1F5F9; padding:8px; border:1px solid #000;"><strong>DATOS DEL ESTUDIANTE Y EVALUACIÓN</strong></td></tr>
-            <tr><td style="padding:6px; border:1px solid #000;"><strong>Habilidad Evaluada:</strong> ${d.habilidad_detectada.toUpperCase()}</td><td style="padding:6px; border:1px solid #000;"><strong>Estadio Motor (Gallahue):</strong> ${d.estadio_gallahue.toUpperCase()}</td></tr>
-            <tr><td style="padding:6px; border:1px solid #000;"><strong>Índice de Madurez:</strong> ${d.porcentaje_madurez}%</td><td style="padding:6px; border:1px solid #000;"><strong>Calibración:</strong> ${d.edad_calibrada || '5 a 11 años'}</td></tr>
+            <tr><td colspan="2" style="background:#F1F5F9; padding:8px; font-weight:bold;">DATOS DEL ESTUDIANTE Y EVALUACIÓN</td></tr>
+            <tr><td><strong>Habilidad Evaluada:</strong> ${d.habilidad_detectada.toUpperCase()}</td><td><strong>Estadio Motor (Gallahue):</strong> ${d.estadio_gallahue.toUpperCase()}</td></tr>
+            <tr><td><strong>Índice de Madurez:</strong> ${d.porcentaje_madurez}%</td><td><strong>Calibración:</strong> ${d.edad_calibrada || '5 a 11 años'}</td></tr>
         </table>
 
         <h3>1. Batería de Criterios Biomecánicos Observados</h3>
@@ -1016,66 +1104,267 @@ function exportDiagnosticoToWord() {
     downloadDocFile(docHtml, `Reporte_Estudiante_${d.habilidad_detectada.replace(/\s+/g, '_')}.doc`);
 }
 
+// EXPORTACIÓN DE PLANEACIÓN DE CLASE EN FORMATO INSTITUCIONAL EXACTO (.DOC)
 function exportToWord() {
     if (!globalDidacticaData) return;
     const d = globalDidacticaData;
     const hoy = new Date().toLocaleDateString('es-CO');
 
+    const objEspHtml = d.objetivos_especificos.map(o => `<li>${o}</li>`).join('');
+    const retroHtml = d.retroalimentacion_tips.map(t => `<li>${t}</li>`).join('');
+
     const docHtml = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-    <head><meta charset='utf-8'><title>Planeación de Clase Aula Global 360</title>
+    <head>
+    <meta charset='utf-8'>
+    <title>Formato Institucional - Planeación de Clase</title>
+    <!--[if gte mso 9]>
+    <xml>
+    <w:WordDocument>
+        <w:View>Print</w:View>
+        <w:Zoom>100</w:Zoom>
+        <w:DoNotOptimizeForBrowser/>
+    </w:WordDocument>
+    </xml>
+    <![endif]-->
     <style>
-        body { font-family: 'Arial', sans-serif; font-size: 11pt; color: #0F172A; }
-        h1 { text-align: center; font-size: 16pt; color: #0369A1; margin-bottom: 2px; }
-        .sub { text-align: center; color: #64748B; font-size: 10pt; margin-bottom: 20px; }
-        table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
-        th, td { border: 1px solid black; padding: 8px; vertical-align: top; }
-        .header-cell { background-color: #E2E8F0; font-weight: bold; text-align: center; }
-        .title-cell { background-color: #CBD5E1; font-weight: bold; font-size: 12pt; text-align: center; }
-        .alert { background-color: #FEF2F2; border-left: 4px solid #DC2626; padding: 10px; margin: 10px 0; }
-        .tips { background-color: #F0FDF4; border-left: 4px solid #059669; padding: 10px; margin: 10px 0; }
-    </style></head>
+        @page {
+            size: letter;
+            margin: 2cm 2cm 2cm 2cm;
+            mso-page-orientation: portrait;
+        }
+        body {
+            font-family: 'Calibri', 'Arial', sans-serif;
+            font-size: 10pt;
+            color: #000000;
+            line-height: 1.25;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 12px;
+            mso-table-lspace: 0pt;
+            mso-table-rspace: 0pt;
+        }
+        th, td {
+            border: 1px solid #000000;
+            padding: 5px 8px;
+            vertical-align: top;
+            font-size: 9.5pt;
+        }
+        .hdr-main {
+            background-color: #CBD5E1;
+            font-weight: bold;
+            text-align: center;
+            font-size: 11pt;
+            text-transform: uppercase;
+        }
+        .hdr-sub {
+            background-color: #E2E8F0;
+            font-weight: bold;
+            text-align: center;
+            font-size: 9.5pt;
+        }
+        .hdr-col {
+            background-color: #F1F5F9;
+            font-weight: bold;
+            font-size: 9.5pt;
+        }
+        .time-cell {
+            background-color: #F8FAFC;
+            font-weight: bold;
+            text-align: center;
+        }
+        .total-time-cell {
+            background-color: #E2E8F0;
+            font-weight: bold;
+            text-align: center;
+            font-size: 10pt;
+        }
+        ul, ol {
+            margin: 3px 0 3px 18px;
+            padding: 0;
+        }
+        li {
+            margin-bottom: 3px;
+        }
+    </style>
+    </head>
     <body>
-        <h1>FORMATO INSTITUCIONAL - PLANEACIÓN DE CLASE</h1>
-        <div class="sub">Ecosistema AULA GLOBAL 360 · Educación Física · Fecha: ${hoy}</div>
 
+        <!-- TABLA 1: ENCABEZADO Y METADATOS INSTITUCIONALES -->
         <table>
-            <tr><td colspan="4" class="title-cell">${d.tema.toUpperCase()}</td></tr>
-            <tr><td colspan="2"><strong>Área:</strong> Educación Física, Recreación y Deporte</td><td colspan="2"><strong>Grado / Edad:</strong> ${d.grado_sugerido}</td></tr>
-            <tr><td colspan="2"><strong>Formato Didáctico:</strong> ${d.formato}</td><td colspan="2"><strong>Metodología:</strong> ${d.metodologia}</td></tr>
-            <tr><td colspan="4"><strong>Materiales Requeridos:</strong> ${d.materiales}</td></tr>
-        </table>
-
-        <div class="alert"><strong>⚠️ PREVENCIÓN, SEGURIDAD Y ESPACIO:</strong><br>${d.alertas_seguridad}</div>
-        <div class="tips"><strong>🗣️ EL LENGUAJE DEL PROFE (Tips de retroalimentación inmediata):</strong><br>${d.frases_clave.join('<br>')}</div>
-
-        <table><tr><td class="header-cell">OBJETIVO BIOMECÁNICO Y MOTOR DE LA CLASE</td></tr><tr><td>${d.objetivo_clase}</td></tr></table>
-
-        <table>
-            <tr><td colspan="3" class="title-cell">ESTRUCTURA Y DESARROLLO DE LA SESIÓN (50 MINUTOS)</td></tr>
-            <tr><td class="header-cell" style="width:25%;">Parte Inicial (10 min)</td><td class="header-cell" style="width:50%;">Parte Central (30 min)</td><td class="header-cell" style="width:25%;">Parte Final (10 min)</td></tr>
             <tr>
-                <td>${d.actividades.fase_inicial}</td>
-                <td>
-                    <strong>1. Montaje y Distribución Espacial:</strong><br>${d.distribucion_espacial}<br><br>
-                    <strong>2. Guion / Instrucción Inicial:</strong><br><em>"${d.guion_docente}"</em><br><br>
-                    <strong>3. Desarrollo y Corrección Activa:</strong><br>${d.actividades.desarrollo_central}
-                </td>
-                <td>${d.actividades.fase_final}</td>
+                <td colspan="4" class="hdr-main">UNIDAD DIDÁCTICA · FORMATO - PLANEACIÓN DE CLASE</td>
+            </tr>
+            <tr>
+                <td colspan="4" class="hdr-sub" style="font-size:10pt;">${d.institucion}</td>
+            </tr>
+            <tr>
+                <td><strong>ÁREA:</strong> ${d.area}</td>
+                <td><strong>CICLO:</strong> ${d.ciclo}</td>
+                <td><strong>GRADO:</strong> ${d.grado}</td>
+                <td><strong>PERÍODO:</strong> ${d.periodo}</td>
+            </tr>
+            <tr>
+                <td><strong>DOCENTE:</strong> ${d.docente}</td>
+                <td><strong>AÑO:</strong> ${d.anio}</td>
+                <td><strong>JORNADA:</strong> ${d.jornada}</td>
+                <td><strong>DURACIÓN:</strong> ${d.duracion_clase}</td>
+            </tr>
+            <tr>
+                <td colspan="4"><strong>TEMA:</strong> ${d.tema}</td>
+            </tr>
+            <tr>
+                <td colspan="2"><strong>LUGAR / INSTALACIÓN:</strong> ${d.lugar}</td>
+                <td colspan="2"><strong>MATERIALES:</strong> ${d.materiales}</td>
             </tr>
         </table>
 
+        <!-- TABLA 2: ESTRUCTURA PEDAGÓGICA, OBJETIVOS Y ESTÁNDARES MEN -->
         <table>
-            <tr><td class="header-cell">PAUTAS DE INCLUSIÓN Y ATENCIÓN A LA DIVERSIDAD</td></tr>
-            <tr><td>${d.inclusion}</td></tr>
-            <tr><td class="header-cell">SISTEMA DE EVALUACIÓN SUGERIDO</td></tr>
-            <tr><td>${d.evaluacion_sugerida}</td></tr>
+            <tr>
+                <td class="hdr-col" style="width:30%;">PREGUNTA PROBLEMATIZADORA</td>
+                <td colspan="3" class="hdr-main" style="width:70%;">OBJETIVOS DE APRENDIZAJE</td>
+            </tr>
+            <tr>
+                <td rowspan="3" style="vertical-align:middle; background:#FAFAFA;">
+                    <em>${d.pregunta_problematizadora}</em>
+                </td>
+                <td colspan="3" class="hdr-sub">OBJETIVO GENERAL</td>
+            </tr>
+            <tr>
+                <td colspan="3">${d.objetivo_general}</td>
+            </tr>
+            <tr>
+                <td colspan="3" class="hdr-sub">OBJETIVOS ESPECÍFICOS</td>
+            </tr>
+            <tr>
+                <td colspan="4" style="padding:0; border:none;"></td>
+            </tr>
+            <tr>
+                <td colspan="4">
+                    <ul>${objEspHtml}</ul>
+                </td>
+            </tr>
+            <tr>
+                <td colspan="4" class="hdr-main">ESTÁNDARES BÁSICOS DE COMPETENCIAS (MEN COLOMBIA)</td>
+            </tr>
+            <tr>
+                <td class="hdr-sub" style="width:33%;">Motriz:</td>
+                <td class="hdr-sub" style="width:34%;" colspan="2">Expresivo – corporal:</td>
+                <td class="hdr-sub" style="width:33%;">Axiológica – corporal:</td>
+            </tr>
+            <tr>
+                <td>${d.estandares.motriz}</td>
+                <td colspan="2">${d.estandares.expresivo_corporal}</td>
+                <td>${d.estandares.axilogica_corporal}</td>
+            </tr>
+            <tr>
+                <td colspan="4" class="hdr-main">LINEAMIENTOS CURRICULARES / ORIENTACIONES PEDAGÓGICAS</td>
+            </tr>
+            <tr>
+                <td colspan="4">${d.lineamientos}</td>
+            </tr>
+            <tr>
+                <td colspan="4" class="hdr-main">INDICADORES DE DESEMPEÑO</td>
+            </tr>
+            <tr>
+                <td class="hdr-sub" style="width:33%;">SABER | COGNITIVO</td>
+                <td class="hdr-sub" style="width:34%;" colspan="2">HACER | PROCEDIMENTAL</td>
+                <td class="hdr-sub" style="width:33%;">SER | ACTITUDINAL</td>
+            </tr>
+            <tr>
+                <td>${d.indicadores.saber}</td>
+                <td colspan="2">${d.indicadores.hacer}</td>
+                <td>${d.indicadores.ser}</td>
+            </tr>
         </table>
 
-        <br><br>
-        <p style="text-align:center;">____________________________________________<br><strong>Firma del Docente Titular de Educación Física</strong></p>
+        <!-- TABLA 3: DESCRIPCIÓN DE LA ACTIVIDAD (SECUENCIA DE 50 MINUTOS) -->
+        <table>
+            <tr>
+                <td colspan="3" class="hdr-main">DESCRIPCIÓN DE LA ACTIVIDAD (SECUENCIA DIDÁCTICA)</td>
+            </tr>
+            <tr>
+                <td class="hdr-sub" style="width:25%;">PARTE INICIAL<br><span style="font-size:8.5pt; font-weight:normal;">(Activación de saberes)</span></td>
+                <td class="hdr-sub" style="width:50%;">PARTE CENTRAL<br><span style="font-size:8.5pt; font-weight:normal;">(Construcción / Formato: ${d.formato})</span></td>
+                <td class="hdr-sub" style="width:25%;">PARTE FINAL<br><span style="font-size:8.5pt; font-weight:normal;">(Aplicación y Metacognición)</span></td>
+            </tr>
+            <tr>
+                <td>${d.actividades.fase_inicial}</td>
+                <td>${d.actividades.desarrollo_central}</td>
+                <td>${d.actividades.fase_final}</td>
+            </tr>
+            <tr>
+                <td class="time-cell">${d.duraciones.inicial}</td>
+                <td class="time-cell">${d.duraciones.central}</td>
+                <td class="time-cell">${d.duraciones.final}</td>
+            </tr>
+            <tr>
+                <td colspan="2" class="total-time-cell" style="text-align:right;">TIEMPO TOTAL DE LA SESIÓN:</td>
+                <td class="total-time-cell">${d.duraciones.total}</td>
+            </tr>
+        </table>
+
+        <!-- TABLA 4: COMPLEMENTOS PEDAGÓGICOS, INCLUSIÓN PIAR Y EVALUACIÓN -->
+        <table>
+            <tr>
+                <td class="hdr-col" style="width:32%;">TAREA EXTRACURRICULAR</td>
+                <td style="width:68%;">${d.tarea_extracurricular}</td>
+            </tr>
+            <tr>
+                <td class="hdr-col">MÉTODOS DE ENSEÑANZA</td>
+                <td>${d.metodos_ensenanza}</td>
+            </tr>
+            <tr>
+                <td class="hdr-col">ESTILO DE ENSEÑANZA</td>
+                <td>${d.estilo_ensenanza}</td>
+            </tr>
+            <tr>
+                <td class="hdr-col">ADAPTACIONES PARA ESTUDIANTES CON NECESIDADES ESPECIALES (PIAR / DUA)</td>
+                <td>${d.adaptaciones_piar}</td>
+            </tr>
+            <tr>
+                <td class="hdr-col">EVALUACIÓN Y CRITERIOS</td>
+                <td>${d.evaluacion}</td>
+            </tr>
+            <tr>
+                <td class="hdr-col">REFLEXIÓN PEDAGÓGICA</td>
+                <td>${d.reflexion_pedagogica}</td>
+            </tr>
+            <tr>
+                <td class="hdr-col">RETROALIMENTACIÓN ("El Lenguaje del Profe")</td>
+                <td><ul>${retroHtml}</ul></td>
+            </tr>
+            <tr>
+                <td class="hdr-col">LINK DEL VIDEO DE PROFUNDIZACIÓN TEMÁTICA</td>
+                <td><a href="${d.video_profundizacion}">${d.video_profundizacion}</a></td>
+            </tr>
+            <tr>
+                <td class="hdr-col">BIBLIOGRAFÍA Y REFERENTES</td>
+                <td>${d.bibliografia}</td>
+            </tr>
+        </table>
+
+        <!-- FIRMAS INSTITUCIONALES -->
+        <table style="border:none; margin-top:40px;">
+            <tr>
+                <td style="border:none; text-align:center; width:50%;">
+                    ____________________________________________<br>
+                    <strong>Firma del Docente Titular de Educación Física</strong><br>
+                    C.C. ________________________
+                </td>
+                <td style="border:none; text-align:center; width:50%;">
+                    ____________________________________________<br>
+                    <strong>Firma de Coordinación Académica / Directiva</strong><br>
+                    Institución Educativa
+                </td>
+            </tr>
+        </table>
+
     </body></html>`;
 
-    downloadDocFile(docHtml, `Planeacion_Clase_${d.formato.replace(/\s+/g, '_')}.doc`);
+    downloadDocFile(docHtml, `Planeacion_Clase_Institucional_${d.formato.replace(/\s+/g, '_')}.doc`);
 }
 
 function downloadDocFile(htmlContent, fileName) {

@@ -2,7 +2,7 @@
 
 **AULA GLOBAL 360** es una plataforma web interactiva de evaluación diagnóstica de Habilidades Motrices Básicas (HMB) y generador de planeaciones pedagógicas para docentes de Educación Física en preescolar y primaria (5 a 11 años).
 
-🌐 **Demo en Vivo (GitHub Pages):** [https://alejandrogomezmesa1.github.io/AulaGlobal360/](https://alejandrogomezmesa1.github.io/AulaGlobal360/)
+🌐 **Demo en Vivo (GitHub Pages):** [https://juanpablopulgarin11.github.io/AULAGLOBAL360/](https://juanpablopulgarin11.github.io/AULAGLOBAL360/)
 
 ---
 
@@ -30,7 +30,7 @@
 
 ## 🚀 Uso Rápido
 
-1. Abre `index.html` en cualquier navegador moderno o visita el enlace de [GitHub Pages](https://alejandrogomezmesa1.github.io/AulaGlobal360/).
+1. Abre `index.html` en cualquier navegador moderno o visita el enlace de [GitHub Pages](https://juanpablopulgarin11.github.io/AULAGLOBAL360/).
 2. Selecciona la habilidad motriz y tus preferencias de clase en el menú lateral.
 3. Sube un video o imagen del estudiante (o usa el modo simulado).
 4. Obtén el diagnóstico biomecánico y descarga la planeación de clase o reporte en Word.
