@@ -19,27 +19,39 @@
             <div class="logo-sub">Evaluación Diagnóstica HMB<br>Batería Validada (5-11 años)</div>
         </div>
 
-        <!-- SELECCIÓN DE HABILIDAD MOTRIZ -->
+        <!-- SELECCIÓN DE HABILIDAD MOTRIZ (BATERÍA HMB 5-11 AÑOS · DIALNET 7925607) -->
         <div class="sidebar-section">
-            <div class="sidebar-label">1. Componente a evaluar</div>
+            <div class="sidebar-label">1. Batería HMB (González Palacio et al., 2021)</div>
             <div class="skill-grid">
                 <button class="skill-btn active" data-skill="auto" onclick="selectSkill(this, 'auto', 'Detección Automática (IA)')">
                     <span class="ico">🔍</span><span class="lbl">Detección Automática (IA)</span>
                 </button>
-                <button class="skill-btn" data-skill="carrera" onclick="selectSkill(this, 'carrera', 'Locomoción: Carrera')">
-                    <span class="ico">🏃</span><span class="lbl">Locomoción: Carrera</span>
+                <button class="skill-btn" data-skill="carrera" onclick="selectSkill(this, 'carrera', '[HMB-L] Carrera')">
+                    <span class="ico">🏃</span><span class="lbl">[HMB-L] Carrera</span>
                 </button>
-                <button class="skill-btn" data-skill="salto" onclick="selectSkill(this, 'salto', 'Locomoción: Salto')">
-                    <span class="ico">🦘</span><span class="lbl">Locomoción: Salto (H/V)</span>
+                <button class="skill-btn" data-skill="salto" onclick="selectSkill(this, 'salto', '[HMB-L] Salto Horizontal')">
+                    <span class="ico">🦘</span><span class="lbl">[HMB-L] Salto Horizontal</span>
                 </button>
-                <button class="skill-btn" data-skill="lanzar" onclick="selectSkill(this, 'lanzar', 'Manipulación: Lanzamiento')">
-                    <span class="ico">⚾</span><span class="lbl">Manipulación: Lanzamiento</span>
+                <button class="skill-btn" data-skill="marcha" onclick="selectSkill(this, 'marcha', '[HMB-L] Marcha')">
+                    <span class="ico">🚶</span><span class="lbl">[HMB-L] Marcha</span>
                 </button>
-                <button class="skill-btn" data-skill="atrapar" onclick="selectSkill(this, 'atrapar', 'Manipulación: Recepción')">
-                    <span class="ico">🧤</span><span class="lbl">Manipulación: Recepción</span>
+                <button class="skill-btn" data-skill="salto_unipodal" onclick="selectSkill(this, 'salto_unipodal', '[HMB-L] Salto Unipodal')">
+                    <span class="ico">🦿</span><span class="lbl">[HMB-L] Salto Unipodal</span>
                 </button>
-                <button class="skill-btn" data-skill="equilibrio" onclick="selectSkill(this, 'equilibrio', 'Estabilidad: Equilibrio')">
-                    <span class="ico">🧘</span><span class="lbl">Estabilidad: Equilibrio</span>
+                <button class="skill-btn" data-skill="lanzar" onclick="selectSkill(this, 'lanzar', '[HMB-M] Lanzamiento')">
+                    <span class="ico">⚾</span><span class="lbl">[HMB-M] Lanzamiento</span>
+                </button>
+                <button class="skill-btn" data-skill="atrapar" onclick="selectSkill(this, 'atrapar', '[HMB-M] Recepción y Atrape')">
+                    <span class="ico">🧤</span><span class="lbl">[HMB-M] Recepción y Atrape</span>
+                </button>
+                <button class="skill-btn" data-skill="patear" onclick="selectSkill(this, 'patear', '[HMB-M] Patear')">
+                    <span class="ico">⚽</span><span class="lbl">[HMB-M] Patear</span>
+                </button>
+                <button class="skill-btn" data-skill="equilibrio" onclick="selectSkill(this, 'equilibrio', '[HMB-E] Eq. Dinámico')">
+                    <span class="ico">🧘</span><span class="lbl">[HMB-E] Eq. Dinámico</span>
+                </button>
+                <button class="skill-btn" data-skill="equilibrio_estatico" onclick="selectSkill(this, 'equilibrio_estatico', '[HMB-E] Eq. Estático')">
+                    <span class="ico">🦩</span><span class="lbl">[HMB-E] Eq. Estático</span>
                 </button>
             </div>
         </div>
@@ -225,7 +237,7 @@
             <!-- TIRA DE FOTOGRAMAS CLAVE (KEYFRAMES STRIP) -->
             <div class="keyframe-section" id="keyframeSection" style="display: none;">
                 <div class="keyframe-header">
-                    <span>🎞️ Fotogramas Extraídos para Análisis Cinemático:</span>
+                    <span>🎞️ Muestreo Adaptativo & Biomecánica (MediaPipe Pose WASM):</span>
                     <span class="keyframe-count" id="keyframeCountBadge">0 cuadros</span>
                 </div>
                 <div class="keyframe-strip" id="keyframeStrip"></div>
