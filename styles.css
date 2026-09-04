@@ -75,16 +75,19 @@
     border: 1px solid #99F6E4;
 }
 
-.app.engine-local .keybar-indicator-dot {
-    background: #0D9488;
-    box-shadow: 0 0 0 3px #CCFBF1;
-}
-
 .app.engine-local .skill-btn.active {
     background: #134E4A;
     border-color: #14B8A6;
     color: #F0FDFA;
     border-left: 3px solid #14B8A6;
+}
+
+.app.engine-local .only-gemini {
+    display: none !important;
+}
+
+.app.engine-local .only-local {
+    display: flex !important;
 }
 
 /* MODO GEMINI VISION (Nube Multimodal) */
@@ -104,16 +107,19 @@
     border: 1px solid #BFDBFE;
 }
 
-.app.engine-gemini .keybar-indicator-dot {
-    background: #2563EB;
-    box-shadow: 0 0 0 3px #DBEAFE;
-}
-
 .app.engine-gemini .skill-btn.active {
     background: #1E3A8A;
     border-color: #60A5FA;
     color: #EFF6FF;
     border-left: 3px solid #60A5FA;
+}
+
+.app.engine-gemini .only-local {
+    display: none !important;
+}
+
+.app.engine-gemini .only-gemini {
+    display: flex !important;
 }
 
 /* ============================================================================
@@ -474,41 +480,113 @@ body {
     transition: all 0.2s var(--ease);
 }
 
-/* KEYBAR */
-.keybar {
+/* CONMUTADOR DE MOTOR (SWITCH PRINCIPAL) */
+.engine-bar {
     background: #FFFFFF;
-    padding: 8px 20px;
+    padding: 10px 20px;
     border-bottom: 1px solid var(--border);
+    transition: background-color 0.2s var(--ease);
+}
+
+.engine-switch-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
-    font-size: 12px;
+    gap: 14px;
+    flex-wrap: wrap;
 }
 
-.keybar-left {
+.engine-switch {
+    display: inline-flex;
+    background: #F1F5F9;
+    padding: 3px;
+    border-radius: var(--r-sm);
+    border: 1px solid var(--border);
+    gap: 3px;
+}
+
+.switch-opt {
+    background: transparent;
+    border: none;
+    padding: 6px 14px;
+    border-radius: var(--r-xs);
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 8px;
-    flex: 1;
+    gap: 6px;
+    transition: all 0.15s ease;
 }
 
-.keybar-indicator-dot {
-    width: 8px;
-    height: 8px;
+.switch-opt .opt-bullet {
+    width: 7px;
+    height: 7px;
     border-radius: 50%;
-    display: inline-block;
-    flex-shrink: 0;
-    transition: all 0.2s var(--ease);
+    background: #94A3B8;
+    transition: background 0.15s;
 }
 
-.key-label {
-    font-weight: 600;
-    color: var(--text-muted);
+.app.engine-local .switch-opt#btnModeLocal.active {
+    background: #FFFFFF;
+    color: #0F766E;
+    font-weight: 700;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+}
+
+.app.engine-local .switch-opt#btnModeLocal.active .opt-bullet {
+    background: #0D9488;
+}
+
+.app.engine-gemini .switch-opt#btnModeGemini.active {
+    background: #FFFFFF;
+    color: #1D4ED8;
+    font-weight: 700;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+}
+
+.app.engine-gemini .switch-opt#btnModeGemini.active .opt-bullet {
+    background: #2563EB;
+}
+
+.engine-context-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.context-view {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.privacy-badge {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    font-weight: 700;
+    background: #F0FDFA;
+    color: #0F766E;
+    border: 1px solid #99F6E4;
+    padding: 3px 8px;
+    border-radius: var(--r-xs);
+    letter-spacing: 0.02em;
+}
+
+.context-note {
     font-size: 11.5px;
+    color: var(--text-muted);
 }
 
-.keybar input {
+.key-config-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.key-config-row input {
     background: #F8FAFC;
     border: 1px solid var(--border);
     padding: 5px 10px;
@@ -520,18 +598,12 @@ body {
     transition: border-color 0.15s;
 }
 
-.keybar input:focus {
+.key-config-row input:focus {
     border-color: var(--accent);
     background: #FFFFFF;
 }
 
-.keybar-actions {
-    display: flex;
-    gap: 6px;
-    align-items: center;
-}
-
-.btn-connect {
+.btn-save-key {
     background: var(--accent);
     color: white;
     border: none;
@@ -542,40 +614,48 @@ body {
     cursor: pointer;
     transition: background 0.15s;
 }
-.btn-connect:hover { background: var(--accent-hover); }
+.btn-save-key:hover { background: var(--accent-hover); }
 
-.btn-offline {
-    background: #F8FAFC;
-    color: var(--text-muted);
-    border: 1px solid var(--border);
-    padding: 5px 10px;
-    border-radius: var(--r-xs);
-    font-size: 11.5px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.15s;
+.key-connected-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
-.btn-offline:hover { background: #F1F5F9; color: var(--text); }
 
-.key-status {
+.connected-badge {
     font-family: var(--font-mono);
     font-size: 10.5px;
-    font-weight: 600;
-    padding: 3px 8px;
-    border-radius: var(--r-xs);
-    transition: all 0.2s;
-}
-
-.status-local {
-    background: #F0FDFA;
-    color: #0F766E;
-    border: 1px solid #CCFBF1;
-}
-
-.status-gemini {
+    font-weight: 700;
     background: #EFF6FF;
     color: #1D4ED8;
-    border: 1px solid #DBEAFE;
+    border: 1px solid #BFDBFE;
+    padding: 3px 8px;
+    border-radius: var(--r-xs);
+}
+
+.key-masked {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    background: #F8FAFC;
+    border: 1px solid var(--border);
+    padding: 3px 8px;
+    border-radius: var(--r-xs);
+}
+
+.btn-key-action {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    padding: 3px 8px;
+    border-radius: var(--r-xs);
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.btn-key-action:hover {
+    background: #F1F5F9;
+    color: var(--text);
 }
 
 /* GROUP PANEL */

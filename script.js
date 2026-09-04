@@ -6,6 +6,7 @@
 
 // ESTADO GLOBAL DE LA APLICACIÓN
 let apiKey = (localStorage.getItem('aula360_api_key') || '').trim();
+let currentEngineMode = localStorage.getItem('aula360_engine_mode') || 'local';
 let selectedSkill = 'auto';
 let selectedSkillName = 'Detección Automática (IA)';
 let selectedMode = 'diagnostico';
@@ -24,12 +25,7 @@ const chatScroll = document.getElementById('chatScroll');
 
 // INICIALIZACIÓN
 document.addEventListener('DOMContentLoaded', () => {
-    if (apiKey) {
-        document.getElementById('apiKeyInput').value = apiKey;
-        updateKeyStatus(true);
-    } else {
-        updateKeyStatus(false);
-    }
+    setEngineMode(currentEngineMode, true);
     updateCGIModel('auto');
 });
 
@@ -50,11 +46,94 @@ function handleKey(e) {
     }
 }
 
-// GESTIÓN DE CLAVE API / MODO LOCAL
-function applyApiKey() {
+// CONMUTADOR DE MOTOR (MODO LOCAL vs MODO GEMINI IA)
+function setEngineMode(mode, silent = false) {
+    currentEngineMode = mode;
+    localStorage.setItem('aula360_engine_mode', mode);
+
+    const appRoot = document.getElementById('appRoot');
+    const btnLocal = document.getElementById('btnModeLocal');
+    const btnGemini = document.getElementById('btnModeGemini');
+    const headerBadge = document.getElementById('engineHeaderBadge');
+    const rightHeaderBadge = document.getElementById('headerEngineBadge');
+    const userInput = document.getElementById('userInput');
+
+    if (mode === 'gemini') {
+        if (appRoot) {
+            appRoot.classList.remove('engine-local');
+            appRoot.classList.add('engine-gemini');
+        }
+        if (btnLocal) btnLocal.classList.remove('active');
+        if (btnGemini) btnGemini.classList.add('active');
+
+        if (headerBadge) {
+            headerBadge.textContent = '✦ Gemini Vision IA (Nube Multimodal)';
+        }
+        if (rightHeaderBadge) {
+            rightHeaderBadge.textContent = 'VISOR ASISTIDO POR GEMINI IA';
+        }
+        if (userInput) {
+            userInput.placeholder = 'Modo IA: Pregúntale a Gemini sobre adaptaciones curriculares, progresiones o diagnóstico...';
+        }
+
+        updateGeminiKeyUI();
+
+        if (!silent) {
+            if (apiKey) {
+                addMsg('bot', '<strong>Modo Gemini Vision IA Activado.</strong> El análisis multimodal y la orientación curricular se procesan en la nube con visión por computadora.');
+            } else {
+                addMsg('bot', '<strong>Modo Gemini Vision IA Activado.</strong> Ingresa tu clave API de Google AI Studio en la barra superior para habilitar el análisis en la nube, o cambia a <strong>Modo Local</strong> para evaluar sin clave.');
+            }
+        }
+    } else {
+        // Modo Local
+        if (appRoot) {
+            appRoot.classList.remove('engine-gemini');
+            appRoot.classList.add('engine-local');
+        }
+        if (btnLocal) btnLocal.classList.add('active');
+        if (btnGemini) btnGemini.classList.remove('active');
+
+        if (headerBadge) {
+            headerBadge.textContent = '● Motor Local Autónomo (WASM · Privacidad Total)';
+        }
+        if (rightHeaderBadge) {
+            rightHeaderBadge.textContent = 'TELEMETRÍA Y BIOMECÁNICA (LOCAL WASM)';
+        }
+        if (userInput) {
+            userInput.placeholder = 'Modo Local: Carga un video o consulta los criterios de la batería motriz en el navegador...';
+        }
+
+        if (!silent) {
+            addMsg('bot', '<strong>Modo Local Autónomo Activado.</strong> El análisis cinemático se procesa 100% en el navegador con MediaPipe Pose (WASM) y la Batería Validada (Dialnet 7925607). <em>Privacidad total sin clave API ni consumo de cuotas.</em>');
+        }
+    }
+}
+
+function updateGeminiKeyUI() {
+    const inputRow = document.getElementById('keyConfigInputRow');
+    const connectedRow = document.getElementById('keyConnectedRow');
+    const maskedText = document.getElementById('keyMaskedText');
+    const apiKeyInput = document.getElementById('apiKeyInput');
+
+    if (apiKey) {
+        if (inputRow) inputRow.style.display = 'none';
+        if (connectedRow) connectedRow.style.display = 'flex';
+        if (maskedText) {
+            const preview = apiKey.length > 8 ? apiKey.slice(0, 6) + '••••••••' + apiKey.slice(-3) : 'AIzaSy••••••••';
+            maskedText.textContent = preview;
+        }
+    } else {
+        if (inputRow) inputRow.style.display = 'flex';
+        if (connectedRow) connectedRow.style.display = 'none';
+        if (apiKeyInput) apiKeyInput.value = '';
+    }
+}
+
+function saveGeminiKey() {
     const input = document.getElementById('apiKeyInput').value.trim();
     if (!input) {
-        useLocalEngine();
+        alert('Por favor ingresa una clave API válida de Google AI Studio.');
         return;
     }
     if (!input.startsWith('AIza')) {
@@ -62,49 +141,33 @@ function applyApiKey() {
     }
     apiKey = input;
     localStorage.setItem('aula360_api_key', apiKey);
-    updateKeyStatus(true);
-    addMsg('bot', '<strong>Gemini Vision IA Conectado.</strong> El análisis cinemático y la planificación curricular se procesan con visión por computadora en la nube.');
+    updateGeminiKeyUI();
+    addMsg('bot', '<strong>Clave API Guardada y Conectada.</strong> Gemini Vision IA está listo para procesar la evidencia multimodal en la nube.');
 }
 
-function useLocalEngine() {
-    apiKey = '';
-    localStorage.removeItem('aula360_api_key');
-    document.getElementById('apiKeyInput').value = '';
-    updateKeyStatus(false);
-    addMsg('bot', '<strong>Motor Local Autónomo Activado.</strong> El procesamiento biomecánico se ejecuta 100% en el navegador con MediaPipe Pose (WASM) con total privacidad.');
-}
-
-function updateKeyStatus(hasKey) {
-    const appRoot = document.getElementById('appRoot');
-    const headerBadge = document.getElementById('engineHeaderBadge');
-    const badge = document.getElementById('keyStatusBadge');
-
-    if (hasKey) {
-        if (appRoot) {
-            appRoot.classList.remove('engine-local');
-            appRoot.classList.add('engine-gemini');
-        }
-        if (headerBadge) {
-            headerBadge.textContent = '✦ Gemini Vision IA (Nube Multimodal)';
-        }
-        if (badge) {
-            badge.className = 'key-status status-gemini';
-            badge.textContent = 'Gemini Vision IA Conectado';
-        }
-    } else {
-        if (appRoot) {
-            appRoot.classList.remove('engine-gemini');
-            appRoot.classList.add('engine-local');
-        }
-        if (headerBadge) {
-            headerBadge.textContent = '● Motor Local Autónomo (WASM · Privacidad Total)';
-        }
-        if (badge) {
-            badge.className = 'key-status status-local';
-            badge.textContent = 'Motor Local Activo';
-        }
+function editGeminiKey() {
+    const inputRow = document.getElementById('keyConfigInputRow');
+    const connectedRow = document.getElementById('keyConnectedRow');
+    const apiKeyInput = document.getElementById('apiKeyInput');
+    if (inputRow) inputRow.style.display = 'flex';
+    if (connectedRow) connectedRow.style.display = 'none';
+    if (apiKeyInput) {
+        apiKeyInput.value = apiKey;
+        apiKeyInput.focus();
     }
 }
+
+function removeGeminiKey() {
+    apiKey = '';
+    localStorage.removeItem('aula360_api_key');
+    updateGeminiKeyUI();
+    addMsg('bot', '<strong>Clave API Desconectada.</strong> Puedes ingresar una nueva clave o conmutar al Modo Local (Sin IA).');
+}
+
+// Aliases para compatibilidad
+function applyApiKey() { saveGeminiKey(); }
+function useLocalEngine() { setEngineMode('local'); }
+function updateKeyStatus(hasKey) { setEngineMode(hasKey ? 'gemini' : 'local', true); }
 
 // SELECCIÓN DE HABILIDAD
 function selectSkill(btnEl, skillCode, skillName) {
@@ -2019,7 +2082,7 @@ async function sendMsg() {
     const userText = userInput.value.trim();
 
     if (!userText && capturedKeyframes.length === 0) {
-        addMsg('bot', '⚠️ Por favor, sube un video o foto del estudiante para comenzar el análisis.');
+        addMsg('bot', 'Por favor, sube un video o foto del estudiante para comenzar el análisis.');
         return;
     }
 
@@ -2036,14 +2099,19 @@ async function sendMsg() {
     const teacherPrefs = getTeacherPreferences();
 
     try {
-        if (apiKey) {
+        if (currentEngineMode === 'gemini') {
+            if (!apiKey) {
+                removeTyping();
+                addMsg('bot', '<strong>Modo Gemini IA:</strong> Para analizar con visión por computadora en la nube, ingresa tu clave de Google AI Studio en el panel superior, o conmuta al <strong>Modo Local (Sin IA)</strong> para evaluar sin clave y con total privacidad.');
+                return;
+            }
             // Modo Nube Multimodal Gemini enriquecido con telemetría MediaPipe
             const diagnosis = await callGeminiVision(selectedSkillName, grade, userText, capturedKeyframes);
             removeTyping();
             handleDiagnosisOutput(diagnosis, teacherPrefs);
         } else {
             // Modo Local Real con MediaPipe WASM y Reglas Biomecánicas
-            await new Promise(r => setTimeout(r, 600));
+            await new Promise(r => setTimeout(r, 450));
             const diagnosis = runLocalBiomechanicalEngine(selectedSkill, grade, userText, capturedKeyframes);
             removeTyping();
             handleDiagnosisOutput(diagnosis, teacherPrefs);
@@ -2051,8 +2119,8 @@ async function sendMsg() {
     } catch (err) {
         console.error('Error en diagnóstico:', err);
         removeTyping();
-        if (apiKey) {
-            addMsg('bot', `⚠️ <strong>Aviso del Asistente:</strong> No se pudo conectar con Gemini Vision (${err.message || 'revisa tu API key o tu conexión'}). Se activó automáticamente el motor biomecánico local de respaldo.`);
+        if (currentEngineMode === 'gemini') {
+            addMsg('bot', `<strong>Aviso del Asistente:</strong> No se pudo conectar con Gemini Vision (${err.message || 'revisa tu API key o tu conexión'}). Se activó el motor biomecánico local con reglas de respaldo.`);
         }
         // Fallback al motor local con reglas si falla la llamada
         const fallback = runLocalBiomechanicalEngine(selectedSkill, grade, userText, capturedKeyframes);

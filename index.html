@@ -195,19 +195,44 @@
                 <span class="topbar-badge" id="modeBadge">MODO INDIVIDUAL</span>
             </div>
 
-            <!-- BARRA DE CONFIGURACIÓN DE MOTOR -->
-            <div class="keybar" id="keybar">
-                <div class="keybar-left">
-                    <span class="keybar-indicator-dot" id="engineDot"></span>
-                    <span class="key-label" id="keybarEngineLabel">Motor:</span>
-                    <input type="password" id="apiKeyInput"
-                        placeholder="Clave API Google AI Studio (opcional para visión nube)..." autocomplete="off">
+            <!-- CONMUTADOR DE MOTOR (SWITCH PRINCIPAL) -->
+            <div class="engine-bar" id="engineBar">
+                <div class="engine-switch-row">
+                    <!-- SWITCH / SEGMENTED CONTROL -->
+                    <div class="engine-switch" role="tablist" aria-label="Modo de Motor">
+                        <button type="button" class="switch-opt active" id="btnModeLocal" onclick="setEngineMode('local')">
+                            <span class="opt-bullet"></span>
+                            <span>Modo Local (Sin IA · WASM)</span>
+                        </button>
+                        <button type="button" class="switch-opt" id="btnModeGemini" onclick="setEngineMode('gemini')">
+                            <span class="opt-bullet"></span>
+                            <span>Modo Gemini IA (Con IA · Nube)</span>
+                        </button>
+                    </div>
+
+                    <!-- ESTADO Y CONTROLES ADAPTATIVOS POR MODO -->
+                    <div class="engine-context-container">
+                        <!-- MODO LOCAL: Sin API Key, solo confirmación de privacidad y motor -->
+                        <div class="context-view only-local" id="viewLocalContext">
+                            <span class="privacy-badge">100% Offline / Privacidad Total</span>
+                            <span class="context-note">MediaPipe Pose (33 landmarks) · Batería Validada (Dialnet 7925607)</span>
+                        </div>
+
+                        <!-- MODO GEMINI IA: Gestión limpia de la API Key -->
+                        <div class="context-view only-gemini" id="viewGeminiContext" style="display: none;">
+                            <div class="key-config-row" id="keyConfigInputRow">
+                                <input type="password" id="apiKeyInput" placeholder="Clave API Google AI Studio (AIzaSy...)" autocomplete="off">
+                                <button type="button" class="btn-save-key" id="btnSaveKey" onclick="saveGeminiKey()">Conectar Clave</button>
+                            </div>
+                            <div class="key-connected-row" id="keyConnectedRow" style="display: none;">
+                                <span class="connected-badge">Gemini Vision IA Conectado</span>
+                                <span class="key-masked" id="keyMaskedText">AIzaSy••••••••</span>
+                                <button type="button" class="btn-key-action" onclick="editGeminiKey()">Cambiar</button>
+                                <button type="button" class="btn-key-action" onclick="removeGeminiKey()">Desconectar</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="keybar-actions">
-                    <button class="btn-connect" onclick="applyApiKey()">Conectar Gemini IA</button>
-                    <button class="btn-offline" onclick="useLocalEngine()">Modo Local</button>
-                </div>
-                <span class="key-status status-local" id="keyStatusBadge">Motor Local Autónomo</span>
             </div>
 
             <!-- PANEL DE ANÁLISIS GRUPAL -->
