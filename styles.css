@@ -67,6 +67,7 @@ body {
     background: var(--bg);
     color: var(--text);
     min-height: 100vh;
+    min-height: 100dvh;
     overflow: hidden;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
@@ -77,6 +78,7 @@ body {
     display: grid;
     grid-template-columns: 290px 1fr 340px;
     height: 100vh;
+    height: 100dvh;
 }
 
 /* OVERLAY MÓVIL */
@@ -324,6 +326,7 @@ body {
     display: flex;
     flex-direction: column;
     height: 100vh;
+    height: 100dvh;
     background: var(--bg);
     border-right: 1px solid var(--border);
     overflow: hidden;
@@ -678,6 +681,7 @@ body {
 .chat-scroll {
     flex: 1;
     overflow-y: auto;
+    min-height: 0;
     padding: 20px 24px;
     display: flex;
     flex-direction: column;
@@ -1037,6 +1041,8 @@ body {
     color: white;
     display: flex;
     flex-direction: column;
+    height: 100vh;
+    height: 100dvh;
     overflow-y: auto;
     border-left: 1px solid rgba(255, 255, 255, 0.08);
 }
@@ -1198,6 +1204,7 @@ body {
     max-width: 720px;
     box-shadow: var(--shadow-lg);
     max-height: 90vh;
+    max-height: 90dvh;
     overflow-y: auto;
     animation: modalIn 0.22s var(--ease-spring);
 }
@@ -1295,22 +1302,48 @@ body {
 
 /* RESPONSIVE */
 @media (max-width: 1080px) {
+    body {
+        height: auto;
+        min-height: 100vh;
+        min-height: 100dvh;
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
     .app {
         grid-template-columns: 1fr;
         height: auto;
         min-height: 100vh;
+        min-height: 100dvh;
     }
     .sidebar {
         position: fixed;
         left: -320px;
         top: 0;
         height: 100vh;
+        height: 100dvh;
         width: 290px;
         transition: left 0.3s var(--ease);
     }
     .sidebar.open { left: 0; }
     .menu-btn { display: block; }
-    .main { height: auto; min-height: 100vh; border-right: none; }
-    .right-panel { height: auto; padding-bottom: 40px; border-left: none; border-top: 2px solid var(--border); }
+    .main {
+        height: auto;
+        min-height: 100vh;
+        min-height: 100dvh;
+        border-right: none;
+        overflow: visible;
+    }
+    .chat-scroll {
+        min-height: 400px;
+        max-height: none;
+    }
+    .right-panel {
+        height: auto;
+        min-height: auto;
+        padding-bottom: 40px;
+        border-left: none;
+        border-top: 2px solid var(--border);
+        overflow: visible;
+    }
     .angle-grid { grid-template-columns: 1fr; }
 }

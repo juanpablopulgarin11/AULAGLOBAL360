@@ -5,7 +5,7 @@
  */
 
 // ESTADO GLOBAL DE LA APLICACIÓN
-let apiKey = localStorage.getItem('aula360_api_key') || '';
+let apiKey = (localStorage.getItem('aula360_api_key') || '').trim();
 let selectedSkill = 'auto';
 let selectedSkillName = 'Detección Automática (IA)';
 let selectedMode = 'diagnostico';
@@ -54,6 +54,9 @@ function applyApiKey() {
     if (!input) {
         useLocalEngine();
         return;
+    }
+    if (!input.startsWith('AIza')) {
+        addMsg('bot', '⚠️ <strong>Formato de clave no reconocido:</strong> Las claves de Google AI Studio suelen comenzar con <code>AIza</code>. Asegúrate de haber copiado la clave correcta desde Google AI Studio.');
     }
     apiKey = input;
     localStorage.setItem('aula360_api_key', apiKey);
@@ -1965,7 +1968,10 @@ DEBES RESPONDER EXCLUSIVAMENTE CON UN OBJETO JSON VÁLIDO CON LA SIGUIENTE ESTRU
     });
 
     const data = await res.json();
-    if (data.error) throw new Error(data.error.message);
+    if (!res.ok || data.error) {
+        const errDetail = (data.error && data.error.message) ? data.error.message : `HTTP ${res.status}: ${res.statusText}`;
+        throw new Error(errDetail);
+    }
 
     const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!rawText) throw new Error('Respuesta vacía de Gemini');
@@ -2022,6 +2028,9 @@ async function sendMsg() {
     } catch (err) {
         console.error('Error en diagnóstico:', err);
         removeTyping();
+        if (apiKey) {
+            addMsg('bot', `⚠️ <strong>Aviso del Asistente:</strong> No se pudo conectar con Gemini Vision (${err.message || 'revisa tu API key o tu conexión'}). Se activó automáticamente el motor biomecánico local de respaldo.`);
+        }
         // Fallback al motor local con reglas si falla la llamada
         const fallback = runLocalBiomechanicalEngine(selectedSkill, grade, userText, capturedKeyframes);
         handleDiagnosisOutput(fallback, teacherPrefs);
@@ -2132,10 +2141,10 @@ function renderDiagnosticoHTML(data, studentNum = null) {
                     <div class="diag-title">${titleText}</div>
                     <div class="diag-meta">Habilidad: <strong>${data.habilidad_detectada.toUpperCase()}</strong> | Componente: <strong>${data.componente_hmb || '[HMB-L] Locomoción'}</strong> | Puntaje: <strong>${data.puntaje_obtenido || data.porcentaje_madurez + '%'}</strong></div>
                     <div style="font-size:10.5px; color:#64748B; margin-top:3px;">
-                        📚 <em>Instrumento: Batería HMB (González Palacio et al., 2021 · Dialnet 7925607) & Gallahue (2012)</em>
+                        📚 <em>Instrumento: Batería Validada de Habilidades Motrices Básicas (HMB - Dialnet 7925607)</em>
                     </div>
                 </div>
-                <span class="stage-badge ${stageClass}">Estadio ${data.estadio_gallahue}</span>
+                <span class="stage-badge ${stageClass}">Estadio de Desarrollo: ${data.estadio_gallahue}</span>
             </div>
 
             <!-- MEDIDOR DE MADUREZ -->
@@ -2203,6 +2212,7 @@ function getGradeAndCycle(gradeVal) {
 }
 
 // BASE DE DATOS DE SECUENCIAS DE PROGRESIÓN PEDAGÓGICA (12 CLASES PROGRESIVAS POR HABILIDAD)
+// Diseñadas con lenguaje didáctico accesible para docentes generalistas y especialistas
 function getSkillProgressionTemplates(skill, materials, format, pedagogy) {
     const templates = {
         'Carrera': [
@@ -2211,9 +2221,9 @@ function getSkillProgressionTemplates(skill, materials, format, pedagogy) {
                 fase_pedagogica: "Fase 1: Iniciación y Esquema Corporal",
                 objetivo: "Reconocer y vivenciar el apoyo sobre el antepié/metatarso reduciendo el impacto en talón.",
                 distribucion: `Trazar 4 carriles de 10 metros con ${materials}. Zonas de aceleración señalizadas con tizas de colores.`,
-                actividad_inicial: `Juego 'El semáforo motriz': desplazamientos suaves con frenadas en punta de pies. Movilidad articular de tobillos y rodillas.`,
-                actividad_central: `Recorridos rítmicos sobre colchonetas y marcas en el suelo procurando dar 'pasos de pluma silenciosos'. El docente modela la amortiguación elástica de tobillo evitando el golpe del talón.`,
-                actividad_final: `Estiramiento estático de gastrocnemios y sóleos en el suelo. Conversatorio sobre las sensaciones de impacto articular.`,
+                actividad_inicial: `Juego 'El semáforo motriz': desplazamientos suaves por la cancha frenando en punta de pies cuando el docente diga 'rojo'. Mover tobillos y rodillas en círculos suaves.`,
+                actividad_central: `Recorridos rítmicos sobre colchonetas procurando dar 'pasos de pluma silenciosos'. El docente muestra cómo pisar con la parte delantera del pie (metatarso) para rebotar como resortes sin golpear fuerte los talones contra el suelo.`,
+                actividad_final: `Estiramiento suave de pantorrillas (parte trasera baja de la pierna) sentados en el suelo. Conversatorio breve sobre cómo se sintió pisar suave como plumas.`,
                 consigna: "¡Imagina que el piso es una nube y tus pies son plumas que no deben hacer ningún ruido al tocar el suelo!",
                 criterio_eval: "Apoya predominantemente con el antepié durante el 80% del recorrido sin golpear el talón."
             },
@@ -2222,9 +2232,9 @@ function getSkillProgressionTemplates(skill, materials, format, pedagogy) {
                 fase_pedagogica: "Fase 1: Iniciación y Esquema Corporal",
                 objetivo: "Mantener una inclinación ligera hacia adelante (5°-10°) con cabeza erguida y mirada al frente.",
                 distribucion: `Espacio delimitado de 12x12 metros con dianas visuales a la altura de los ojos en la pared perimetral.`,
-                actividad_inicial: `Juego de activación 'La torre inclinada': inclinaciones dinámicas controladas desde los tobillos sin doblar la cintura.`,
-                actividad_central: `Desplazamientos en línea recta manteniendo la mirada fija en tarjetas de colores al frente. Se evita la flexión excesiva de cuello o tronco hacia abajo.`,
-                actividad_final: `Juego de vuelta a la calma 'La sombra': imitación de posturas de elongación axial y control respiratorio.`,
+                actividad_inicial: `Juego de activación 'La torre inclinada': balancear el cuerpo hacia adelante desde los tobillos manteniendo el cuerpo derechito, sin doblar la cintura ni agachar la cabeza.`,
+                actividad_central: `Carreras suaves en línea recta mirando tarjetas de colores pegadas al frente a la altura de los ojos. Se evita mirar hacia abajo al piso o doblar el cuello hacia el pecho al correr.`,
+                actividad_final: `Juego de vuelta a la calma 'La sombra': estirarse hacia arriba con la espalda bien recta como intentando tocar el cielo y respirar despacio inflando la barriga.`,
                 consigna: "¡Mirada de águila fija en el horizonte y cuerpo inclinado hacia adelante como una flecha lanzada!",
                 criterio_eval: "Mantiene la mirada al frente sin desviar la cabeza hacia el suelo durante la carrera."
             },
@@ -2233,10 +2243,10 @@ function getSkillProgressionTemplates(skill, materials, format, pedagogy) {
                 fase_pedagogica: "Fase 1: Iniciación y Esquema Corporal",
                 objetivo: "Coordinar el braceo en plano sagital con codos flexionados a ~90° sin cruzar la línea media.",
                 distribucion: `Cuadrilátero de 10x8 metros con 4 estaciones de braceo estático y en desplazamiento.`,
-                actividad_inicial: `Activación dinámica de hombros y codos con ritmos musicales y palmadas alternadas.`,
-                actividad_central: `Ejercicios de braceo primero en posición sedente, luego en rodillas y finalmente en carrera continua entre conos paralelos estrechos que delimitan el plano sagital.`,
-                actividad_final: `Elongación de deltoides, pectorales y dorsales. Metacognición sobre la ayuda del braceo en la propulsión.`,
-                consigna: "¡Codos en caja fuerte a 90 grados, impulsando directo de la cadera a la barbilla sin cruzar el pecho!",
+                actividad_inicial: `Activación dinámica moviendo hombros y codos hacia adelante y hacia atrás al ritmo de palmadas y música alegre.`,
+                actividad_central: `Ejercicios de balanceo de brazos con los codos doblados en ángulo recto (formando una 'L'): primero sentados en el piso, luego de rodillas y finalmente corriendo por pasillos estrechos de conos para mover los brazos en línea recta hacia adelante y atrás sin cruzarlos por el pecho.`,
+                actividad_final: `Estirar suavemente los hombros, el pecho y la espalda. Conversar brevemente sobre cómo mover los brazos con fuerza nos ayuda a correr más rápido.`,
+                consigna: "¡Codos en forma de L, impulsando directo desde la cadera hasta la barbilla sin cruzar los brazos por el pecho!",
                 criterio_eval: "Ejecuta el braceo en oposición con codos flexionados sin oscilaciones laterales marcadas."
             },
             {
@@ -2244,10 +2254,10 @@ function getSkillProgressionTemplates(skill, materials, format, pedagogy) {
                 fase_pedagogica: "Fase 2: Coordinación y Ajuste Técnico",
                 objetivo: "Flexionar la rodilla recuperadora (≤ 90°) aproximando el talón a los glúteos para acelerar el ciclo de zancada.",
                 distribucion: `Montaje de pasillos con mini-obstáculos y ${materials} separados a 1.20 metros.`,
-                actividad_inicial: `Juego 'Pisa la cola al dragón' con desplazamientos de talones a glúteos en baja intensidad.`,
-                actividad_central: `Pasadas sobre mini-obstáculos suaves donde los estudiantes deben elevar activamente el talón hacia el glúteo para no derribar las marcas. Ajuste individualizado de distancias.`,
-                actividad_final: `Estiramiento guiado de cuádriceps e isquiotibiales. Respiración diafragmática.`,
-                consigna: "¡Tus talones quieren saludar a tus bolsillos traseros en cada zancada para que tus piernas vuelen!",
+                actividad_inicial: `Juego 'Pisa la cola al dragón': trote suave llevando los talones hacia atrás en dirección a los glúteos (la cola) a baja velocidad.`,
+                actividad_central: `Pasadas sobre mini-obstáculos suaves (conos pequeños o botellas de plástico) donde los niños deben doblar bien la rodilla hacia atrás y subir el talón para no derribar las marcas. Ajuste personalizado según la estatura del estudiante.`,
+                actividad_final: `Estiramiento guiado de cuádriceps (parte delantera del muslo) e isquiotibiales (parte trasera del muslo). Respirar profundo llenando la barriga de aire.`,
+                consigna: "¡Tus talones quieren saludar a tus bolsillos traseros en cada zancada para que tus piernas vuelen libres!",
                 criterio_eval: "Logra una flexión de rodilla visible en la fase de recobro en la mayoría de sus ciclos de carrera."
             },
             {
@@ -2255,10 +2265,10 @@ function getSkillProgressionTemplates(skill, materials, format, pedagogy) {
                 fase_pedagogica: "Fase 2: Coordinación y Ajuste Técnico",
                 objetivo: "Ajustar el centro de gravedad en cambios de trayectoria desacelerando con estabilidad pélvica.",
                 distribucion: `Circuito de slalom en zigzag de 6 postes con conos y marcas transversales.`,
-                actividad_inicial: `Activación lúdica 'Osos y ardillas' con cambios rápidos de dirección a la señal auditiva.`,
-                actividad_central: `Recorridos en zigzag por estaciones, donde al llegar a cada cono deben flexionar rodillas para bajar el centro de gravedad y empujar fuertemente en la nueva dirección.`,
-                actividad_final: `Marcha lenta con relajación miofascial y sacudida de extremidades.`,
-                consigna: "¡Baja un poco tu cadera al llegar a la curva como un carro de carreras para no derrapar!",
+                actividad_inicial: `Juego de activación 'Osos y ardillas': trotar en diferentes direcciones y cambiar rápidamente de rumbo al escuchar un silbido o palmada del profesor.`,
+                actividad_central: `Recorridos en zigzag esquivando conos. Al llegar a cada cono, los niños deben doblar un poco las rodillas para bajar la cadera y empujar el suelo con fuerza hacia la nueva dirección sin tropezar.`,
+                actividad_final: `Caminata lenta sacudiendo suavemente brazos y piernas para soltar los músculos y descansar.`,
+                consigna: "¡Baja un poco tu cadera al llegar a cada curva como un carro de carreras para doblar sin derrapar!",
                 criterio_eval: "Desacelera con control y reorienta la trayectoria sin caídas ni pérdidas de balance."
             },
             {
@@ -2266,10 +2276,10 @@ function getSkillProgressionTemplates(skill, materials, format, pedagogy) {
                 fase_pedagogica: "Fase 2: Coordinación y Ajuste Técnico",
                 objetivo: "Encontrar un ritmo coordinado y adaptativo de zancada combinando impulsión y frecuencia.",
                 distribucion: `Escaleras de coordinación dibujadas con tizas en el suelo y aros espaciados progresivamente.`,
-                actividad_inicial: `Juego de ritmo corporal con palmadas y pasos sincronizados al compás de silbato o música.`,
-                actividad_central: `Pasadas por escalas de coordinación rítmica (apoyos de 1 y 2 contactos por cuadrante) aumentando progresivamente la velocidad sin desarmar la técnica de braceo.`,
-                actividad_final: `Estiramiento en parejas apoyados hombro con hombro. Socialización de logros.`,
-                consigna: "¡Siente la música de tus pasos en el suelo: tac-tac-tac constante y rítmico!",
+                actividad_inicial: `Juego de ritmo corporal: dar palmadas y pasos sincronizados al compás de silbato o música alegre.`,
+                actividad_central: `Pasadas por escalas dibujadas en el suelo o aros seguidos: dar 1 y 2 pasos rápidos en cada espacio aumentando poco a poco la velocidad sin desarmar la postura de los brazos ni la espalda.`,
+                actividad_final: `Estiramiento en parejas apoyados hombro con hombro. Compartir qué parte del recorrido fue la más divertida.`,
+                consigna: "¡Siente la música de tus pasos en el suelo: tac-tac-tac constante, parejito y con ritmo!",
                 criterio_eval: "Completa la secuencia rítmica de apoyos manteniendo la fluidez y el control postural."
             },
             {
@@ -2277,10 +2287,10 @@ function getSkillProgressionTemplates(skill, materials, format, pedagogy) {
                 fase_pedagogica: "Fase 3: Complejidad y Retos Dinámicos",
                 objetivo: "Ejecutar salidas reactivas ante estímulos sensoriales transfiriendo la energía en los primeros 5 metros.",
                 distribucion: `Líneas de salida paralelas de 15 metros con conos de meta a 5, 10 y 15 metros.`,
-                actividad_inicial: `Juego de reacción 'Tierra, mar y aire': saltos y salidas cortas según la consigna verbal.`,
-                actividad_central: `Retos de aceleración desde diferentes posiciones iniciales (sentados, de espaldas, acostados bocabajo), enfatizando la triple extensión de la pierna impulsora en la primera zancada.`,
-                actividad_final: `Dinámica suave de relajación muscular y respiración guiada.`,
-                consigna: "¡Explosión de cohete en el primer paso impulsando con fuerza desde la punta de tus dedos!",
+                actividad_inicial: `Juego de reacción 'Tierra, mar y aire': saltar y salir corriendo unos metros según la palabra que mencione el docente.`,
+                actividad_central: `Juegos de carreras cortas saliendo desde distintas posiciones (sentados, de espaldas o acostados boca abajo). El reto es levantarse con rapidez y dar el primer paso empujando con energía el piso con la punta del pie.`,
+                actividad_final: `Caminar despacio respirando profundo y estirar suavemente las piernas.`,
+                consigna: "¡Despega en el primer paso con la fuerza de un cohete espacial empujando el suelo con la punta de tus pies!",
                 criterio_eval: "Reacciona con rapidez y logra una inclinación propulsora en los primeros metros de aceleración."
             },
             {
@@ -2288,10 +2298,10 @@ function getSkillProgressionTemplates(skill, materials, format, pedagogy) {
                 fase_pedagogica: "Fase 3: Complejidad y Retos Dinámicos",
                 objetivo: "Integrar el transporte de objetos manuales en carrera sin descomponer el braceo ni la alineación.",
                 distribucion: `Pistas de relevos de 15 metros con conos y zonas de entrega seguras de 3 metros.`,
-                actividad_inicial: `Movilidad segmentaria global con pases de pelotas de espuma en círculos.`,
-                actividad_central: `Relevos cooperativos por equipos transportando testigos livianos o pañoletas. La regla es mantener la técnica de carrera y entregar el objeto sin frenar bruscamente.`,
-                actividad_final: `Conversatorio sobre el trabajo en equipo y vuelta a la calma con estiramientos pasivos.`,
-                consigna: "¡Corre como el viento y entrega tu energía a tu compañero con una sonrisa y paso firme!",
+                actividad_inicial: `Mover brazos, hombros y piernas en círculo pasándose pelotas de espuma suaves.`,
+                actividad_central: `Relevos cooperativos por equipos llevando una pañoleta o testigo en la mano. La regla es mantener los brazos en movimiento al correr y entregar el objeto con cuidado al compañero sin frenar en seco.`,
+                actividad_final: `Conversar en ronda sobre el valor de ayudarse entre compañeros y estirar suavemente brazos y piernas sin rebotar.`,
+                consigna: "¡Corre como el viento y entrega la pañoleta a tu compañero con una sonrisa y paso firme!",
                 criterio_eval: "Mantiene la estabilidad y el patrón de carrera mientras sostiene y transfiere un móvil."
             },
             {
@@ -2299,10 +2309,10 @@ function getSkillProgressionTemplates(skill, materials, format, pedagogy) {
                 fase_pedagogica: "Fase 3: Complejidad y Retos Dinámicos",
                 objetivo: "Resolver múltiples situaciones motrices consecutivas aplicando la técnica de carrera en variabilidad.",
                 distribucion: `Circuito de 4 estaciones: Estación 1: Zancadas en aros; Estación 2: Zigzag; Estación 3: Salto y sprint; Estación 4: Desaceleración y giro.`,
-                actividad_inicial: `Activación general guiada con trote suave y movilidad articular cefalocaudal.`,
-                actividad_central: `Rotación cronometrada por las 4 estaciones aplicando el método de ${pedagogy}. Enfoque en la autorregulación del esfuerzo y la calidad técnica.`,
-                actividad_final: `Marcha lenta de recuperación cardíaca y estiramiento de tren inferior.`,
-                consigna: "¡Calidad antes que velocidad: haz que cada movimiento sea limpio, elegante y coordinado!",
+                actividad_inicial: `Trote suave y movilidad del cuerpo en orden: desde la cabeza, cuello, hombros y brazos, hasta la cintura y las piernas.`,
+                actividad_central: `Rotar por 4 estaciones divertidas aplicando la metodología de ${pedagogy}. Se prioriza hacer los movimientos bien hechos, fluidos y coordinados antes que correr sin control.`,
+                actividad_final: `Caminar despacio para normalizar los latidos del corazón y estirar las piernas y pantorrillas.`,
+                consigna: "¡Lo más importante es hacerlo bien: movimientos limpios, seguros y con buena postura!",
                 criterio_eval: "Ejecuta las transiciones entre estaciones manteniendo el control de los apoyos y el braceo."
             },
             {
@@ -2310,10 +2320,10 @@ function getSkillProgressionTemplates(skill, materials, format, pedagogy) {
                 fase_pedagogica: "Fase 4: Consolidación y Aplicación en Juego",
                 objetivo: "Aplicar la carrera eficiente en juegos de persecución con toma de decisiones espaciales.",
                 distribucion: `Espacio amplio de 20x15 metros delimitado con zonas de refugio seguras.`,
-                actividad_inicial: `Juego 'Las cuatro esquinas': carreras cortas hacia zonas seguras según consignas tácticas.`,
-                actividad_central: `Juego adaptado 'Cazadores y guardianes': los estudiantes utilizan fintas, aceleraciones y cambios de dirección para superar a sus compañeros respetando el juego limpio.`,
-                actividad_final: `Círculo de reflexión pedagógica sobre la toma de decisiones y el respeto a las reglas.`,
-                consigna: "¡Lee el espacio libre antes de acelerar y usa tus cambios de dirección con inteligencia!",
+                actividad_inicial: `Juego 'Las cuatro esquinas': carreras cortas hacia zonas seguras según las indicaciones del docente.`,
+                actividad_central: `Juego adaptado 'Cazadores y guardianes': los estudiantes usan cambios de ritmo y giros suaves para llegar a las zonas de refugio respetando siempre a los compañeros.`,
+                actividad_final: `Círculo de descanso: sentarse a conversar sobre cómo buscaron los espacios libres y estirar los brazos y piernas.`,
+                consigna: "¡Mira el espacio libre antes de arrancar y usa tus giros con astucia para esquivar sin tropezar!",
                 criterio_eval: "Aplica cambios de ritmo y fintas espaciales en situaciones reales de juego."
             },
             {
@@ -2321,10 +2331,10 @@ function getSkillProgressionTemplates(skill, materials, format, pedagogy) {
                 fase_pedagogica: "Fase 4: Consolidación y Aplicación en Juego",
                 objetivo: "Autorregular la intensidad de la carrera reconociendo las respuestas fisiológicas del propio cuerpo.",
                 distribucion: `Circuito perimetral con marcas de pulsaciones y zonas de hidratación.`,
-                actividad_inicial: `Chequeo del pulso y conversatorio sobre respiración e hidratación deportiva.`,
-                actividad_central: `Retos de carrera continua a ritmo controlado con estaciones de aceleración breve. Los estudiantes monitorean su respiración y ajustan el esfuerzo sin agotarse prematuramente.`,
-                actividad_final: `Ejercicios de relajación guiada y estiramientos profundos.`,
-                consigna: "¡Escucha el motor de tu corazón: corre a un ritmo donde puedas respirar con calma y disfrutar!",
+                actividad_inicial: `Sentir los latidos del corazón en el pecho antes de empezar y conversar sobre la importancia de tomar agua al hacer actividad física.`,
+                actividad_central: `Carrera continua a un ritmo cómodo donde los niños puedan hablar sin ahogarse, intercalando aceleraciones cortas. Cada niño aprende a regular su velocidad sin fatigarse en exceso.`,
+                actividad_final: `Acostarse boca arriba en colchonetas, cerrar los ojos y respirar despacio llenando la barriga de aire.`,
+                consigna: "¡Escucha el motor de tu corazón: corre a un ritmo donde puedas respirar con tranquilidad y disfrutar!",
                 criterio_eval: "Autorregula el ritmo de carrera y describe sus sensaciones de fatiga y recuperación."
             },
             {
@@ -2332,10 +2342,10 @@ function getSkillProgressionTemplates(skill, materials, format, pedagogy) {
                 fase_pedagogica: "Fase 4: Consolidación y Aplicación en Juego",
                 objetivo: "Demostrar y coevaluar el patrón maduro de carrera en un circuito lúdico de cierre de período.",
                 distribucion: `Gran pista de habilidades con todas las ${materials} integradas en estaciones de gala.`,
-                actividad_inicial: `Activación festiva y repaso de los acuerdos de convivencia y apoyo mutuo.`,
-                actividad_central: `Gala motriz: recorrido individual y por parejas del circuito integral. Los compañeros observan y retroalimentan con tarjetas de felicitación los criterios biomecánicos logrados.`,
-                actividad_final: `Ceremonia de felicitación y cierre de la unidad didáctica con estiramiento colectivo.`,
-                consigna: "¡Hoy celebramos todo lo que nuestro cuerpo ha aprendido: corre con orgullo y alegría!",
+                actividad_inicial: `Bienvenida alegre y repaso de los acuerdos de convivencia y apoyo mutuo.`,
+                actividad_central: `Recorrido de gala: los niños pasan por un circuito que reúne todo lo aprendido (pisar en punta, brazos doblados a 90 grados, mirada al frente y rodillas arriba). Los compañeros aplauden y felicitan con tarjetas de colores.`,
+                actividad_final: `Celebración grupal por los avances logrados en el período y estiramiento colectivo suave.`,
+                consigna: "¡Hoy celebramos todo lo que nuestro cuerpo aprendió: corre con orgullo, confianza y alegría!",
                 criterio_eval: "Exhibe un patrón de carrera fluido en estadio maduro (vuelo claro, braceo sagital y antepié)."
             }
         ],
@@ -2345,10 +2355,10 @@ function getSkillProgressionTemplates(skill, materials, format, pedagogy) {
                 fase_pedagogica: "Fase 1: Iniciación y Esquema Corporal",
                 objetivo: "Adoptar una posición preparatoria equilibrada con flexión de rodillas a 90°-100° y apoyo plantar simétrico.",
                 distribucion: `Zonas de despegue marcadas con cinta o ${materials} separadas cada 2 metros.`,
-                actividad_inicial: `Juego 'El resorte mágico': flexiones y extensiones estáticas en el puesto con rebotes elásticos suaves.`,
-                actividad_central: `Ejercicios de carga elástica: sentadillas guiadas frente a conos manteniendo la espalda recta y brazos atrás listos para el despegue. Corrección de la base de sustentación.`,
-                actividad_final: `Estiramiento de cuádriceps y glúteos en posición sedente. Metacognición sobre la acumulación de energía elástica.`,
-                consigna: "¡Carga tus piernas como un resorte de acero listo para dispararse hacia adelante!",
+                actividad_inicial: `Juego 'El resorte mágico': doblar y estirar las rodillas suavemente en el puesto como si tuviéramos resortes en las piernas.`,
+                actividad_central: `Práctica de la posición de despegue: pararse con los pies separados al ancho de los hombros, doblar las rodillas sin levantar los talones y llevar los dos brazos hacia atrás con la espalda derechita listos para saltar.`,
+                actividad_final: `Estirar los cuádriceps (parte delantera del muslo) y glúteos sentados en el suelo. Conversar sobre cómo las piernas se cargan de fuerza como resortes.`,
+                consigna: "¡Carga tus piernas como un resorte de acero bien firme listo para saltar hacia adelante!",
                 criterio_eval: "Flexiona rodillas a un ángulo cercano a 90° con tronco inclinado sin perder el equilibrio antes del salto."
             },
             {
@@ -2356,10 +2366,10 @@ function getSkillProgressionTemplates(skill, materials, format, pedagogy) {
                 fase_pedagogica: "Fase 1: Iniciación y Esquema Corporal",
                 objetivo: "Aterrizar simultáneamente sobre ambos pies absorbiendo el impacto mediante una flexión reactiva de rodillas.",
                 distribucion: `Zonas de caída acolchadas con colchonetas o marcas de césped delimitadas con conos.`,
-                actividad_inicial: `Juego 'Gatos y ratones': caídas desde pequeñas alturas (10-15 cm) buscando el silencio absoluto al tocar el suelo.`,
-                actividad_central: `Saltos cortos hacia adelante aterrizando en colchonetas. Énfasis en flexionar tobillos, rodillas y caderas simultáneamente ('aterrizaje de gato ninja') para proteger las articulaciones.`,
-                actividad_final: `Ejercicios de movilidad de tobillos y respiración diafragmática.`,
-                consigna: "¡Aterriza suave como un gato ninja: que nadie en el colegio escuche tu llegada al suelo!",
+                actividad_inicial: `Juego 'Gatos y ratones': dar saltitos muy pequeños en el lugar cayendo sin hacer ningún ruido en el suelo.`,
+                actividad_central: `Saltos cortos hacia adelante cayendo sobre colchonetas. La clave principal es aterrizar con los dos pies a la vez y doblar de inmediato tobillos, rodillas y cadera ('caída de gato ninja') para no golpearse las articulaciones.`,
+                actividad_final: `Mover los tobillos en círculos y respirar profundo inflando el abdomen.`,
+                consigna: "¡Aterriza suave como un gato ninja: que nadie escuche tus pies al llegar al piso!",
                 criterio_eval: "Realiza el aterrizaje simultáneo bipodal flexionando rodillas sin rigidez articular."
             },
             {
@@ -2367,9 +2377,9 @@ function getSkillProgressionTemplates(skill, materials, format, pedagogy) {
                 fase_pedagogica: "Fase 1: Iniciación y Esquema Corporal",
                 objetivo: "Utilizar el balanceo vigoroso de brazos de atrás hacia adelante y arriba como guía de la propulsión.",
                 distribucion: `Líneas de salto con cintas elevadas a 1.5 metros para estimular la proyección de brazos hacia arriba.`,
-                actividad_inicial: `Balanceos dinámicos de brazos en el puesto al ritmo de palmadas aumentando la velocidad de oscilación.`,
-                actividad_central: `Saltos buscando tocar con ambas manos una cinta suspendida al frente. Los brazos inician extendidos atrás y se lanzan enérgicamente hacia adelante y arriba en el momento del despegue.`,
-                actividad_final: `Elongación de hombros, pectorales y cintura escapular.`,
+                actividad_inicial: `Balancear los dos brazos hacia adelante y hacia atrás en el puesto al ritmo de aplausos, aumentando la velocidad poco a poco.`,
+                actividad_central: `Saltar hacia adelante buscando tocar con las manos una cinta suspendida al frente. Los brazos empiezan atrás y se lanzan con energía hacia arriba y adelante en el momento exacto de despegar.`,
+                actividad_final: `Estiramiento suave de hombros, pecho y espalda alta en círculo.`,
                 consigna: "¡Lanza tus brazos hacia el cielo como si fueras a tocar las estrellas con la punta de tus dedos!",
                 criterio_eval: "Proyecta ambos brazos hacia adelante y arriba de forma coordinada durante la fase de despegue y vuelo."
             },
@@ -2378,9 +2388,9 @@ function getSkillProgressionTemplates(skill, materials, format, pedagogy) {
                 fase_pedagogica: "Fase 2: Coordinación y Ajuste Técnico",
                 objetivo: "Extender vigorosamente y al unísono tobillos, rodillas y caderas en el instante del despegue.",
                 distribucion: `Estaciones con marcas de despegue y dianas de distancia a 0.5, 1.0 y 1.5 metros con ${materials}.`,
-                actividad_inicial: `Juego 'El cohete espacial': saltos verticales con extensión máxima del cuerpo en el aire.`,
-                actividad_central: `Práctica de despegue explosivo horizontal. Los estudiantes empujan activamente el suelo con el metatarso logrando la extensión completa de la cadena cinética inferior.`,
-                actividad_final: `Estiramiento de gemelos, isquiotibiales y zona lumbar.`,
+                actividad_inicial: `Juego 'El cohete espacial': agacharse y despegar saltando verticalmente estirando todo el cuerpo en el aire.`,
+                actividad_central: `Saltar hacia adelante empujando con fuerza el suelo con la punta de los pies, estirando al mismo tiempo tobillos, rodillas y cadera para lograr un despegue potente.`,
+                actividad_final: `Estirar suavemente pantorrillas (parte trasera baja de la pierna), muslos y espalda baja.`,
                 consigna: "¡Empuja el piso con tanta fuerza como si fueras a dejar tu huella marcada en el suelo!",
                 criterio_eval: "Demuestra una extensión visible y simultánea de tobillo, rodilla y cadera al abandonar el suelo."
             },
@@ -2389,10 +2399,10 @@ function getSkillProgressionTemplates(skill, materials, format, pedagogy) {
                 fase_pedagogica: "Fase 2: Coordinación y Ajuste Técnico",
                 objetivo: "Ajustar el ángulo de despegue (~45°) para maximizar el alcance horizontal manteniendo la estabilidad.",
                 distribucion: `Pasillos de salto con zonas intermedias de 'ríos imaginarios' con cuerdas y aros.`,
-                actividad_inicial: `Desplazamientos con saltos continuos de baja intensidad sobre líneas.`,
-                actividad_central: `Superación de obstáculos bajos (aros y cuerdas) que obligan a elevar la trayectoria de vuelo sin perder el avance hacia adelante. Ajuste personalizado según la estatura del estudiante.`,
-                actividad_final: `Marcha lenta y ejercicios de relajación miofascial.`,
-                consigna: "¡Dibuja un arcoíris en el aire con tu cuerpo, volando alto y aterrizando lejos!",
+                actividad_inicial: `Saltitos continuos a baja intensidad siguiendo líneas dibujadas en el suelo.`,
+                actividad_central: `Saltar por encima de obstáculos bajitos (aros o cuerdas en el piso que simulan 'ríos') que obligan a subir en el aire dibujando un arcoíris sin caerse hacia atrás al aterrizar.`,
+                actividad_final: `Caminata lenta sacudiendo suavemente piernas y brazos para descansar.`,
+                consigna: "¡Dibuja un arcoíris en el aire con tu cuerpo: vuela alto y aterriza lejos con pies juntos!",
                 criterio_eval: "Alcanza una parábola de vuelo equilibrada sin caer hacia atrás en el aterrizaje."
             },
             {
@@ -2400,10 +2410,10 @@ function getSkillProgressionTemplates(skill, materials, format, pedagogy) {
                 fase_pedagogica: "Fase 2: Coordinación y Ajuste Técnico",
                 objetivo: "Transferir la fuerza propulsora en el plano vertical alcanzando móviles suspendidos.",
                 distribucion: `Pared con marcas métricas de colores y balones suspendidos a diferentes alturas.`,
-                actividad_inicial: `Juegos de toques de palmas en salto con compañeros de similar estatura.`,
-                actividad_central: `Desafíos de salto vertical para tocar tarjetas o móviles aéreos. Enfoque en la impulsión bipodal y la absorción elástica al caer en el mismo punto de despegue.`,
-                actividad_final: `Estiramiento axial de columna y miembros inferiores.`,
-                consigna: "¡Crece en el aire como un gigante y aterriza suave en tu propio castillo!",
+                actividad_inicial: `Chocar palmas arriba con un compañero de estatura parecida dando pequeños saltitos.`,
+                actividad_central: `Desafíos de saltar hacia arriba para tocar figuras o pelotas colgadas. El énfasis es despegar con los dos pies juntos y caer doblando las rodillas en el mismo sitio.`,
+                actividad_final: `Estirarse hacia arriba alargando la espalda y estirar suavemente las piernas.`,
+                consigna: "¡Crece en el aire como un gigante y aterriza suave como una pluma en tu castillo!",
                 criterio_eval: "Realiza el salto vertical con despegue bipodal y caída amortiguada en el mismo cuadrante."
             },
             {
@@ -2411,9 +2421,9 @@ function getSkillProgressionTemplates(skill, materials, format, pedagogy) {
                 fase_pedagogica: "Fase 3: Complejidad y Retos Dinámicos",
                 objetivo: "Encadenar saltos sucesivos manteniendo el ritmo, la reactividad articular y la dirección.",
                 distribucion: `Hileras de 6 aros consecutivos y mini-vallas de espuma distribuidas a 80 cm.`,
-                actividad_inicial: `Juego de saltos al compás de la música: 1-2-3 salto y congelado.`,
-                actividad_central: `Recorridos de saltos seguidos dentro de los aros. La consigna es utilizar la amortiguación del primer salto como carga propulsora inmediata para el siguiente salto sin pausas prolongadas.`,
-                actividad_final: `Círculo de estiramiento pasivo y respiración profunda.`,
+                actividad_inicial: `Juego de saltos con música: 1-2-3 salto y quedarse congelados como estatuas.`,
+                actividad_central: `Pasar por una fila de aros dando saltos seguidos. La regla es doblar las rodillas al caer y aprovechar ese rebote elástico para salir al siguiente aro sin detenerse.`,
+                actividad_final: `Sentarse en círculo, respirar despacio y estirar las piernas hacia adelante.`,
                 consigna: "¡Sé como una pelota de goma que rebota sin parar con energía elástica en cada aro!",
                 criterio_eval: "Ejecuta 4 o más saltos continuos sin perder el equilibrio ni interrumpir la secuencia."
             },
@@ -2422,10 +2432,10 @@ function getSkillProgressionTemplates(skill, materials, format, pedagogy) {
                 fase_pedagogica: "Fase 3: Complejidad y Retos Dinámicos",
                 objetivo: "Resolver secuencias de saltos frontales, laterales y diagonales con cambios de apoyo.",
                 distribucion: `Circuito en cuadrilátero con estaciones de salto frontal, lateral sobre valla y salto diagonal en cruz.`,
-                actividad_inicial: `Movilidad articular completa y desplazamientos laterales con saltos cortos.`,
-                actividad_central: `Rotación por estaciones aplicando el método de ${pedagogy}. Los estudiantes varían los planos de salto y ajustan la postura corporal para estabilizar cada aterrizaje.`,
-                actividad_final: `Vuelta a la calma con dinámicas de balanceo y sacudida muscular.`,
-                consigna: "¡Controla tu aterrizaje en cada dirección antes de lanzarte al siguiente reto!",
+                actividad_inicial: `Mover brazos, cintura y piernas en círculos y hacer pasitos laterales con saltos cortos.`,
+                actividad_central: `Circuito de 3 estaciones: Estación 1: saltar hacia adelante; Estación 2: saltar de lado sobre una línea; Estación 3: saltar en diagonal en una cruz de aros. En cada caída se debe controlar el aterrizaje antes del próximo salto.`,
+                actividad_final: `Balancear suavemente los brazos y sacudir las piernas para soltar la tensión muscular.`,
+                consigna: "¡Asegura tu aterrizaje en cada salto antes de lanzarte al siguiente reto!",
                 criterio_eval: "Adapta la orientación corporal y estabiliza el aterrizaje en saltos laterales y diagonales."
             },
             {
@@ -2433,10 +2443,10 @@ function getSkillProgressionTemplates(skill, materials, format, pedagogy) {
                 fase_pedagogica: "Fase 3: Complejidad y Retos Dinámicos",
                 objetivo: "Sincronizar y sumar esfuerzos en saltos cooperativos respetando los turnos y la seguridad.",
                 distribucion: `Espacio delimitado de 15x10 metros con pistas de relevos de salto.`,
-                actividad_inicial: `Juego de espejos en parejas imitando secuencias de salto simultáneo.`,
-                actividad_central: `Reto 'El puente colectivo': cada estudiante salta desde la marca donde aterrizó su compañero anterior para lograr cruzar juntos el patio. Enfoque en el estímulo mutuo y la técnica segura.`,
-                actividad_final: `Conversatorio sobre el trabajo colaborativo y estiramientos en parejas.`,
-                consigna: "¡Cada salto suma para el equipo: salta con técnica, aterriza seguro y apoya a tu grupo!",
+                actividad_inicial: `Juego de espejos en parejas: mirarse de frente e imitar los saltos del compañero al mismo tiempo.`,
+                actividad_central: `Reto 'El puente colectivo': cada niño salta desde el lugar exacto donde aterrizó su compañero anterior para lograr cruzar juntos el patio. Se premia el salto bien amortiguado y el apoyo entre todos.`,
+                actividad_final: `Comentar cómo se sintieron trabajando en equipo y estirar suavemente en parejas.`,
+                consigna: "¡Cada salto suma para el equipo: salta con ganas, aterriza seguro y apoya a tu grupo!",
                 criterio_eval: "Participa coordinadamente en los relevos aplicando la técnica aprendida sin apuros lesivos."
             },
             {
@@ -2444,10 +2454,10 @@ function getSkillProgressionTemplates(skill, materials, format, pedagogy) {
                 fase_pedagogica: "Fase 4: Consolidación y Aplicación en Juego",
                 objetivo: "Ajustar la fuerza del salto para aterrizar con precisión en zonas de diferentes tamaños.",
                 distribucion: `Cuadrícula gigante tipo 'rayuela motriz' con islas de colchonetas y aros numerados.`,
-                actividad_inicial: `Juego de persecución con zonas de seguridad a las que solo se puede ingresar mediante un salto bipodal.`,
-                actividad_central: `Juego 'El rescate de las islas': los alumnos deben saltar de isla en isla calculando la distancia exacta para no caer al 'agua', manteniendo el equilibrio estático 2 segundos al aterrizar.`,
-                actividad_final: `Reflexión sobre el cálculo de distancias y relajación corporal.`,
-                consigna: "¡Calcula tu fuerza como un arquero: ni muy corto ni muy largo, justo en el centro de la isla!",
+                actividad_inicial: `Juego de persecución con 'casitas de seguridad' a las que solo se entra dando un salto con los dos pies juntos.`,
+                actividad_central: `Juego 'El rescate de las islas': saltar de colchoneta en colchoneta calculando la distancia exacta para no tocar el piso ('el agua'), quedándose 2 segundos en equilibrio al caer.`,
+                actividad_final: `Conversar sobre cómo calcularon la fuerza de cada salto y respirar profundo con ojos cerrados.`,
+                consigna: "¡Mide tu fuerza: ni muy corto ni muy largo, cae derechito en el centro de la isla!",
                 criterio_eval: "Dosifica la potencia del salto y logra aterrizar con precisión y balance en la zona señalada."
             },
             {
@@ -2455,10 +2465,10 @@ function getSkillProgressionTemplates(skill, materials, format, pedagogy) {
                 fase_pedagogica: "Fase 4: Consolidación y Aplicación en Juego",
                 objetivo: "Superar obstáculos en movimiento o con límite temporal manteniendo la postura madura.",
                 distribucion: `Cuerdas oscilantes a ras de suelo ('la serpiente') y pasillos de salto rítmico.`,
-                actividad_inicial: `Activación cardiovascular con trote y saltos de cuerda individual.`,
-                actividad_central: `Salto sobre cuerdas onduladas en movimiento sin tocarlas, requiriendo sincronizar el momento de despegue con la posición del obstáculo móvil.`,
-                actividad_final: `Estiramiento general y ejercicios de visualización motriz.`,
-                consigna: "¡Espera el momento exacto, salta con decisión y vuela sobre el obstáculo con elegancia!",
+                actividad_inicial: `Trote suave por el patio y saltitos individuales con cuerdas en el suelo.`,
+                actividad_central: `Saltar sobre cuerdas que se mueven suavemente por el suelo ('la serpiente') sin pisarlas, calculando el momento exacto para saltar con los dos pies a la vez.`,
+                actividad_final: `Estiramientos suaves de piernas y brazos acostados boca arriba en colchonetas.`,
+                consigna: "¡Espera el momento exacto, salta con decisión y vuela sobre la serpiente con elegancia!",
                 criterio_eval: "Sincroniza el despegue con el estímulo móvil y aterriza de forma equilibrada."
             },
             {
@@ -2466,10 +2476,10 @@ function getSkillProgressionTemplates(skill, materials, format, pedagogy) {
                 fase_pedagogica: "Fase 4: Consolidación y Aplicación en Juego",
                 objetivo: "Demostrar y coevaluar el patrón maduro de salto (preparación, despegue, vuelo y aterrizaje).",
                 distribucion: `Gran pista gimnástica con todas las ${materials} integradas en estaciones de demostración.`,
-                actividad_inicial: `Calentamiento festivo y repaso de la rúbrica de criterios biomecánicos de Gallahue.`,
-                actividad_central: `Circuito de maestría motriz: los estudiantes realizan el recorrido completo mostrando los 4 componentes maduros del salto. Coevaluación formativa con fichas visuales.`,
-                actividad_final: `Ceremonia de reconocimiento y cierre de la unidad con estiramiento colectivo.`,
-                consigna: "¡Muestra tu maestría motriz con saltos potentes, vuelos hermosos y aterrizajes perfectos!",
+                actividad_inicial: `Calentamiento festivo y repaso de los criterios de la Batería de Habilidades Motrices.`,
+                actividad_central: `Circuito de exhibición: los niños muestran los 4 momentos del salto (flexionar rodillas con brazos atrás, extenderse con fuerza, volar alto y aterrizar suave doblando rodillas). Coevaluación con aplausos y fichas de felicitación.`,
+                actividad_final: `Ceremonia de felicitación por los logros del período y estiramiento grupal alegre.`,
+                consigna: "¡Muestra tu maestría motriz con saltos potentes, vuelos hermosos y aterrizajes suaves!",
                 criterio_eval: "Demuestra los 4 criterios del estadio maduro de salto (sentadilla 90°, brazos coordinados, triple extensión y aterrizaje amortiguado)."
             }
         ],
@@ -2479,9 +2489,9 @@ function getSkillProgressionTemplates(skill, materials, format, pedagogy) {
                 fase_pedagogica: "Fase 1: Iniciación y Esquema Corporal",
                 objetivo: "Posicionar el cuerpo de perfil al objetivo con agarre seguro del móvil con la mano dominante.",
                 distribucion: `Líneas de lanzamiento señalizadas a 3 y 5 metros de una pared con dianas circulares.`,
-                actividad_inicial: `Juego de calentamiento 'El radar': giros corporales de perfil a la voz del docente. Movilidad de hombros y muñecas.`,
-                actividad_central: `Práctica de postura de perfil: pies perpendiculares a la línea de lanzamiento, hombro no dominante apuntando a la diana y pelota sostenida con dedos sin apretar en exceso.`,
-                actividad_final: `Elongación de antebrazos, bíceps y deltoides. Metacognición sobre la orientación espacial.`,
+                actividad_inicial: `Juego de calentamiento 'El radar': ponerse de lado rápidamente hacia donde indique el docente. Mover hombros y muñecas en círculos suaves.`,
+                actividad_central: `Aprender a pararse de lado (de perfil) a la pared o diana: el hombro que no lanza apunta al blanco, los pies están de lado y la pelota se sostiene con la yema de los dedos sin apretarla en exceso.`,
+                actividad_final: `Estirar suavemente los brazos, el pecho y los hombros. Conversar sobre por qué pararse de lado ayuda a apuntar mejor.`,
                 consigna: "¡Ponte de lado como un arquero medieval, apuntando al blanco con tu hombro delantero!",
                 criterio_eval: "Adopta la postura corporal de perfil respecto a la diana antes de iniciar el armado."
             },
@@ -2490,10 +2500,10 @@ function getSkillProgressionTemplates(skill, materials, format, pedagogy) {
                 fase_pedagogica: "Fase 1: Iniciación y Esquema Corporal",
                 objetivo: "Dar un paso firme con el pie opuesto al brazo ejecutor para transferir el centro de gravedad.",
                 distribucion: `Huellas dibujadas en el piso con tizas indicando la posición del pie contralateral adelantado.`,
-                actividad_inicial: `Juego 'Paso de gigante': desplazamientos coordinando paso contralateral con palmadas.`,
-                actividad_central: `Lanzamientos suaves de pelotas de espuma enfocados exclusivamente en adelantar el pie contrario al brazo lanzador y transferir el peso desde el pie trasero hacia el delantero.`,
-                actividad_final: `Estiramiento de cuádriceps, glúteos y gemelos. Respiración diafragmática.`,
-                consigna: "¡Paso firme con el pie contrario adelante para que todo el poder de tu cuerpo viaje al balón!",
+                actividad_inicial: `Juego 'Paso de gigante': caminar dando un paso largo con el pie contrario al brazo dominante y aplaudir al mismo tiempo.`,
+                actividad_central: `Lanzar pelotas de espuma suaves practicando dar un paso firme con el pie contrario al brazo que lanza (si lanzo con la derecha, adelanto el pie izquierdo) y pasar el peso del cuerpo desde el pie de atrás hacia el pie de adelante.`,
+                actividad_final: `Estirar suavemente muslos, pantorrillas y espalda baja. Respirar inflando la barriga.`,
+                consigna: "¡Paso firme con el pie contrario adelante para que toda la fuerza de tu cuerpo viaje a la pelota!",
                 criterio_eval: "Adelanta consistentemente el pie contrario al brazo lanzador en la fase preparatoria."
             },
             {
@@ -2501,9 +2511,9 @@ function getSkillProgressionTemplates(skill, materials, format, pedagogy) {
                 fase_pedagogica: "Fase 1: Iniciación y Esquema Corporal",
                 objetivo: "Llevar el codo hacia atrás y arriba a la altura del hombro (~90°) antes de la aceleración.",
                 distribucion: `Postes o conos altos con marcas visuales que indican la altura correcta del codo.`,
-                actividad_inicial: `Movilidad dinámica de hombros formando círculos y 'alas de águila' con los codos elevados.`,
-                actividad_central: `Ejercicios frente a la pared: armar el brazo con el codo a la altura del hombro, verificar la postura y lanzar con extensión final de muñeca hacia una diana alta.`,
-                actividad_final: `Estiramiento de manguito rotador, pectorales y tríceps.`,
+                actividad_inicial: `Mover los hombros en círculos grandes y abrir los brazos como alas de águila manteniendo los codos a la altura de las orejas.`,
+                actividad_central: `Frente a una pared: colocar el codo arriba a la altura del hombro (cerca de la oreja) y lanzar hacia una marca alta en la pared, estirando la muñeca al final sin dejar caer el codo contra las costillas.`,
+                actividad_final: `Estiramiento suave del hombro, el pecho y la parte trasera del brazo (tríceps).`,
                 consigna: "¡Codo arriba a la altura de tu oreja, como si fueras a responder una llamada telefónica!",
                 criterio_eval: "Eleva el codo a la altura del hombro sin dejarlo caer pegado a las costillas al armar."
             },
@@ -2512,9 +2522,9 @@ function getSkillProgressionTemplates(skill, materials, format, pedagogy) {
                 fase_pedagogica: "Fase 2: Coordinación y Ajuste Técnico",
                 objetivo: "Rotar coordinadamente la cadera y el tronco hacia adelante para sumar potencia al lanzamiento.",
                 distribucion: `Zonas de lanzamiento de 6x6 metros con balones de goma y ${materials}.`,
-                actividad_inicial: `Juego de torsión de tronco en parejas 'Pasa la pelota atrás' en posición de pie.`,
-                actividad_central: `Lanzamientos a media distancia donde los estudiantes sienten la torsión de la cintura: primero gira la cadera, luego el pecho y finalmente se proyecta el brazo como una catapulta.`,
-                actividad_final: `Elongación de dorsales, oblicuos y músculos intercostales.`,
+                actividad_inicial: `Juego en parejas 'Pasa la pelota atrás': de pie espalda con espalda, girar la cintura de un lado a otro para pasarse una pelota suave.`,
+                actividad_central: `Lanzamientos sintiendo el giro del cuerpo: primero gira la cadera, luego el pecho hacia el frente y finalmente sale el brazo disparado hacia el blanco como una catapulta.`,
+                actividad_final: `Estirar la espalda y los costados de la cintura inclinándose suavemente de lado a lado.`,
                 consigna: "¡Gira tu cintura como un tornado: la fuerza nace en tus pies y explota en tu mano!",
                 criterio_eval: "Demuestra una rotación visible de tronco y hombros previa a la suelta del móvil."
             },
@@ -2523,10 +2533,10 @@ function getSkillProgressionTemplates(skill, materials, format, pedagogy) {
                 fase_pedagogica: "Fase 2: Coordinación y Ajuste Técnico",
                 objetivo: "Calibrar la trayectoria y fuerza del lanzamiento para acertar en objetivos a diferentes alturas.",
                 distribucion: `Mural de precisión con aros colgados a 1.2m, 1.8m y 2.4m con puntuaciones lúdicas.`,
-                actividad_inicial: `Dinámicas de puntería con pelotas de tenis hacia cubos en el suelo.`,
-                actividad_central: `Circuito de puntería por estaciones: los alumnos aplican el gesto completo (perfil, paso, codo alto, giro) buscando encestar en los aros más altos.`,
-                actividad_final: `Marcha lenta con sacudida de brazos y respiración controlada.`,
-                consigna: "¡Apunta al centro de la diana y suelta el balón en el punto más alto de tu extensión!",
+                actividad_inicial: `Juegos de puntería lanzando pelotas de tenis hacia baldes o aros en el piso.`,
+                actividad_central: `Estaciones de tiro al blanco: lanzar hacia aros colgados a distintas alturas, usando la técnica completa (de perfil, paso contrario, codo alto y giro de cintura).`,
+                actividad_final: `Caminar despacio sacudiendo los brazos para relajarlos y respirar con calma.`,
+                consigna: "¡Apunta al centro del aro y suelta la pelota en el punto más alto cuando tu brazo esté arriba!",
                 criterio_eval: "Acierta en la zona objetivo manteniendo la estructura técnica del gesto en el 70% de los intentos."
             },
             {
@@ -2534,10 +2544,10 @@ function getSkillProgressionTemplates(skill, materials, format, pedagogy) {
                 fase_pedagogica: "Fase 2: Coordinación y Ajuste Técnico",
                 objetivo: "Adaptar la fuerza prensil y el impulso motor a pelotas de diferente peso y tamaño.",
                 distribucion: `Estaciones con pelotas de tenis, balones de espuma, saquitos de semillas y vóley liviano.`,
-                actividad_inicial: `Manipulación sensorial de los distintos móviles (apretar, balancear, botar).`,
-                actividad_central: `Lanzamientos consecutivos rotando los elementos. El estudiante experimenta cómo ajustar la fuerza muscular y la velocidad del brazo según el peso del objeto.`,
-                actividad_final: `Estiramiento de la musculatura flexora y extensora de dedos y muñecas.`,
-                consigna: "¡Siente el peso del objeto en tus dedos y calcula la fuerza justa para que vuele exacto!",
+                actividad_inicial: `Explorar con las manos objetos de distintos pesos (pelotas de espuma, pelotas de tenis, saquitos de tela con semillas).`,
+                actividad_central: `Lanzar los diferentes objetos hacia objetivos seguros, experimentando cómo usar más o menos fuerza según si el objeto es pesado o liviano.`,
+                actividad_final: `Estirar suavemente los dedos y las muñecas hacia adelante y hacia atrás.`,
+                consigna: "¡Siente el peso del objeto en tus manos y calcula la fuerza exacta para que vuele derechito!",
                 criterio_eval: "Modula la fuerza de empuje adecuándose a las características físicas de cada móvil."
             },
             {
@@ -2545,10 +2555,10 @@ function getSkillProgressionTemplates(skill, materials, format, pedagogy) {
                 fase_pedagogica: "Fase 3: Complejidad y Retos Dinámicos",
                 objetivo: "Coordinar 2 o 3 pasos de carrera de aproximación con el bloqueo del pie contralateral y lanzamiento.",
                 distribucion: `Pasillos de carrera de 5 metros que finalizan en la línea de lanzamiento reglamentaria.`,
-                actividad_inicial: `Trote rítmico con paradas en 1 tiempo sobre marcas de colores.`,
-                actividad_central: `Carrera corta $\rightarrow$ paso de bloqueo contralateral $\rightarrow$ rotación $\rightarrow$ lanzamiento potente hacia una zona lejana. Enfoque en transferir la velocidad de la carrera al lanzamiento.`,
-                actividad_final: `Relajación pasiva con estiramiento de piernas y hombros.`,
-                consigna: "¡Corre con ritmo, clava tu pie como una estaca y proyecta el balón al horizonte!",
+                actividad_inicial: `Trote suave por el patio frenando con los dos pies cuando el docente dé una palmada.`,
+                actividad_central: `Dar dos pasitos de trote, frenar con el pie contrario adelante, girar el cuerpo y lanzar con fuerza hacia una zona abierta, aprovechando la velocidad de la carrera.`,
+                actividad_final: `Caminar despacio y estirar los brazos y las piernas sin rebotar.`,
+                consigna: "¡Corre con ritmo, frena con tu pie contrario adelante y lanza con poder hacia el horizonte!",
                 criterio_eval: "Encadena la carrera previa con el bloqueo del pie sin perder el equilibrio tras soltar."
             },
             {
@@ -2556,10 +2566,10 @@ function getSkillProgressionTemplates(skill, materials, format, pedagogy) {
                 fase_pedagogica: "Fase 3: Complejidad y Retos Dinámicos",
                 objetivo: "Sumar aciertos en dinámicas grupales de relevos manteniendo la calma y la técnica.",
                 distribucion: `Pistas paralelas de relevos con castillos de conos para derribar a 8 metros.`,
-                actividad_inicial: `Juegos de pases rápidos de mano a mano en filas cooperativas.`,
-                actividad_central: `Juego 'Los constructores y derribadores': relevos de carrera y lanzamiento de precisión para derribar conos numerados. Se valora tanto el acierto como la técnica correcta.`,
-                actividad_final: `Conversatorio sobre la concentración y el control emocional bajo presión lúdica.`,
-                consigna: "¡Tómate tu segundo de concentración, arma tu brazo con calma y lanza con confianza!",
+                actividad_inicial: `Pasarse la pelota de mano en mano rápidamente en filas de compañeros.`,
+                actividad_central: `Juego 'Los constructores y derribadores': carrerita corta y lanzamiento sobre hombro para derribar conos con puntos. Se premia tanto la buena técnica como el acierto.`,
+                actividad_final: `Conversar sobre cómo mantener la calma para apuntar bien y respirar profundo.`,
+                consigna: "¡Tómate un segundo para respirar, levanta bien tu codo y lanza con tranquilidad y confianza!",
                 criterio_eval: "Mantiene la técnica madura de lanzamiento en situaciones competitivas lúdicas."
             },
             {
@@ -2567,10 +2577,10 @@ function getSkillProgressionTemplates(skill, materials, format, pedagogy) {
                 fase_pedagogica: "Fase 3: Complejidad y Retos Dinámicos",
                 objetivo: "Lanzar con precisión hacia compañeros en movimiento en situaciones tácticas abiertas.",
                 distribucion: `Cancha de 15x10 metros dividida en cuadrantes de juego.`,
-                actividad_inicial: `Pases en parejas aumentando la distancia progresivamente (3m $\rightarrow$ 6m $\rightarrow$ 9m).`,
-                actividad_central: `Juego 'Los 10 pases mágicos': dos equipos deben completar 10 pases sobre hombro consecutivos entre compañeros desmarcados sin que el móvil toque el suelo.`,
-                actividad_final: `Estiramiento colectivo y retroalimentación táctica.`,
-                consigna: "¡Comunícate con tu compañero, anticipa su carrera y lanza a sus manos con suavidad!",
+                actividad_inicial: `Pases en parejas aumentando la distancia poco a poco (3 metros, luego 6 metros, luego 9 metros).`,
+                actividad_central: `Juego 'Los 10 pases mágicos': dos equipos intentan completar 10 pases sobre hombro seguidos entre compañeros sin que la pelota toque el suelo.`,
+                actividad_final: `Sentarse en círculo a dialogar sobre las jugadas y estirar hombros y brazos.`,
+                consigna: "¡Comunícate con tu compañero, mira hacia dónde corre y pásale la pelota directo a sus manos!",
                 criterio_eval: "Ajusta la trayectoria y fuerza del pase hacia un compañero en desplazamiento."
             },
             {
@@ -2578,10 +2588,10 @@ function getSkillProgressionTemplates(skill, materials, format, pedagogy) {
                 fase_pedagogica: "Fase 4: Consolidación y Aplicación en Juego",
                 objetivo: "Tomar decisiones rápidas sobre la trayectoria del lanzamiento ante la presencia de defensores.",
                 distribucion: `Zonas de ataque y defensa delimitadas con arcos o dianas múltiples.`,
-                actividad_inicial: `Juego de fintas corporales y esquivas 1 vs 1 sin balón.`,
-                actividad_central: `Situaciones 2 atacantes vs 1 defensor: el portador del balón debe identificar si lanzar directo a la diana libre o pasar a su compañero desmarcado utilizando el gesto sobre hombro.`,
-                actividad_final: `Reflexión sobre la lectura del juego y estiramiento de tren superior e inferior.`,
-                consigna: "¡Mira todo el campo, engaña con la mirada y lanza al espacio donde nadie te bloquee!",
+                actividad_inicial: `Juego de amagues y esquivas en parejas sin pelota para entrenar la agilidad.`,
+                actividad_central: `Reto de 2 atacantes contra 1 defensor: el estudiante con la pelota decide si lanzar a la diana vacía o pasársela a su compañero libre por encima del hombro.`,
+                actividad_final: `Reflexión sobre cómo mirar la cancha antes de lanzar y estirar piernas y brazos.`,
+                consigna: "¡Mira toda la cancha, amaga con la vista y lanza hacia el espacio donde nadie te tape!",
                 criterio_eval: "Selecciona la trayectoria óptima de lanzamiento evitando el bloqueo del defensor."
             },
             {
@@ -2589,10 +2599,10 @@ function getSkillProgressionTemplates(skill, materials, format, pedagogy) {
                 fase_pedagogica: "Fase 4: Consolidación y Aplicación en Juego",
                 objetivo: "Alcanzar la máxima distancia de lanzamiento aplicando la cadena cinética completa sin sobreesfuerzo articular.",
                 distribucion: `Campo abierto con zonas métricas marcadas cada 2 metros hasta los 20 metros.`,
-                actividad_inicial: `Calentamiento específico del hombro con gomas elásticas o movimientos circulares suaves.`,
-                actividad_central: `Intentos de lanzamiento de distancia máxima. El docente evalúa que el incremento de fuerza provenga de las piernas y el tronco y no de un latigazo exclusivo del brazo.`,
-                actividad_final: `Crioterapia simbólica (relajación guiada) y estiramiento profundo de hombros y espalda.`,
-                consigna: "¡Usa la fuerza de todo tu cuerpo, desde los dedos de tus pies hasta la punta de tus manos!",
+                actividad_inicial: `Mover los hombros suavemente en círculos grandes y estirar los brazos hacia los lados.`,
+                actividad_central: `Lanzar lo más lejos posible en campo abierto. El docente supervisa que los niños usen el impulso de las piernas y el giro del cuerpo, y no solo la fuerza bruta del brazo.`,
+                actividad_final: `Cerrar los ojos, respirar despacio imaginando una brisa fresca que descansa los músculos, y estirar hombros y espalda.`,
+                consigna: "¡Usa la fuerza de todo tu cuerpo, desde la punta de tus pies hasta la punta de tus dedos!",
                 criterio_eval: "Ejecuta el lanzamiento de máxima distancia con una cadena cinética fluida y sin dolor."
             },
             {
@@ -2600,9 +2610,9 @@ function getSkillProgressionTemplates(skill, materials, format, pedagogy) {
                 fase_pedagogica: "Fase 4: Consolidación y Aplicación en Juego",
                 objetivo: "Demostrar y coevaluar los 4 componentes del estadio maduro de lanzamiento sobre hombro.",
                 distribucion: `Gala motriz con 4 estaciones de lanzamiento (precisión, distancia, en movimiento y estratégico).`,
-                actividad_inicial: `Activación festiva y repaso de los criterios de Gallahue (perfil, paso contralateral, codo alto y rotación).`,
+                actividad_inicial: `Activación festiva y repaso de las 4 claves del lanzamiento: pararse de lado, dar el paso con el pie contrario, levantar el codo a la oreja y girar el cuerpo al lanzar.`,
                 actividad_central: `Recorrido evaluativo: los estudiantes realizan lanzamientos en las diferentes estaciones mientras sus compañeros registran los logros técnicos en fichas lúdicas.`,
-                actividad_final: `Premiación pedagógica de los logros de la unidad y estiramiento grupal.`,
+                actividad_final: `Premiación pedagógica de los logros de la unidad y estiramiento grupal alegre.`,
                 consigna: "¡Lanza con la maestría de un campeón: técnica limpia, potencia controlada y alegría!",
                 criterio_eval: "Evidencia el estadio maduro de lanzamiento cumpliendo los 4 criterios biomecánicos evaluados."
             }
@@ -2636,24 +2646,134 @@ function generateDidacticPlan(diagnosticoData, prefs, isGroup = false) {
     const finalMin = Math.max(5, Math.round(totalMin * 0.20));
     const centralMin = totalMin - initMin - finalMin;
 
-    // Generar la secuencia progresiva completa de N clases
+    // Obtener plantillas base para la habilidad
     const fullTemplates = getSkillProgressionTemplates(skill, materials, format, pedagogy);
+
+    // TAREA 1: Extraer falencias identificadas en la evaluación biomecánica
+    const criteriosFallidos = (diagnosticoData.criterios || []).filter(c => c.puntaje === 0);
+    const erroresDetectados = (diagnosticoData.errores_criticos || []).filter(e => {
+        const txt = (e.error || '').toLowerCase();
+        return txt && !txt.includes('sin fallos') && !txt.includes('adecuada');
+    });
+
+    const hayFalencias = (!isGroup) && (criteriosFallidos.length > 0 || erroresDetectados.length > 0);
+
+    // Función de evaluación de afinidad entre plantilla y falencias detectadas
+    const stopWords = new Set(['para', 'como', 'sobre', 'durante', 'fase', 'patron', 'criterio', 'movimiento', 'estudiante', 'cuerpo', 'logra', 'mantiene', 'realiza', 'adecuada', 'adecuado']);
+
+    function evaluarAfinidad(tmpl) {
+        let score = 0;
+        let matchedError = '';
+        const haystack = `${tmpl.titulo} ${tmpl.objetivo} ${tmpl.criterio_eval} ${tmpl.actividad_central}`.toLowerCase();
+
+        // 1. Evaluar contra errores críticos detectados
+        erroresDetectados.forEach(errObj => {
+            const errText = (errObj.error || '').toLowerCase();
+            const palabras = errText.split(/[\s,.;:]+/).filter(w => w.length > 3 && !stopWords.has(w));
+            let matches = 0;
+            palabras.forEach(p => {
+                if (haystack.includes(p)) matches++;
+            });
+            if (matches > 0 && matches * 3 > score) {
+                score = matches * 3;
+                matchedError = errObj.error;
+            }
+        });
+
+        // 2. Evaluar contra criterios no logrados (puntaje === 0)
+        criteriosFallidos.forEach(critObj => {
+            const critText = `${critObj.criterio} ${critObj.observacion || ''}`.toLowerCase();
+            const palabras = critText.split(/[\s,.;:]+/).filter(w => w.length > 3 && !stopWords.has(w));
+            let matches = 0;
+            palabras.forEach(p => {
+                if (haystack.includes(p)) matches++;
+            });
+            if (matches > 0 && matches * 2 > score) {
+                score = matches * 2;
+                if (!matchedError) matchedError = critObj.criterio;
+            }
+        });
+
+        return { score, matchedError };
+    }
+
     const clasesSecuencia = [];
 
-    for (let i = 0; i < totalClasses; i++) {
-        const tmpl = fullTemplates[i % fullTemplates.length];
-        clasesSecuencia.push({
-            numero: i + 1,
-            titulo: tmpl.titulo,
-            fase_pedagogica: tmpl.fase_pedagogica,
-            objetivo: tmpl.objetivo,
-            distribucion: tmpl.distribucion,
-            actividad_inicial: `<strong>Activación (${initMin} min):</strong> ${tmpl.actividad_inicial}`,
-            actividad_central: tmpl.actividad_central,
-            actividad_final: `<strong>Vuelta a la calma (${finalMin} min):</strong> ${tmpl.actividad_final}`,
-            consigna: tmpl.consigna,
-            criterio_eval: tmpl.criterio_eval
+    if (hayFalencias) {
+        // Mapear cada plantilla con su afinidad
+        const scoredTemplates = fullTemplates.map((tmpl, idx) => {
+            const { score, matchedError } = evaluarAfinidad(tmpl);
+            return { tmpl, origIndex: idx, score, matchedError };
         });
+
+        // Seleccionar 1 o 2 sesiones prioritarias de refuerzo específico (las de mayor afinidad, score >= 4)
+        const maxScoreFound = Math.max(...scoredTemplates.map(s => s.score));
+        const threshold = Math.max(4, Math.floor(maxScoreFound * 0.6));
+        const prioritarias = scoredTemplates
+            .filter(item => item.score >= threshold)
+            .sort((a, b) => b.score - a.score)
+            .slice(0, 2);
+
+        const prioritariasIndices = new Set(prioritarias.map(p => p.origIndex));
+        const restantes = scoredTemplates.filter(item => !prioritariasIndices.has(item.origIndex));
+
+        // Construcción pedagógica de la secuencia reordenada:
+        // Clase 1: Conserva la exploración de esquema corporal (iniciación)
+        // Clases 2 (y 3 si hay falencias múltiples): Refuerzo directo con banner visual visible
+        // Clases siguientes: Progresión técnica regular respetando la evolución motriz
+        const reordered = [];
+        if (restantes.length > 0 && restantes[0].origIndex === 0) {
+            reordered.push(restantes.shift());
+        } else if (restantes.length > 0) {
+            reordered.push(restantes.shift());
+        }
+
+        prioritarias.forEach(p => reordered.push(p));
+        restantes.forEach(r => reordered.push(r));
+
+        for (let i = 0; i < totalClasses; i++) {
+            const item = reordered[i % reordered.length];
+            const tmpl = item.tmpl;
+            const esRefuerzo = prioritariasIndices.has(item.origIndex) && i < (1 + prioritarias.length);
+
+            let badgeRefuerzoHTML = '';
+            let tituloClase = tmpl.titulo;
+
+            if (esRefuerzo && item.matchedError) {
+                badgeRefuerzoHTML = `<div class="refuerzo-docente-box" style="background:#EFF6FF; border-left:4px solid #2563EB; padding:8px 12px; margin-bottom:10px; border-radius:6px; font-size:12px; color:#1E40AF; line-height:1.45;">🎯 <strong>Refuerzo Dirigido Biomecánico:</strong> En la evaluación del estudiante se identificó <em>"${item.matchedError}"</em>. Hoy trabajamos con énfasis prioritario para andamiar y corregir esta falencia específica.</div>`;
+                tituloClase = `${tmpl.titulo} 🎯 [Enfoque Prioritario]`;
+            }
+
+            clasesSecuencia.push({
+                numero: i + 1,
+                titulo: tituloClase,
+                fase_pedagogica: tmpl.fase_pedagogica,
+                objetivo: tmpl.objetivo,
+                distribucion: tmpl.distribucion,
+                actividad_inicial: `<strong>Activación (${initMin} min):</strong><br>${badgeRefuerzoHTML}${tmpl.actividad_inicial}`,
+                actividad_central: tmpl.actividad_central,
+                actividad_final: `<strong>Vuelta a la calma (${finalMin} min):</strong> ${tmpl.actividad_final}`,
+                consigna: tmpl.consigna,
+                criterio_eval: tmpl.criterio_eval
+            });
+        }
+    } else {
+        // Modo regular uniforme (sin falencias detectadas o modo colectivo grupal)
+        for (let i = 0; i < totalClasses; i++) {
+            const tmpl = fullTemplates[i % fullTemplates.length];
+            clasesSecuencia.push({
+                numero: i + 1,
+                titulo: tmpl.titulo,
+                fase_pedagogica: tmpl.fase_pedagogica,
+                objetivo: tmpl.objetivo,
+                distribucion: tmpl.distribucion,
+                actividad_inicial: `<strong>Activación (${initMin} min):</strong> ${tmpl.actividad_inicial}`,
+                actividad_central: tmpl.actividad_central,
+                actividad_final: `<strong>Vuelta a la calma (${finalMin} min):</strong> ${tmpl.actividad_final}`,
+                consigna: tmpl.consigna,
+                criterio_eval: tmpl.criterio_eval
+            });
+        }
     }
 
     // Pregunta Problematizadora contextualizada
@@ -2722,14 +2842,14 @@ function generateDidacticPlan(diagnosticoData, prefs, isGroup = false) {
             total: `${totalMin} minutos`
         },
         tarea_extracurricular: `Compartir y repasar en casa con la familia las dinámicas y retos de ${skill} practicados en cada sesión, fortaleciendo la integración familiar y los hábitos de vida activa.`,
-        evaluacion: `Evaluación formativa continua: Observación directa de la progresión motriz del estudiante clase a clase (${skill}), valoración de la adquisición de criterios maduros de Gallahue, participación activa y autorregulación.`,
+        evaluacion: `Evaluación formativa continua: Observación directa de la progresión motriz del estudiante clase a clase (${skill}), valoración de la adquisición de criterios maduros de la Batería HMB, participación activa y autorregulación.`,
         metodos_ensenanza: `Mando directo pedagógico por asignación de tareas, descubrimiento guiado y aprendizaje cooperativo estructurado en progresión de dificultad.`,
         estilo_ensenanza: `Estilo lúdico-participativo y resolución de problemas motores basado en ${pedagogy}.`,
         adaptaciones_piar: `Ajustes Razonables (DUA / PIAR): Graduación de niveles de dificultad, adaptación de distancias y apoyos; uso de compañeros tutores; variación de materiales y pausas activas para asegurar la inclusión de todos los ritmos de aprendizaje.`,
         reflexion_pedagogica: `La secuencia progresiva concibe el error motriz como una oportunidad de autorregulación y andamiaje corporal, garantizando que cada estudiante avance con confianza hacia el estadio maduro.`,
         retroalimentacion_tips: frasesProfe,
         video_profundizacion: "https://aulaglobal360.edu.co/recursos/pedagogia-hmb",
-        bibliografia: "Ministerio de Educación Nacional de Colombia (MEN). Orientaciones Pedagógicas para la Educación Física, Recreación y Deporte. / Gallahue, D. L., & Ozmun, J. C. (2012). Understanding Motor Development."
+        bibliografia: "Ministerio de Educación Nacional de Colombia (MEN). Orientaciones Pedagógicas para la Educación Física, Recreación y Deporte. / Gallahue, D. L., & Ozmun, J. C. (2012). Understanding Motor Development: Infants, Children, Adolescents, Adults. / González Palacio, E., Montoya Grisales, N., Cardona, C., Marín, E., & Muñoz, D. (2021). Diseño y validación de una batería de habilidades motrices básicas para niños entre 5 y 11 años (Dialnet 7925607). / Ulrich, D. A. (2019). Test of Gross Motor Development (TGMD-3)."
     };
 }
 
@@ -2915,7 +3035,7 @@ function exportDiagnosticoToWord() {
 
         <table>
             <tr><td colspan="2" style="background:#F1F5F9; padding:8px; font-weight:bold;">DATOS DEL ESTUDIANTE Y EVALUACIÓN INSTRUMENTAL</td></tr>
-            <tr><td><strong>Habilidad Evaluada:</strong> ${d.habilidad_detectada.toUpperCase()}</td><td><strong>Estadio Motor (Gallahue):</strong> ${d.estadio_gallahue.toUpperCase()}</td></tr>
+            <tr><td><strong>Habilidad Evaluada:</strong> ${d.habilidad_detectada.toUpperCase()}</td><td><strong>Estadio Motor:</strong> ${d.estadio_gallahue.toUpperCase()}</td></tr>
             <tr><td><strong>Componente HMB:</strong> ${d.componente_hmb || '[HMB-L] Locomoción'}</td><td><strong>Puntuación Batería HMB:</strong> ${d.puntaje_obtenido || d.porcentaje_madurez + '%'}</td></tr>
             <tr><td><strong>Índice de Madurez:</strong> ${d.porcentaje_madurez}%</td><td><strong>Calibración Etaria:</strong> ${d.edad_calibrada || '5 a 11 años'}</td></tr>
             <tr><td colspan="2" style="font-size:8.5pt; color:#475569; background:#F8FAFC;"><strong>Marco Científico:</strong> Batería de Habilidades Motrices Básicas para Niños entre 5 y 11 Años (González Palacio, Montoya Grisales, Cardona, Marín & Muñoz, 2021 · Dialnet 7925607).</td></tr>

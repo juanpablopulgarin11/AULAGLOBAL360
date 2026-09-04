@@ -1,390 +1,433 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AULA GLOBAL 360 · Sistema Experto de Evaluación Biomecánica HMB</title>
     <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
 
-<div class="app">
-    
-    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+    <div class="app">
 
-    <!-- BARRA LATERAL -->
-    <aside class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <div class="logo"><span>✨</span> AULA GLOBAL 360</div>
-            <div class="logo-sub">Evaluación Diagnóstica HMB<br>Batería Validada (5-11 años)</div>
-        </div>
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
-        <!-- SELECCIÓN DE HABILIDAD MOTRIZ (BATERÍA HMB 5-11 AÑOS · DIALNET 7925607) -->
-        <div class="sidebar-section">
-            <div class="sidebar-label">1. Batería HMB (González Palacio et al., 2021)</div>
-            <div class="skill-grid">
-                <button class="skill-btn active" data-skill="auto" onclick="selectSkill(this, 'auto', 'Detección Automática (IA)')">
-                    <span class="ico">🔍</span><span class="lbl">Detección Automática (IA)</span>
-                </button>
-                <button class="skill-btn" data-skill="carrera" onclick="selectSkill(this, 'carrera', '[HMB-L] Carrera')">
-                    <span class="ico">🏃</span><span class="lbl">[HMB-L] Carrera</span>
-                </button>
-                <button class="skill-btn" data-skill="salto" onclick="selectSkill(this, 'salto', '[HMB-L] Salto Horizontal')">
-                    <span class="ico">🦘</span><span class="lbl">[HMB-L] Salto Horizontal</span>
-                </button>
-                <button class="skill-btn" data-skill="marcha" onclick="selectSkill(this, 'marcha', '[HMB-L] Marcha')">
-                    <span class="ico">🚶</span><span class="lbl">[HMB-L] Marcha</span>
-                </button>
-                <button class="skill-btn" data-skill="salto_unipodal" onclick="selectSkill(this, 'salto_unipodal', '[HMB-L] Salto Unipodal')">
-                    <span class="ico">🦿</span><span class="lbl">[HMB-L] Salto Unipodal</span>
-                </button>
-                <button class="skill-btn" data-skill="lanzar" onclick="selectSkill(this, 'lanzar', '[HMB-M] Lanzamiento')">
-                    <span class="ico">⚾</span><span class="lbl">[HMB-M] Lanzamiento</span>
-                </button>
-                <button class="skill-btn" data-skill="atrapar" onclick="selectSkill(this, 'atrapar', '[HMB-M] Recepción y Atrape')">
-                    <span class="ico">🧤</span><span class="lbl">[HMB-M] Recepción y Atrape</span>
-                </button>
-                <button class="skill-btn" data-skill="patear" onclick="selectSkill(this, 'patear', '[HMB-M] Patear')">
-                    <span class="ico">⚽</span><span class="lbl">[HMB-M] Patear</span>
-                </button>
-                <button class="skill-btn" data-skill="equilibrio" onclick="selectSkill(this, 'equilibrio', '[HMB-E] Eq. Dinámico')">
-                    <span class="ico">🧘</span><span class="lbl">[HMB-E] Eq. Dinámico</span>
-                </button>
-                <button class="skill-btn" data-skill="equilibrio_estatico" onclick="selectSkill(this, 'equilibrio_estatico', '[HMB-E] Eq. Estático')">
-                    <span class="ico">🦩</span><span class="lbl">[HMB-E] Eq. Estático</span>
-                </button>
+        <!-- BARRA LATERAL -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo"><span>✨</span> AULA GLOBAL 360</div>
+                <div class="logo-sub">Evaluación Diagnóstica HMB<br>Batería Validada (5-11 años)</div>
             </div>
-        </div>
 
-        <div class="sidebar-divider"></div>
-
-        <!-- CALIBRACIÓN EVOLUTIVA POR EDAD -->
-        <div class="sidebar-section">
-            <div class="sidebar-label">2. Calibración por Edad / Grado</div>
-            <div style="padding: 0 16px;">
-                <select id="gradeSelect" class="pref-select">
-                    <option value="5_anos">🧸 Transición / Preescolar (5 años)</option>
-                    <option value="6_anos">🎒 Grado 1º de Primaria (6 años)</option>
-                    <option value="7_anos" selected>🎒 Grado 2º de Primaria (7 años)</option>
-                    <option value="8_anos">🎒 Grado 3º de Primaria (8 años)</option>
-                    <option value="9_11_anos">🏅 Grado 4º - 5º (9 a 11 años)</option>
-                </select>
-            </div>
-        </div>
-
-        <div class="sidebar-divider"></div>
-
-        <!-- PREFERENCIAS PEDAGÓGICAS Y DE CLASE -->
-        <div class="sidebar-section">
-            <div class="sidebar-label">3. Preferencias del Maestro</div>
-            <div style="padding: 0 16px; display: flex; flex-direction: column; gap: 8px;">
-                <label class="input-sublabel">Formato Didáctico:</label>
-                <select id="prefFormat" class="pref-select">
-                    <option value="Cuento Motor">📖 Cuento Motor</option>
-                    <option value="Circuito de Estaciones" selected>🎯 Circuito de Estaciones</option>
-                    <option value="Retos Cooperativos">🤝 Retos Cooperativos</option>
-                    <option value="Juego Libre Dirigido">🏃 Juego Libre Dirigido</option>
-                </select>
-                
-                <label class="input-sublabel">Metodología Pedagógica:</label>
-                <select id="prefPedagogy" class="pref-select">
-                    <option value="Descubrimiento Guiado">🧠 Descubrimiento Guiado</option>
-                    <option value="Resolución de Problemas">💡 Resolución de Problemas</option>
-                    <option value="Asignación de Tareas" selected>📋 Asignación de Tareas</option>
-                </select>
-
-                <!-- PERSONALIZACIÓN TEMPORAL Y CURRICULAR DEL PERÍODO -->
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                    <div>
-                        <label class="input-sublabel">Período (Máx 4):</label>
-                        <select id="prefPeriod" class="pref-select">
-                            <option value="1" selected>Período 1</option>
-                            <option value="2">Período 2</option>
-                            <option value="3">Período 3</option>
-                            <option value="4">Período 4</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="input-sublabel">Duración Clase:</label>
-                        <select id="prefDuration" class="pref-select">
-                            <option value="45">⏱️ 45 Min</option>
-                            <option value="50" selected>⏱️ 50 Min</option>
-                            <option value="55">⏱️ 55 Min</option>
-                            <option value="60">⏱️ 60 Min</option>
-                            <option value="90">⏱️ 90 Min</option>
-                        </select>
-                    </div>
+            <!-- SELECCIÓN DE HABILIDAD MOTRIZ (BATERÍA HMB 5-11 AÑOS · DIALNET 7925607) -->
+            <div class="sidebar-section">
+                <div class="sidebar-label">1. Batería HMB (González Palacio et al., 2021)</div>
+                <div class="skill-grid">
+                    <button class="skill-btn active" data-skill="auto"
+                        onclick="selectSkill(this, 'auto', 'Detección Automática (IA)')">
+                        <span class="ico">🔍</span><span class="lbl">Detección Automática (IA)</span>
+                    </button>
+                    <button class="skill-btn" data-skill="carrera"
+                        onclick="selectSkill(this, 'carrera', '[HMB-L] Carrera')">
+                        <span class="ico">🏃</span><span class="lbl">[HMB-L] Carrera</span>
+                    </button>
+                    <button class="skill-btn" data-skill="salto"
+                        onclick="selectSkill(this, 'salto', '[HMB-L] Salto Horizontal')">
+                        <span class="ico">🦘</span><span class="lbl">[HMB-L] Salto Horizontal</span>
+                    </button>
+                    <button class="skill-btn" data-skill="marcha"
+                        onclick="selectSkill(this, 'marcha', '[HMB-L] Marcha')">
+                        <span class="ico">🚶</span><span class="lbl">[HMB-L] Marcha</span>
+                    </button>
+                    <button class="skill-btn" data-skill="salto_unipodal"
+                        onclick="selectSkill(this, 'salto_unipodal', '[HMB-L] Salto Unipodal')">
+                        <span class="ico">🦿</span><span class="lbl">[HMB-L] Salto Unipodal</span>
+                    </button>
+                    <button class="skill-btn" data-skill="lanzar"
+                        onclick="selectSkill(this, 'lanzar', '[HMB-M] Lanzamiento')">
+                        <span class="ico">⚾</span><span class="lbl">[HMB-M] Lanzamiento</span>
+                    </button>
+                    <button class="skill-btn" data-skill="atrapar"
+                        onclick="selectSkill(this, 'atrapar', '[HMB-M] Recepción y Atrape')">
+                        <span class="ico">🧤</span><span class="lbl">[HMB-M] Recepción y Atrape</span>
+                    </button>
+                    <button class="skill-btn" data-skill="patear"
+                        onclick="selectSkill(this, 'patear', '[HMB-M] Patear')">
+                        <span class="ico">⚽</span><span class="lbl">[HMB-M] Patear</span>
+                    </button>
+                    <button class="skill-btn" data-skill="equilibrio"
+                        onclick="selectSkill(this, 'equilibrio', '[HMB-E] Eq. Dinámico')">
+                        <span class="ico">🧘</span><span class="lbl">[HMB-E] Eq. Dinámico</span>
+                    </button>
+                    <button class="skill-btn" data-skill="equilibrio_estatico"
+                        onclick="selectSkill(this, 'equilibrio_estatico', '[HMB-E] Eq. Estático')">
+                        <span class="ico">🦩</span><span class="lbl">[HMB-E] Eq. Estático</span>
+                    </button>
                 </div>
+            </div>
 
-                <div>
-                    <label class="input-sublabel">Cantidad de Clases por Período (Máx 12):</label>
-                    <select id="prefTotalClasses" class="pref-select">
-                        <option value="1">1 Clase (Sesión Individual)</option>
-                        <option value="2">2 Clases (Secuencia Corta)</option>
-                        <option value="3">3 Clases (Fase de Iniciación)</option>
-                        <option value="4">4 Clases (Microciclo)</option>
-                        <option value="6">6 Clases (Medio Período)</option>
-                        <option value="8">8 Clases (Bimestre Pedagógico)</option>
-                        <option value="10">10 Clases (Progresión Amplia)</option>
-                        <option value="12" selected>12 Clases (Período Completo · Máx)</option>
+            <div class="sidebar-divider"></div>
+
+            <!-- CALIBRACIÓN EVOLUTIVA POR EDAD -->
+            <div class="sidebar-section">
+                <div class="sidebar-label">2. Calibración por Edad / Grado</div>
+                <div style="padding: 0 16px;">
+                    <select id="gradeSelect" class="pref-select">
+                        <option value="5_anos">🧸 Transición / Preescolar (5 años)</option>
+                        <option value="6_anos">🎒 Grado 1º de Primaria (6 años)</option>
+                        <option value="7_anos" selected>🎒 Grado 2º de Primaria (7 años)</option>
+                        <option value="8_anos">🎒 Grado 3º de Primaria (8 años)</option>
+                        <option value="9_11_anos">🏅 Grado 4º - 5º (9 a 11 años)</option>
                     </select>
                 </div>
+            </div>
 
-                <div class="input-sublabel" style="margin-top: 4px;">Materiales Disponibles:</div>
-                <div class="mat-grid">
-                    <label><input type="checkbox" value="Conos" class="mat-check" checked> Conos</label>
-                    <label><input type="checkbox" value="Aros" class="mat-check" checked> Aros</label>
-                    <label><input type="checkbox" value="Cuerdas" class="mat-check"> Cuerdas</label>
-                    <label><input type="checkbox" value="Balones" class="mat-check" checked> Balones</label>
-                    <label><input type="checkbox" value="Colchonetas" class="mat-check"> Colchonetas</label>
+            <div class="sidebar-divider"></div>
+
+            <!-- PREFERENCIAS PEDAGÓGICAS Y DE CLASE -->
+            <div class="sidebar-section">
+                <div class="sidebar-label">3. Preferencias del Maestro</div>
+                <div style="padding: 0 16px; display: flex; flex-direction: column; gap: 8px;">
+                    <label class="input-sublabel">Formato Didáctico:</label>
+                    <select id="prefFormat" class="pref-select">
+                        <option value="Cuento Motor">📖 Cuento Motor</option>
+                        <option value="Circuito de Estaciones" selected>🎯 Circuito de Estaciones</option>
+                        <option value="Retos Cooperativos">🤝 Retos Cooperativos</option>
+                        <option value="Juego Libre Dirigido">🏃 Juego Libre Dirigido</option>
+                    </select>
+
+                    <label class="input-sublabel">Metodología Pedagógica:</label>
+                    <select id="prefPedagogy" class="pref-select">
+                        <option value="Descubrimiento Guiado">🧠 Descubrimiento Guiado</option>
+                        <option value="Resolución de Problemas">💡 Resolución de Problemas</option>
+                        <option value="Asignación de Tareas" selected>📋 Asignación de Tareas</option>
+                    </select>
+
+                    <!-- PERSONALIZACIÓN TEMPORAL Y CURRICULAR DEL PERÍODO -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                        <div>
+                            <label class="input-sublabel">Período (Máx 4):</label>
+                            <select id="prefPeriod" class="pref-select">
+                                <option value="1" selected>Período 1</option>
+                                <option value="2">Período 2</option>
+                                <option value="3">Período 3</option>
+                                <option value="4">Período 4</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="input-sublabel">Duración Clase:</label>
+                            <select id="prefDuration" class="pref-select">
+                                <option value="45">⏱️ 45 Min</option>
+                                <option value="50" selected>⏱️ 50 Min</option>
+                                <option value="55">⏱️ 55 Min</option>
+                                <option value="60">⏱️ 60 Min</option>
+                                <option value="90">⏱️ 90 Min</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="input-sublabel">Cantidad de Clases por Período (Máx 12):</label>
+                        <select id="prefTotalClasses" class="pref-select">
+                            <option value="1">1 Clase (Sesión Individual)</option>
+                            <option value="2">2 Clases (Secuencia Corta)</option>
+                            <option value="3">3 Clases (Fase de Iniciación)</option>
+                            <option value="4">4 Clases (Microciclo)</option>
+                            <option value="6">6 Clases (Medio Período)</option>
+                            <option value="8">8 Clases (Bimestre Pedagógico)</option>
+                            <option value="10">10 Clases (Progresión Amplia)</option>
+                            <option value="12" selected>12 Clases (Período Completo · Máx)</option>
+                        </select>
+                    </div>
+
+                    <div class="input-sublabel" style="margin-top: 4px;">Materiales Disponibles:</div>
+                    <div class="mat-grid">
+                        <label><input type="checkbox" value="Conos" class="mat-check" checked> Conos</label>
+                        <label><input type="checkbox" value="Aros" class="mat-check" checked> Aros</label>
+                        <label><input type="checkbox" value="Cuerdas" class="mat-check"> Cuerdas</label>
+                        <label><input type="checkbox" value="Balones" class="mat-check" checked> Balones</label>
+                        <label><input type="checkbox" value="Colchonetas" class="mat-check"> Colchonetas</label>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <div class="sidebar-divider"></div>
+            <div class="sidebar-divider"></div>
 
-        <!-- MODOS DE OPERACIÓN -->
-        <div class="sidebar-section">
-            <div class="sidebar-label">4. Modo de Operación</div>
-            <div class="mode-btns">
-                <button class="mode-btn active" data-mode="diagnostico" onclick="selectMode(this)">
-                    📊 Individual (Estudiante)
+            <!-- MODOS DE OPERACIÓN -->
+            <div class="sidebar-section">
+                <div class="sidebar-label">4. Modo de Operación</div>
+                <div class="mode-btns">
+                    <button class="mode-btn active" data-mode="diagnostico" onclick="selectMode(this)">
+                        📊 Individual (Estudiante)
+                    </button>
+                    <button class="mode-btn mode-btn-group" data-mode="grupal" onclick="selectMode(this)">
+                        👨‍👩‍👧‍👦 Colectivo (Salón Completo)
+                    </button>
+                </div>
+            </div>
+
+            <div class="sidebar-footer">
+                Batería: González Palacio & Montoya Grisales<br>
+                Batería de Habilidades Motrices Básicas (HMB)
+            </div>
+        </aside>
+
+        <!-- ÁREA PRINCIPAL -->
+        <main class="main">
+            <!-- TOPBAR -->
+            <div class="topbar">
+                <button class="menu-btn" onclick="toggleSidebar()" aria-label="Abrir menú">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round">
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
                 </button>
-                <button class="mode-btn mode-btn-group" data-mode="grupal" onclick="selectMode(this)">
-                    👨‍👩‍👧‍👦 Colectivo (Salón Completo)
+                <div class="topbar-title" id="mainHeaderTitle">Análisis Biomecánico de Movimiento</div>
+                <span class="topbar-badge" id="modeBadge">MODO INDIVIDUAL</span>
+            </div>
+
+            <!-- BARRA DE CONFIGURACIÓN DE IA -->
+            <div class="keybar">
+                <div class="keybar-left">
+                    <span class="key-icon">⚡</span>
+                    <span class="key-label">Motor IA:</span>
+                    <input type="password" id="apiKeyInput"
+                        placeholder="Clave Gemini API (opcional para visión nube)..." autocomplete="off">
+                </div>
+                <div class="keybar-actions">
+                    <button class="btn-connect" onclick="applyApiKey()">Guardar / Probar</button>
+                    <button class="btn-offline" onclick="useLocalEngine()">Usar Motor Local HD</button>
+                </div>
+                <span class="key-status status-local" id="keyStatusBadge">🧠 Motor Local Activo</span>
+            </div>
+
+            <!-- PANEL DE ANÁLISIS GRUPAL -->
+            <div class="group-panel" id="groupPanel" style="display: none;">
+                <div class="group-panel-icon">🎒</div>
+                <div id="groupSetup" class="group-setup-box">
+                    <div class="group-setup-text">
+                        <strong>Evaluación Grupal de Salón</strong>
+                        <span>Define cuántos estudiantes evaluarás para consolidar el diagnóstico:</span>
+                    </div>
+                    <div class="group-setup-controls">
+                        <input type="number" id="totalStudents" min="1" max="60" value="30">
+                        <button class="btn-start-group" onclick="startGroupMode()">Iniciar Registro</button>
+                    </div>
+                </div>
+
+                <div class="group-progress" id="groupProgress" style="display: none;">
+                    <div class="group-progress-info">
+                        <span class="group-text" id="groupCounterText">Estudiante actual: 1 de 30</span>
+                        <span class="group-pct" id="groupPctText">0%</span>
+                    </div>
+                    <div class="progress-track">
+                        <div class="progress-fill" id="groupProgressFill" style="width: 0%;"></div>
+                    </div>
+                    <div class="group-actions">
+                        <button class="btn-finish-group" id="btnFinishGroup" onclick="generateGroupPlan()">📊 Generar
+                            Planeación Consolidada</button>
+                        <button class="btn-reset-group" onclick="resetGroupAssessment()">Reiniciar</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ZONA DE CARGA DE EVIDENCIA -->
+            <div class="upload-wrapper">
+                <div class="upload-header">
+                    <div class="upload-title">
+                        <span class="step-badge">1</span>
+                        <strong>Evidencia Visual del Estudiante</strong>
+                        <span class="upload-subtitle" id="currentSkillSubtitle">(Detección Automática)</span>
+                    </div>
+                    <button class="help-btn" onclick="openModal()">📸 Guía de Grabación</button>
+                </div>
+
+                <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+                    <div class="uz-icon" id="uzIcon">🎬</div>
+                    <div class="uz-title" id="uzTitle">Haz clic o arrastra un video o foto del estudiante</div>
+                    <div class="uz-sub" id="uzSub">Formatos: MP4, MOV, WEBM, JPG, PNG (Recomendado: 3 a 5 segundos)
+                    </div>
+                </div>
+                <input type="file" id="fileInput" accept="video/*,image/*" style="display:none"
+                    onchange="handleFile(event)">
+
+                <!-- TIRA DE FOTOGRAMAS CLAVE (KEYFRAMES STRIP) -->
+                <div class="keyframe-section" id="keyframeSection" style="display: none;">
+                    <div class="keyframe-header">
+                        <span>🎞️ Muestreo Adaptativo & Biomecánica (MediaPipe Pose WASM):</span>
+                        <span class="keyframe-count" id="keyframeCountBadge">0 cuadros</span>
+                    </div>
+                    <div class="keyframe-strip" id="keyframeStrip"></div>
+                </div>
+            </div>
+
+            <!-- HISTORIAL DE MENSAJES / REPORTES -->
+            <div class="chat-scroll" id="chatScroll">
+                <div class="msg bot">
+                    <div class="msg-av">✨</div>
+                    <div class="bubble">
+                        <div class="welcome-header">
+                            <strong>¡Bienvenido al Evaluador Biomecánico AULA GLOBAL 360!</strong>
+                        </div>
+                        <p>Esta plataforma analiza de forma precisa los patrones motores de niños (5-11 años) basándose
+                            en la <strong>Batería Validada de Habilidades Motrices Básicas (HMB)</strong>.</p>
+                        <div class="welcome-steps">
+                            <div class="w-step"><span>1</span> Selecciona la habilidad en el menú lateral o déjalo en
+                                <em>Detección Automática</em>.
+                            </div>
+                            <div class="w-step"><span>2</span> Sube un video corto (3 a 5 seg) o fotografía del
+                                estudiante en acción.</div>
+                            <div class="w-step"><span>3</span> El sistema extraerá los fotogramas clave, evaluará los
+                                criterios articulares y generará el informe y plan de clase en Word.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BARRA DE ENTRADA -->
+            <div class="input-row">
+                <div class="input-wrap">
+                    <textarea id="userInput"
+                        placeholder="Observaciones docentes (opcional, ej. 'Aterriza con fuerza en talón' o 'Usa calzado plano')..."
+                        onkeydown="handleKey(event)" rows="1"></textarea>
+                </div>
+                <button class="send-btn" id="sendBtn" onclick="sendMsg()" title="Analizar evidencia">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="22" y1="2" x2="11" y2="13"></line>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
                 </button>
             </div>
-        </div>
+        </main>
 
-        <div class="sidebar-footer">
-            Batería: González Palacio & Montoya Grisales<br>
-            Estadios: David L. Gallahue & TGMD-3
-        </div>
-    </aside>
-
-    <!-- ÁREA PRINCIPAL -->
-    <main class="main">
-        <!-- TOPBAR -->
-        <div class="topbar">
-            <button class="menu-btn" onclick="toggleSidebar()" aria-label="Abrir menú">
-                <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-            </button>
-            <div class="topbar-title" id="mainHeaderTitle">Análisis Biomecánico de Movimiento</div>
-            <span class="topbar-badge" id="modeBadge">MODO INDIVIDUAL</span>
-        </div>
-
-        <!-- BARRA DE CONFIGURACIÓN DE IA -->
-        <div class="keybar">
-            <div class="keybar-left">
-                <span class="key-icon">⚡</span>
-                <span class="key-label">Motor IA:</span>
-                <input type="password" id="apiKeyInput" placeholder="Clave Gemini API (opcional para visión nube)..." autocomplete="off">
-            </div>
-            <div class="keybar-actions">
-                <button class="btn-connect" onclick="applyApiKey()">Guardar / Probar</button>
-                <button class="btn-offline" onclick="useLocalEngine()">Usar Motor Local HD</button>
-            </div>
-            <span class="key-status status-local" id="keyStatusBadge">🧠 Motor Local Activo</span>
-        </div>
-
-        <!-- PANEL DE ANÁLISIS GRUPAL -->
-        <div class="group-panel" id="groupPanel" style="display: none;">
-            <div class="group-panel-icon">🎒</div>
-            <div id="groupSetup" class="group-setup-box">
-                <div class="group-setup-text">
-                    <strong>Evaluación Grupal de Salón</strong>
-                    <span>Define cuántos estudiantes evaluarás para consolidar el diagnóstico:</span>
-                </div>
-                <div class="group-setup-controls">
-                    <input type="number" id="totalStudents" min="1" max="60" value="30">
-                    <button class="btn-start-group" onclick="startGroupMode()">Iniciar Registro</button>
-                </div>
-            </div>
-            
-            <div class="group-progress" id="groupProgress" style="display: none;">
-                <div class="group-progress-info">
-                    <span class="group-text" id="groupCounterText">Estudiante actual: 1 de 30</span>
-                    <span class="group-pct" id="groupPctText">0%</span>
-                </div>
-                <div class="progress-track">
-                    <div class="progress-fill" id="groupProgressFill" style="width: 0%;"></div>
-                </div>
-                <div class="group-actions">
-                    <button class="btn-finish-group" id="btnFinishGroup" onclick="generateGroupPlan()">📊 Generar Planeación Consolidada</button>
-                    <button class="btn-reset-group" onclick="resetGroupAssessment()">Reiniciar</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- ZONA DE CARGA DE EVIDENCIA -->
-        <div class="upload-wrapper">
-            <div class="upload-header">
-                <div class="upload-title">
-                    <span class="step-badge">1</span>
-                    <strong>Evidencia Visual del Estudiante</strong>
-                    <span class="upload-subtitle" id="currentSkillSubtitle">(Detección Automática)</span>
-                </div>
-                <button class="help-btn" onclick="openModal()">📸 Guía de Grabación</button>
+        <!-- PANEL DERECHO: VISUALIZACIÓN ANATÓMICA Y TELEMETRÍA -->
+        <aside class="right-panel" id="rightPanel">
+            <div class="right-header">
+                <span class="icon-3d">🧬</span> Telemetría y Biomecánica 3D
             </div>
 
-            <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
-                <div class="uz-icon" id="uzIcon">🎬</div>
-                <div class="uz-title" id="uzTitle">Haz clic o arrastra un video o foto del estudiante</div>
-                <div class="uz-sub" id="uzSub">Formatos: MP4, MOV, WEBM, JPG, PNG (Recomendado: 3 a 5 segundos)</div>
-            </div>
-            <input type="file" id="fileInput" accept="video/*,image/*" style="display:none" onchange="handleFile(event)">
-
-            <!-- TIRA DE FOTOGRAMAS CLAVE (KEYFRAMES STRIP) -->
-            <div class="keyframe-section" id="keyframeSection" style="display: none;">
-                <div class="keyframe-header">
-                    <span>🎞️ Muestreo Adaptativo & Biomecánica (MediaPipe Pose WASM):</span>
-                    <span class="keyframe-count" id="keyframeCountBadge">0 cuadros</span>
-                </div>
-                <div class="keyframe-strip" id="keyframeStrip"></div>
-            </div>
-        </div>
-
-        <!-- HISTORIAL DE MENSAJES / REPORTES -->
-        <div class="chat-scroll" id="chatScroll">
-            <div class="msg bot">
-                <div class="msg-av">✨</div>
-                <div class="bubble">
-                    <div class="welcome-header">
-                        <strong>¡Bienvenido al Evaluador Biomecánico AULA GLOBAL 360!</strong>
+            <div class="sim-container">
+                <!-- CAJA 1: EVIDENCIA DEL ESTUDIANTE -->
+                <div class="video-box">
+                    <div class="video-box-header">
+                        <span>EVIDENCIA DEL ESTUDIANTE</span>
+                        <div class="status-dot" id="studentStatus"></div>
                     </div>
-                    <p>Esta plataforma analiza de forma precisa los patrones motores de niños (5-11 años) basándose en la <strong>Batería Validada de HMB</strong> y los estadios de <strong>David L. Gallahue & TGMD-3</strong>.</p>
-                    <div class="welcome-steps">
-                        <div class="w-step"><span>1</span> Selecciona la habilidad en el menú lateral o déjalo en <em>Detección Automática</em>.</div>
-                        <div class="w-step"><span>2</span> Sube un video corto (3 a 5 seg) o fotografía del estudiante en acción.</div>
-                        <div class="w-step"><span>3</span> El sistema extraerá los fotogramas clave, evaluará los criterios articulares y generará el informe y plan de clase en Word.</div>
+                    <div class="player-area" id="studentPlayerArea">
+                        <div class="placeholder-text" id="studentPlaceholder">
+                            <span style="font-size: 28px;">📥</span>
+                            Esperando video / imagen...
+                        </div>
+                        <video id="studentVideoPlayer" style="display:none;" autoplay loop muted playsinline></video>
+                        <img id="studentImgPreview" style="display:none;" alt="Evidencia estudiante" />
+                        <div class="scan-overlay" id="scanOverlay" style="display: none;">
+                            <div class="scan-line"></div>
+                            <div class="scan-joint" style="top: 25%; left: 50%;"></div>
+                            <div class="scan-joint" style="top: 50%; left: 45%;"></div>
+                            <div class="scan-joint" style="top: 75%; left: 40%;"></div>
+                        </div>
+                    </div>
+                    <div class="video-box-footer" id="telemetryFooter">
+                        <span id="fpsCounter">FPS: --</span>
+                        <span id="frameDensity">Muestreo: 6-8 fases</span>
+                    </div>
+                </div>
+
+                <!-- CAJA 2: MODELO DE REFERENCIA PATRÓN MADURO -->
+                <div class="video-box">
+                    <div class="video-box-header">
+                        <span id="avatarTitle">PATRÓN DE REFERENCIA (MADURO)</span>
+                        <div class="status-dot active"></div>
+                    </div>
+                    <div class="player-area avatar-dark" id="avatarArea">
+                        <div class="avatar-placeholder" id="avatarPlaceholder">
+                            <div class="avatar-scanner"></div>
+                            <span class="avatar-robot-ico" id="avatarIcon">🏃‍♂️</span>
+                            <span class="avatar-name" id="avatarSkillName">Patrón: Carrera Eficiente</span>
+                            <span class="avatar-desc" id="avatarSkillDesc">Braceo 90° · Impulso Metatarsal ·
+                                Vuelo</span>
+                        </div>
+                        <video id="avatarVideoPlayer"
+                            style="display:none; width: 100%; height: 100%; object-fit: cover; z-index: 5; position: absolute;"
+                            autoplay loop muted playsinline></video>
+                    </div>
+                    <div class="video-box-footer">
+                        <span>CGI Biomecánico TGMD-3</span>
+                        <span style="color: var(--accent2);">✓ Estadio Maduro</span>
                     </div>
                 </div>
             </div>
-        </div>
+        </aside>
+    </div>
 
-        <!-- BARRA DE ENTRADA -->
-        <div class="input-row">
-            <div class="input-wrap">
-                <textarea id="userInput" placeholder="Observaciones docentes (opcional, ej. 'Aterriza con fuerza en talón' o 'Usa calzado plano')..." onkeydown="handleKey(event)" rows="1"></textarea>
-            </div>
-            <button class="send-btn" id="sendBtn" onclick="sendMsg()" title="Analizar evidencia">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-            </button>
-        </div>
-    </main>
-
-    <!-- PANEL DERECHO: VISUALIZACIÓN ANATÓMICA Y TELEMETRÍA -->
-    <aside class="right-panel" id="rightPanel">
-        <div class="right-header">
-            <span class="icon-3d">🧬</span> Telemetría y Biomecánica 3D
-        </div>
-        
-        <div class="sim-container">
-            <!-- CAJA 1: EVIDENCIA DEL ESTUDIANTE -->
-            <div class="video-box">
-                <div class="video-box-header">
-                    <span>EVIDENCIA DEL ESTUDIANTE</span>
-                    <div class="status-dot" id="studentStatus"></div>
-                </div>
-                <div class="player-area" id="studentPlayerArea">
-                    <div class="placeholder-text" id="studentPlaceholder">
-                        <span style="font-size: 28px;">📥</span>
-                        Esperando video / imagen...
-                    </div>
-                    <video id="studentVideoPlayer" style="display:none;" autoplay loop muted playsinline></video>
-                    <img id="studentImgPreview" style="display:none;" alt="Evidencia estudiante" />
-                    <div class="scan-overlay" id="scanOverlay" style="display: none;">
-                        <div class="scan-line"></div>
-                        <div class="scan-joint" style="top: 25%; left: 50%;"></div>
-                        <div class="scan-joint" style="top: 50%; left: 45%;"></div>
-                        <div class="scan-joint" style="top: 75%; left: 40%;"></div>
-                    </div>
-                </div>
-                <div class="video-box-footer" id="telemetryFooter">
-                    <span id="fpsCounter">FPS: --</span>
-                    <span id="frameDensity">Muestreo: 6-8 fases</span>
-                </div>
+    <!-- MODAL DE GUÍA DE GRABACIÓN -->
+    <div class="modal-overlay" id="recordingModal" onclick="closeModalOnOutside(event)">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">📸 Protocolo de Grabación para Máxima Precisión</h2>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
             </div>
 
-            <!-- CAJA 2: MODELO DE REFERENCIA PATRÓN MADURO -->
-            <div class="video-box">
-                <div class="video-box-header">
-                    <span id="avatarTitle">PATRÓN DE REFERENCIA (MADURO)</span>
-                    <div class="status-dot active"></div>
-                </div>
-                <div class="player-area avatar-dark" id="avatarArea">
-                    <div class="avatar-placeholder" id="avatarPlaceholder">
-                        <div class="avatar-scanner"></div>
-                        <span class="avatar-robot-ico" id="avatarIcon">🏃‍♂️</span>
-                        <span class="avatar-name" id="avatarSkillName">Patrón: Carrera Eficiente</span>
-                        <span class="avatar-desc" id="avatarSkillDesc">Braceo 90° · Impulso Metatarsal · Vuelo</span>
+            <div class="modal-body">
+                <div class="step-container">
+                    <div class="step-row">
+                        <div class="step-num">1</div>
+                        <div class="step-content">
+                            <h4>La Regla de los 3 a 5 Segundos</h4>
+                            <p>Inicia la grabación 1 segundo antes de la acción motriz y finaliza inmediatamente tras el
+                                aterrizaje o suelta. Evita videos largos innecesarios.</p>
+                        </div>
                     </div>
-                    <video id="avatarVideoPlayer" style="display:none; width: 100%; height: 100%; object-fit: cover; z-index: 5; position: absolute;" autoplay loop muted playsinline></video>
+                    <div class="step-row">
+                        <div class="step-num">2</div>
+                        <div class="step-content">
+                            <h4>Encuadre de Cuerpo Entero (Plano General)</h4>
+                            <p>Ubícate a una distancia de 3 a 4 metros. El estudiante debe ser visible desde la
+                                coronilla hasta la punta de los pies en todo momento.</p>
+                        </div>
+                    </div>
+                    <div class="step-row">
+                        <div class="step-num">3</div>
+                        <div class="step-content">
+                            <h4>Cámara Fija a la Altura del Centro de Masa</h4>
+                            <p>Sostén la cámara a la altura del ombligo/cadera del niño sin realizar movimientos bruscos
+                                de paneo.</p>
+                        </div>
+                    </div>
                 </div>
-                <div class="video-box-footer">
-                    <span>CGI Biomecánico TGMD-3</span>
-                    <span style="color: var(--accent2);">✓ Estadio Maduro</span>
-                </div>
-            </div>
-        </div>
-    </aside>
-</div>
 
-<!-- MODAL DE GUÍA DE GRABACIÓN -->
-<div class="modal-overlay" id="recordingModal" onclick="closeModalOnOutside(event)">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h2 class="modal-title">📸 Protocolo de Grabación para Máxima Precisión</h2>
-            <button class="modal-close" onclick="closeModal()">&times;</button>
-        </div>
-        
-        <div class="modal-body">
-            <div class="step-container">
-                <div class="step-row">
-                    <div class="step-num">1</div>
-                    <div class="step-content">
-                        <h4>La Regla de los 3 a 5 Segundos</h4>
-                        <p>Inicia la grabación 1 segundo antes de la acción motriz y finaliza inmediatamente tras el aterrizaje o suelta. Evita videos largos innecesarios.</p>
+                <div class="sidebar-label" style="color: var(--text); font-weight: bold; margin-bottom: 12px;">Planos
+                    Anatómicos Óptimos por Habilidad:</div>
+                <div class="angle-grid">
+                    <div class="angle-card">
+                        <div class="angle-icon">🏃</div>
+                        <h5>Carrera y Salto (Locomoción)</h5>
+                        <p><strong>Plano Sagital (Lateral/Perfil):</strong> Permite calcular el ángulo de flexión de
+                            rodilla, braceo anterior/posterior, fase de vuelo e inclinación del torso.</p>
                     </div>
-                </div>
-                <div class="step-row">
-                    <div class="step-num">2</div>
-                    <div class="step-content">
-                        <h4>Encuadre de Cuerpo Entero (Plano General)</h4>
-                        <p>Ubícate a una distancia de 3 a 4 metros. El estudiante debe ser visible desde la coronilla hasta la punta de los pies en todo momento.</p>
+                    <div class="angle-card">
+                        <div class="angle-icon">⚾</div>
+                        <h5>Lanzar y Atrapar (Manipulación)</h5>
+                        <p><strong>Plano Frontal / Diagonal:</strong> Permite evaluar el paso contralateral, rotación de
+                            hombros y codos, y punto de extensión final.</p>
                     </div>
-                </div>
-                <div class="step-row">
-                    <div class="step-num">3</div>
-                    <div class="step-content">
-                        <h4>Cámara Fija a la Altura del Centro de Masa</h4>
-                        <p>Sostén la cámara a la altura del ombligo/cadera del niño sin realizar movimientos bruscos de paneo.</p>
+                    <div class="angle-card">
+                        <div class="angle-icon">🧘</div>
+                        <h5>Equilibrio (Estabilidad)</h5>
+                        <p><strong>Plano Frontal:</strong> Permite evaluar la oscilación del tronco, base de
+                            sustentación y alineación de la pelvis.</p>
                     </div>
-                </div>
-            </div>
-
-            <div class="sidebar-label" style="color: var(--text); font-weight: bold; margin-bottom: 12px;">Planos Anatómicos Óptimos por Habilidad:</div>
-            <div class="angle-grid">
-                <div class="angle-card">
-                    <div class="angle-icon">🏃</div>
-                    <h5>Carrera y Salto (Locomoción)</h5>
-                    <p><strong>Plano Sagital (Lateral/Perfil):</strong> Permite calcular el ángulo de flexión de rodilla, braceo anterior/posterior, fase de vuelo e inclinación del torso.</p>
-                </div>
-                <div class="angle-card">
-                    <div class="angle-icon">⚾</div>
-                    <h5>Lanzar y Atrapar (Manipulación)</h5>
-                    <p><strong>Plano Frontal / Diagonal:</strong> Permite evaluar el paso contralateral, rotación de hombros y codos, y punto de extensión final.</p>
-                </div>
-                <div class="angle-card">
-                    <div class="angle-icon">🧘</div>
-                    <h5>Equilibrio (Estabilidad)</h5>
-                    <p><strong>Plano Frontal:</strong> Permite evaluar la oscilación del tronco, base de sustentación y alineación de la pelvis.</p>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
-<script src="script.js"></script>
+    <script src="script.js"></script>
 </body>
+
 </html>
