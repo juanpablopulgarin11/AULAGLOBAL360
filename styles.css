@@ -217,15 +217,21 @@ body {
     text-transform: uppercase;
 }
 
-.logo-mark {
-    background: #1E293B;
-    border: 1px solid #334155;
-    color: #F8FAFC;
-    padding: 3px 7px;
-    border-radius: var(--r-xs);
-    font-size: 11px;
-    font-weight: 800;
+.logo-svg-mark {
+    flex-shrink: 0;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+.logo-text {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.logo-highlight {
     font-family: var(--font-mono);
+    color: #38BDF8;
+    font-weight: 800;
 }
 
 .logo-sub {
