@@ -27,6 +27,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (apiKey) {
         document.getElementById('apiKeyInput').value = apiKey;
         updateKeyStatus(true);
+    } else {
+        updateKeyStatus(false);
     }
     updateCGIModel('auto');
 });
@@ -56,12 +58,12 @@ function applyApiKey() {
         return;
     }
     if (!input.startsWith('AIza')) {
-        addMsg('bot', '⚠️ <strong>Formato de clave no reconocido:</strong> Las claves de Google AI Studio suelen comenzar con <code>AIza</code>. Asegúrate de haber copiado la clave correcta desde Google AI Studio.');
+        addMsg('bot', '<strong>Formato de clave no habitual:</strong> Las claves de Google AI Studio suelen comenzar con <code>AIza</code>. Asegúrate de haber copiado la clave correcta desde Google AI Studio.');
     }
     apiKey = input;
     localStorage.setItem('aula360_api_key', apiKey);
     updateKeyStatus(true);
-    addMsg('bot', '⚡ <strong>Motor Gemini Vision Multimodal Conectado.</strong> El análisis de fotogramas se procesará en la nube con visión por computadora.');
+    addMsg('bot', '<strong>Gemini Vision IA Conectado.</strong> El análisis cinemático y la planificación curricular se procesan con visión por computadora en la nube.');
 }
 
 function useLocalEngine() {
@@ -69,17 +71,38 @@ function useLocalEngine() {
     localStorage.removeItem('aula360_api_key');
     document.getElementById('apiKeyInput').value = '';
     updateKeyStatus(false);
-    addMsg('bot', '🧠 <strong>Motor Biomecánico Local Activado.</strong> El análisis se procesará localmente sin necesidad de internet ni consumo de API.');
+    addMsg('bot', '<strong>Motor Local Autónomo Activado.</strong> El procesamiento biomecánico se ejecuta 100% en el navegador con MediaPipe Pose (WASM) con total privacidad.');
 }
 
 function updateKeyStatus(hasKey) {
+    const appRoot = document.getElementById('appRoot');
+    const headerBadge = document.getElementById('engineHeaderBadge');
     const badge = document.getElementById('keyStatusBadge');
+
     if (hasKey) {
-        badge.className = 'key-status status-gemini';
-        badge.textContent = '⚡ Gemini Vision HD';
+        if (appRoot) {
+            appRoot.classList.remove('engine-local');
+            appRoot.classList.add('engine-gemini');
+        }
+        if (headerBadge) {
+            headerBadge.textContent = '✦ Gemini Vision IA (Nube Multimodal)';
+        }
+        if (badge) {
+            badge.className = 'key-status status-gemini';
+            badge.textContent = 'Gemini Vision IA Conectado';
+        }
     } else {
-        badge.className = 'key-status status-local';
-        badge.textContent = '🧠 Motor Local HD';
+        if (appRoot) {
+            appRoot.classList.remove('engine-gemini');
+            appRoot.classList.add('engine-local');
+        }
+        if (headerBadge) {
+            headerBadge.textContent = '● Motor Local Autónomo (WASM · Privacidad Total)';
+        }
+        if (badge) {
+            badge.className = 'key-status status-local';
+            badge.textContent = 'Motor Local Activo';
+        }
     }
 }
 
@@ -751,7 +774,7 @@ function addMsg(role, contentHTML) {
 
     const avatar = document.createElement('div');
     avatar.className = 'msg-av';
-    avatar.textContent = role === 'bot' ? '✨' : 'TÚ';
+    avatar.textContent = role === 'bot' ? 'AG' : 'DOC';
 
     const bubble = document.createElement('div');
     bubble.className = 'bubble';
@@ -770,7 +793,7 @@ function showTyping() {
     wrap.className = 'msg bot';
     wrap.id = 'typingIndicator';
     wrap.innerHTML = `
-        <div class="msg-av">✨</div>
+        <div class="msg-av">AG</div>
         <div class="bubble">
             <div class="typing">
                 <div class="typing-dot"></div>
@@ -2060,9 +2083,9 @@ function handleDiagnosisOutput(data, teacherPrefs) {
         addMsg('bot', renderDiagnosticoHTML(data, evaluatedStudents), true);
 
         if (evaluatedStudents < targetStudents) {
-            addMsg('bot', `✅ <strong>Estudiante ${evaluatedStudents} registrado con éxito.</strong><br>Por favor carga el video/foto del <strong>Estudiante ${evaluatedStudents + 1}</strong> para continuar.`);
+            addMsg('bot', `<strong>Estudiante ${evaluatedStudents} registrado con éxito.</strong><br>Por favor carga la evidencia del <strong>Estudiante ${evaluatedStudents + 1}</strong> para continuar.`);
         } else {
-            addMsg('bot', `🎉 <strong>¡Se han completado los ${targetStudents} diagnósticos individuales del salón!</strong><br>Haz clic abajo para generar la <strong>Unidad Didáctica Colectiva</strong> adaptada a las dificultades del grupo.`);
+            addMsg('bot', `<strong>Se han completado los ${targetStudents} diagnósticos individuales del grupo.</strong><br>Haz clic en el panel para consolidar la <strong>Unidad Didáctica Colectiva</strong>.`);
         }
     }
 }
@@ -2082,7 +2105,7 @@ function renderDiagnosticoHTML(data, studentNum = null) {
         const medidoInfo = c.medido ? `<span style="font-family:var(--font-mono); color:var(--accent); font-size:11px;">[Medido: ${c.medido} | Umbral: ${c.umbral || '--'}]</span><br>` : '';
         return `
             <tr>
-                <td><strong>${c.criterio}</strong><br>${medidoInfo}<span style="color:var(--muted); font-size:11px;">Fase: ${c.fase || 'Ejecución'} · ${c.observacion || ''}</span></td>
+                <td><strong>${c.criterio}</strong><br>${medidoInfo}<span style="color:var(--text-subtle); font-size:11px;">Fase: ${c.fase || 'Ejecución'} · ${c.observacion || ''}</span></td>
                 <td style="text-align:center; vertical-align:middle;">${badge}</td>
             </tr>
         `;
@@ -2090,8 +2113,8 @@ function renderDiagnosticoHTML(data, studentNum = null) {
 
     let errorsHTML = data.errores_criticos.map(e => `
         <div class="error-box">
-            <strong>⚠️ ${e.error}</strong><br>
-            <span style="color:#881337; font-size:11.5px;"><strong>Impacto:</strong> ${e.impacto_biomecanico}</span>
+            <strong>Anomalía técnica:</strong> ${e.error}<br>
+            <span style="font-size:11px; opacity:0.9;"><strong>Impacto biomecánico:</strong> ${e.impacto_biomecanico}</span>
         </div>
     `).join('');
 
@@ -2103,20 +2126,20 @@ function renderDiagnosticoHTML(data, studentNum = null) {
     const telemetryBoxHTML = t ? `
         <div class="telemetry-box">
             <div class="telemetry-header">
-                🧬 Cinemática Articular Medida (MediaPipe Pose WASM · 33 Landmarks)
+                Telemetría Cinemática Articular (MediaPipe Pose WASM · 33 Landmarks)
             </div>
             <div class="telemetry-grid">
                 <div class="telemetry-item">
                     <span class="telemetry-lbl">Flexión Mín. Rodilla:</span>
-                    <span class="telemetry-val">${t.minKneeAngle}° <span style="font-size:9.5px; color:#94A3B8;">(≤90° maduro)</span></span>
+                    <span class="telemetry-val">${t.minKneeAngle}° <span style="font-size:9px; color:#94A3B8;">(≤90° maduro)</span></span>
                 </div>
                 <div class="telemetry-item">
                     <span class="telemetry-lbl">Ángulo Codo (Braceo):</span>
-                    <span class="telemetry-val">${t.avgElbowAngle}° <span style="font-size:9.5px; color:#94A3B8;">(75°-105°)</span></span>
+                    <span class="telemetry-val">${t.avgElbowAngle}° <span style="font-size:9px; color:#94A3B8;">(75°-105°)</span></span>
                 </div>
                 <div class="telemetry-item">
                     <span class="telemetry-lbl">Inclinación Tronco:</span>
-                    <span class="telemetry-val">${t.avgTrunkAngle}° <span style="font-size:9.5px; color:#94A3B8;">(5°-15°)</span></span>
+                    <span class="telemetry-val">${t.avgTrunkAngle}° <span style="font-size:9px; color:#94A3B8;">(5°-15°)</span></span>
                 </div>
                 <div class="telemetry-item">
                     <span class="telemetry-lbl">Fase Aérea / Vuelo:</span>
@@ -2127,7 +2150,7 @@ function renderDiagnosticoHTML(data, studentNum = null) {
                     <span class="telemetry-val">${t.symmetryScore}%</span>
                 </div>
                 <div class="telemetry-item">
-                    <span class="telemetry-lbl">Método de Muestreo:</span>
+                    <span class="telemetry-lbl">Muestreo de Frames:</span>
                     <span class="telemetry-val" style="font-size:9.5px; color:#38BDF8;">Adaptativo por Luminancia</span>
                 </div>
             </div>
@@ -2140,11 +2163,11 @@ function renderDiagnosticoHTML(data, studentNum = null) {
                 <div>
                     <div class="diag-title">${titleText}</div>
                     <div class="diag-meta">Habilidad: <strong>${data.habilidad_detectada.toUpperCase()}</strong> | Componente: <strong>${data.componente_hmb || '[HMB-L] Locomoción'}</strong> | Puntaje: <strong>${data.puntaje_obtenido || data.porcentaje_madurez + '%'}</strong></div>
-                    <div style="font-size:10.5px; color:#64748B; margin-top:3px;">
-                        📚 <em>Instrumento: Batería Validada de Habilidades Motrices Básicas (HMB - Dialnet 7925607)</em>
+                    <div style="font-size:10.5px; color:var(--text-subtle); margin-top:3px;">
+                        <em>Instrumento: Batería Validada de Habilidades Motrices Básicas (HMB - Dialnet 7925607)</em>
                     </div>
                 </div>
-                <span class="stage-badge ${stageClass}">Estadio de Desarrollo: ${data.estadio_gallahue}</span>
+                <span class="stage-badge ${stageClass}">Estadio: ${data.estadio_gallahue}</span>
             </div>
 
             <!-- MEDIDOR DE MADUREZ -->
@@ -2161,12 +2184,12 @@ function renderDiagnosticoHTML(data, studentNum = null) {
                 </div>
             </div>
 
-            <p style="font-size:12.5px; color:var(--muted); margin-bottom:12px; line-height:1.5;">${data.resumen_biomecanico}</p>
+            <p style="font-size:12.5px; color:var(--text-muted); margin-bottom:12px; line-height:1.5;">${data.resumen_biomecanico}</p>
 
             ${telemetryBoxHTML}
 
             <!-- TABLA DE CRITERIOS -->
-            <div style="font-family:var(--font-mono); font-size:11px; font-weight:700; color:var(--accent); text-transform:uppercase; margin-bottom:6px;">Batería de Criterios Validados y Mediciones</div>
+            <div style="font-family:var(--font-mono); font-size:10.5px; font-weight:700; color:var(--accent); text-transform:uppercase; margin-bottom:6px;">Batería de Criterios Validados y Mediciones</div>
             <table class="diag-table">
                 <thead>
                     <tr>
@@ -2180,12 +2203,12 @@ function renderDiagnosticoHTML(data, studentNum = null) {
             </table>
 
             <!-- ERRORES CRÍTICOS -->
-            <div style="font-family:var(--font-mono); font-size:11px; font-weight:700; color:#E11D48; text-transform:uppercase; margin:12px 0 6px;">Anomalías Cinemáticas Observadas</div>
+            <div style="font-family:var(--font-mono); font-size:10.5px; font-weight:700; color:#DC2626; text-transform:uppercase; margin:12px 0 6px;">Anomalías Cinemáticas Observadas</div>
             ${errorsHTML}
 
             <!-- LENGUAJE DEL PROFE -->
             <div class="profe-cue-box">
-                <div style="font-weight:700; margin-bottom:4px;">🗣️ El Lenguaje del Profe (Consignas Verbales para el Niño):</div>
+                <div style="font-weight:700; margin-bottom:4px;">Consignas Verbales para el Estudiante ("El Lenguaje del Profe"):</div>
                 <ul style="padding-left: 18px; line-height:1.5; font-size:12px;">
                     ${phrasesHTML}
                 </ul>
@@ -2193,7 +2216,7 @@ function renderDiagnosticoHTML(data, studentNum = null) {
 
             <!-- BOTONES DE EXPORTACIÓN -->
             <button class="btn-export-doc" onclick="exportDiagnosticoToWord()">
-                📥 Descargar Reporte del Estudiante (.doc con Telemetría e Historial)
+                Descargar Reporte del Estudiante (.doc con Telemetría e Historial)
             </button>
         </div>
     `;
@@ -2861,59 +2884,59 @@ function renderDidacticaHTML(didactica) {
     const frasesHTML = didactica.retroalimentacion_tips.map(f => `<li>"${f}"</li>`).join('');
 
     const clasesHTML = didactica.clases_secuencia.map(c => `
-        <div style="background:#FFFFFF; border:1px solid #E2E8F0; border-left:4px solid #0284C7; padding:10px 12px; border-radius:6px; margin-bottom:8px;">
+        <div style="background:#FFFFFF; border:1px solid #E2E8F0; border-left:3px solid var(--accent); padding:10px 12px; border-radius:6px; margin-bottom:8px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-                <strong style="color:#0369A1; font-size:12.5px;">Clase ${c.numero} de ${didactica.total_clases}: ${c.titulo}</strong>
-                <span style="font-size:10.5px; background:#E0F2FE; color:#0369A1; padding:2px 6px; border-radius:4px; font-weight:600;">${c.fase_pedagogica}</span>
+                <strong style="color:var(--text); font-size:12.5px;">Sesión ${c.numero} de ${didactica.total_clases}: ${c.titulo}</strong>
+                <span style="font-size:10px; background:var(--accent-soft); color:var(--accent); padding:2px 6px; border-radius:4px; font-weight:600; font-family:var(--font-mono);">${c.fase_pedagogica}</span>
             </div>
-            <div style="font-size:11.5px; color:#475569; margin-bottom:6px;"><strong>🎯 Objetivo:</strong> ${c.objetivo}</div>
-            <div style="font-size:11.5px; line-height:1.4; color:#1E293B;">
-                <div>🔥 ${c.actividad_inicial}</div>
-                <div style="margin:3px 0;">⚡ <strong>Desarrollo (${didactica.duraciones.central}):</strong> ${c.actividad_central}</div>
-                <div>🧘 ${c.actividad_final}</div>
+            <div style="font-size:11.5px; color:var(--text-muted); margin-bottom:6px;"><strong>Objetivo de sesión:</strong> ${c.objetivo}</div>
+            <div style="font-size:11.5px; line-height:1.45; color:var(--text);">
+                <div style="margin-bottom:2px;"><span style="font-family:var(--font-mono); font-size:10px; color:#64748B; font-weight:700;">[INICIAL]</span> ${c.actividad_inicial}</div>
+                <div style="margin-bottom:2px;"><span style="font-family:var(--font-mono); font-size:10px; color:var(--accent); font-weight:700;">[DESARROLLO · ${didactica.duraciones.central}]</span> ${c.actividad_central}</div>
+                <div><span style="font-family:var(--font-mono); font-size:10px; color:#16A34A; font-weight:700;">[CIERRE]</span> ${c.actividad_final}</div>
             </div>
-            <div style="margin-top:6px; font-size:11px; background:#FFFBEB; border:1px dashed #F59E0B; padding:5px 8px; border-radius:4px; color:#92400E;">
-                🗣️ <em>"${c.consigna}"</em>
+            <div style="margin-top:6px; font-size:11px; background:#F8FAFC; border:1px solid #E2E8F0; padding:5px 8px; border-radius:4px; color:var(--text);">
+                <strong>Consigna verbal:</strong> "${c.consigna}"
             </div>
         </div>
     `).join('');
 
     return `
-        <div class="diag-card" style="border-left-color: var(--accent2);">
+        <div class="diag-card">
             <div class="diag-header-bar">
                 <div>
                     <div class="diag-title">UNIDAD DIDÁCTICA INSTITUCIONAL · PERÍODO ${didactica.periodo}</div>
                     <div class="diag-meta"><strong>${didactica.tema}</strong> | Grado: <strong>${didactica.grado}</strong></div>
-                    <div style="font-size:11px; color:var(--muted); margin-top:2px;">Secuencia de <strong>${didactica.total_clases} Clases Progresivas</strong> Planificadas · ⏱️ ${didactica.duracion_clase} c/u</div>
+                    <div style="font-size:11px; color:var(--text-subtle); margin-top:2px;">Secuencia curricular de <strong>${didactica.total_clases} Sesiones Progresivas</strong> · ${didactica.duracion_clase} por sesión</div>
                 </div>
-                <span class="stage-badge stage-maduro">${didactica.total_clases} Clases</span>
+                <span class="stage-badge stage-maduro">${didactica.total_clases} Sesiones</span>
             </div>
 
             <!-- PREGUNTA PROBLEMATIZADORA Y OBJETIVOS -->
             <div style="background:#F8FAFC; border:1px solid #E2E8F0; padding:10px 12px; border-radius:6px; font-size:12px; margin-bottom:12px;">
-                <div style="font-weight:700; color:#0369A1; margin-bottom:4px;">❓ Pregunta Problematizadora del Período:</div>
+                <div style="font-weight:700; color:var(--accent); margin-bottom:4px;">Pregunta Problematizadora del Período:</div>
                 <div style="font-style:italic; margin-bottom:8px;">${didactica.pregunta_problematizadora}</div>
-                <div style="font-weight:700; color:var(--text); margin-bottom:2px;">🎯 Objetivo General de la Unidad:</div>
+                <div style="font-weight:700; color:var(--text); margin-bottom:2px;">Objetivo General de la Unidad:</div>
                 <div>${didactica.objetivo_general}</div>
             </div>
 
             <!-- INDICADORES SABER, HACER, SER -->
             <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:8px; margin-bottom:12px; font-size:11.5px;">
-                <div style="background:#EFF6FF; border-left:3px solid #3B82F6; padding:8px; border-radius:4px;">
-                    <strong>🧠 Saber (Cognitivo):</strong><br>${didactica.indicadores.saber}
+                <div style="background:#F8FAFC; border-left:3px solid var(--accent); padding:8px; border-radius:4px; border:1px solid #E2E8F0;">
+                    <strong>Saber (Dimensión Cognitiva):</strong><br>${didactica.indicadores.saber}
                 </div>
-                <div style="background:#F0FDF4; border-left:3px solid #10B981; padding:8px; border-radius:4px;">
-                    <strong>🏃 Hacer (Procedimental):</strong><br>${didactica.indicadores.hacer}
+                <div style="background:#F8FAFC; border-left:3px solid #16A34A; padding:8px; border-radius:4px; border:1px solid #E2E8F0;">
+                    <strong>Hacer (Dimensión Procedimental):</strong><br>${didactica.indicadores.hacer}
                 </div>
-                <div style="background:#FEF3C7; border-left:3px solid #F59E0B; padding:8px; border-radius:4px;">
-                    <strong>❤️ Ser (Actitudinal):</strong><br>${didactica.indicadores.ser}
+                <div style="background:#F8FAFC; border-left:3px solid #D97706; padding:8px; border-radius:4px; border:1px solid #E2E8F0;">
+                    <strong>Ser (Dimensión Actitudinal):</strong><br>${didactica.indicadores.ser}
                 </div>
             </div>
 
             <!-- SECUENCIA DE PROGRESIÓN DE CLASES -->
             <div style="margin-bottom:12px;">
-                <div style="font-weight:700; color:#0F172A; font-size:12px; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.04em;">
-                    📚 Secuencia de Progresión Pedagógica (${didactica.total_clases} Clases del Período):
+                <div style="font-weight:700; color:var(--text); font-size:11.5px; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.04em; font-family:var(--font-mono);">
+                    Secuencia de Progresión Pedagógica (${didactica.total_clases} Sesiones):
                 </div>
                 <div style="max-height:380px; overflow-y:auto; padding-right:4px;">
                     ${clasesHTML}
@@ -2922,14 +2945,14 @@ function renderDidacticaHTML(didactica) {
 
             <!-- EL LENGUAJE DEL PROFE -->
             <div class="profe-cue-box" style="margin-bottom:14px;">
-                <div style="font-weight:700; margin-bottom:4px;">🗣️ Consignas Pedagógicas Clave ("El Lenguaje del Profe"):</div>
+                <div style="font-weight:700; margin-bottom:4px;">Consignas Pedagógicas Clave ("El Lenguaje del Profe"):</div>
                 <ul style="padding-left:18px; line-height:1.5; font-size:12px;">
                     ${frasesHTML}
                 </ul>
             </div>
 
             <button class="btn-export-plan" onclick="exportToWord()">
-                📄 Descargar Unidad Didáctica Completa (${didactica.total_clases} Clases en .doc Institucional)
+                Descargar Unidad Didáctica Completa (${didactica.total_clases} Sesiones en Formato Institucional)
             </button>
         </div>
     `;

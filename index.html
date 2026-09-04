@@ -4,21 +4,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AULA GLOBAL 360 · Sistema Experto de Evaluación Biomecánica HMB</title>
+    <title>AULA GLOBAL 360 · Evaluación Biomecánica HMB</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 
 <body>
 
-    <div class="app">
+    <div class="app engine-local" id="appRoot">
 
         <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
         <!-- BARRA LATERAL -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
-                <div class="logo"><span>✨</span> AULA GLOBAL 360</div>
-                <div class="logo-sub">Evaluación Diagnóstica HMB<br>Batería Validada (5-11 años)</div>
+                <div class="logo">
+                    <span class="logo-mark">AG</span> AULA GLOBAL 360
+                </div>
+                <div class="logo-sub">Evaluación Biomecánica HMB<br>Batería Validada (5 a 11 años)</div>
             </div>
 
             <!-- SELECCIÓN DE HABILIDAD MOTRIZ (BATERÍA HMB 5-11 AÑOS · DIALNET 7925607) -->
@@ -26,44 +28,44 @@
                 <div class="sidebar-label">1. Batería HMB (González Palacio et al., 2021)</div>
                 <div class="skill-grid">
                     <button class="skill-btn active" data-skill="auto"
-                        onclick="selectSkill(this, 'auto', 'Detección Automática (IA)')">
-                        <span class="ico">🔍</span><span class="lbl">Detección Automática (IA)</span>
+                        onclick="selectSkill(this, 'auto', 'Detección Automática')">
+                        <span class="lbl">Detección Automática</span>
                     </button>
                     <button class="skill-btn" data-skill="carrera"
                         onclick="selectSkill(this, 'carrera', '[HMB-L] Carrera')">
-                        <span class="ico">🏃</span><span class="lbl">[HMB-L] Carrera</span>
+                        <span class="lbl">[HMB-L] Carrera</span>
                     </button>
                     <button class="skill-btn" data-skill="salto"
                         onclick="selectSkill(this, 'salto', '[HMB-L] Salto Horizontal')">
-                        <span class="ico">🦘</span><span class="lbl">[HMB-L] Salto Horizontal</span>
+                        <span class="lbl">[HMB-L] Salto Horizontal</span>
                     </button>
                     <button class="skill-btn" data-skill="marcha"
                         onclick="selectSkill(this, 'marcha', '[HMB-L] Marcha')">
-                        <span class="ico">🚶</span><span class="lbl">[HMB-L] Marcha</span>
+                        <span class="lbl">[HMB-L] Marcha</span>
                     </button>
                     <button class="skill-btn" data-skill="salto_unipodal"
                         onclick="selectSkill(this, 'salto_unipodal', '[HMB-L] Salto Unipodal')">
-                        <span class="ico">🦿</span><span class="lbl">[HMB-L] Salto Unipodal</span>
+                        <span class="lbl">[HMB-L] Salto Unipodal</span>
                     </button>
                     <button class="skill-btn" data-skill="lanzar"
                         onclick="selectSkill(this, 'lanzar', '[HMB-M] Lanzamiento')">
-                        <span class="ico">⚾</span><span class="lbl">[HMB-M] Lanzamiento</span>
+                        <span class="lbl">[HMB-M] Lanzamiento</span>
                     </button>
                     <button class="skill-btn" data-skill="atrapar"
                         onclick="selectSkill(this, 'atrapar', '[HMB-M] Recepción y Atrape')">
-                        <span class="ico">🧤</span><span class="lbl">[HMB-M] Recepción y Atrape</span>
+                        <span class="lbl">[HMB-M] Recepción y Atrape</span>
                     </button>
                     <button class="skill-btn" data-skill="patear"
                         onclick="selectSkill(this, 'patear', '[HMB-M] Patear')">
-                        <span class="ico">⚽</span><span class="lbl">[HMB-M] Patear</span>
+                        <span class="lbl">[HMB-M] Patear</span>
                     </button>
                     <button class="skill-btn" data-skill="equilibrio"
                         onclick="selectSkill(this, 'equilibrio', '[HMB-E] Eq. Dinámico')">
-                        <span class="ico">🧘</span><span class="lbl">[HMB-E] Eq. Dinámico</span>
+                        <span class="lbl">[HMB-E] Eq. Dinámico</span>
                     </button>
                     <button class="skill-btn" data-skill="equilibrio_estatico"
                         onclick="selectSkill(this, 'equilibrio_estatico', '[HMB-E] Eq. Estático')">
-                        <span class="ico">🦩</span><span class="lbl">[HMB-E] Eq. Estático</span>
+                        <span class="lbl">[HMB-E] Eq. Estático</span>
                     </button>
                 </div>
             </div>
@@ -75,11 +77,11 @@
                 <div class="sidebar-label">2. Calibración por Edad / Grado</div>
                 <div style="padding: 0 16px;">
                     <select id="gradeSelect" class="pref-select">
-                        <option value="5_anos">🧸 Transición / Preescolar (5 años)</option>
-                        <option value="6_anos">🎒 Grado 1º de Primaria (6 años)</option>
-                        <option value="7_anos" selected>🎒 Grado 2º de Primaria (7 años)</option>
-                        <option value="8_anos">🎒 Grado 3º de Primaria (8 años)</option>
-                        <option value="9_11_anos">🏅 Grado 4º - 5º (9 a 11 años)</option>
+                        <option value="5_anos">Transición / Preescolar (5 años)</option>
+                        <option value="6_anos">Grado 1º de Primaria (6 años)</option>
+                        <option value="7_anos" selected>Grado 2º de Primaria (7 años)</option>
+                        <option value="8_anos">Grado 3º de Primaria (8 años)</option>
+                        <option value="9_11_anos">Grado 4º - 5º (9 a 11 años)</option>
                     </select>
                 </div>
             </div>
@@ -92,17 +94,17 @@
                 <div style="padding: 0 16px; display: flex; flex-direction: column; gap: 8px;">
                     <label class="input-sublabel">Formato Didáctico:</label>
                     <select id="prefFormat" class="pref-select">
-                        <option value="Cuento Motor">📖 Cuento Motor</option>
-                        <option value="Circuito de Estaciones" selected>🎯 Circuito de Estaciones</option>
-                        <option value="Retos Cooperativos">🤝 Retos Cooperativos</option>
-                        <option value="Juego Libre Dirigido">🏃 Juego Libre Dirigido</option>
+                        <option value="Cuento Motor">Cuento Motor</option>
+                        <option value="Circuito de Estaciones" selected>Circuito de Estaciones</option>
+                        <option value="Retos Cooperativos">Retos Cooperativos</option>
+                        <option value="Juego Libre Dirigido">Juego Libre Dirigido</option>
                     </select>
 
                     <label class="input-sublabel">Metodología Pedagógica:</label>
                     <select id="prefPedagogy" class="pref-select">
-                        <option value="Descubrimiento Guiado">🧠 Descubrimiento Guiado</option>
-                        <option value="Resolución de Problemas">💡 Resolución de Problemas</option>
-                        <option value="Asignación de Tareas" selected>📋 Asignación de Tareas</option>
+                        <option value="Descubrimiento Guiado">Descubrimiento Guiado</option>
+                        <option value="Resolución de Problemas">Resolución de Problemas</option>
+                        <option value="Asignación de Tareas" selected>Asignación de Tareas</option>
                     </select>
 
                     <!-- PERSONALIZACIÓN TEMPORAL Y CURRICULAR DEL PERÍODO -->
@@ -119,11 +121,11 @@
                         <div>
                             <label class="input-sublabel">Duración Clase:</label>
                             <select id="prefDuration" class="pref-select">
-                                <option value="45">⏱️ 45 Min</option>
-                                <option value="50" selected>⏱️ 50 Min</option>
-                                <option value="55">⏱️ 55 Min</option>
-                                <option value="60">⏱️ 60 Min</option>
-                                <option value="90">⏱️ 90 Min</option>
+                                <option value="45">45 Minutos</option>
+                                <option value="50" selected>50 Minutos</option>
+                                <option value="55">55 Minutos</option>
+                                <option value="60">60 Minutos</option>
+                                <option value="90">90 Minutos</option>
                             </select>
                         </div>
                     </div>
@@ -160,10 +162,10 @@
                 <div class="sidebar-label">4. Modo de Operación</div>
                 <div class="mode-btns">
                     <button class="mode-btn active" data-mode="diagnostico" onclick="selectMode(this)">
-                        📊 Individual (Estudiante)
+                        Individual (Estudiante)
                     </button>
                     <button class="mode-btn mode-btn-group" data-mode="grupal" onclick="selectMode(this)">
-                        👨‍👩‍👧‍👦 Colectivo (Salón Completo)
+                        Colectivo (Salón Completo)
                     </button>
                 </div>
             </div>
@@ -179,39 +181,41 @@
             <!-- TOPBAR -->
             <div class="topbar">
                 <button class="menu-btn" onclick="toggleSidebar()" aria-label="Abrir menú">
-                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
                         stroke-linecap="round">
                         <line x1="3" y1="12" x2="21" y2="12"></line>
                         <line x1="3" y1="6" x2="21" y2="6"></line>
                         <line x1="3" y1="18" x2="21" y2="18"></line>
                     </svg>
                 </button>
-                <div class="topbar-title" id="mainHeaderTitle">Análisis Biomecánico de Movimiento</div>
+                <div class="topbar-title-wrap">
+                    <span class="topbar-title" id="mainHeaderTitle">Evaluación Biomecánica de Movimiento</span>
+                    <span class="engine-indicator-pill" id="engineHeaderBadge">Motor Local Autónomo</span>
+                </div>
                 <span class="topbar-badge" id="modeBadge">MODO INDIVIDUAL</span>
             </div>
 
-            <!-- BARRA DE CONFIGURACIÓN DE IA -->
-            <div class="keybar">
+            <!-- BARRA DE CONFIGURACIÓN DE MOTOR -->
+            <div class="keybar" id="keybar">
                 <div class="keybar-left">
-                    <span class="key-icon">⚡</span>
-                    <span class="key-label">Motor IA:</span>
+                    <span class="keybar-indicator-dot" id="engineDot"></span>
+                    <span class="key-label" id="keybarEngineLabel">Motor:</span>
                     <input type="password" id="apiKeyInput"
-                        placeholder="Clave Gemini API (opcional para visión nube)..." autocomplete="off">
+                        placeholder="Clave API Google AI Studio (opcional para visión nube)..." autocomplete="off">
                 </div>
                 <div class="keybar-actions">
-                    <button class="btn-connect" onclick="applyApiKey()">Guardar / Probar</button>
-                    <button class="btn-offline" onclick="useLocalEngine()">Usar Motor Local HD</button>
+                    <button class="btn-connect" onclick="applyApiKey()">Conectar Gemini IA</button>
+                    <button class="btn-offline" onclick="useLocalEngine()">Modo Local</button>
                 </div>
-                <span class="key-status status-local" id="keyStatusBadge">🧠 Motor Local Activo</span>
+                <span class="key-status status-local" id="keyStatusBadge">Motor Local Autónomo</span>
             </div>
 
             <!-- PANEL DE ANÁLISIS GRUPAL -->
             <div class="group-panel" id="groupPanel" style="display: none;">
-                <div class="group-panel-icon">🎒</div>
                 <div id="groupSetup" class="group-setup-box">
                     <div class="group-setup-text">
-                        <strong>Evaluación Grupal de Salón</strong>
-                        <span>Define cuántos estudiantes evaluarás para consolidar el diagnóstico:</span>
+                        <strong>Evaluación Grupal Consolidada</strong>
+                        <span>Número de estudiantes para consolidar el diagnóstico de aula:</span>
                     </div>
                     <div class="group-setup-controls">
                         <input type="number" id="totalStudents" min="1" max="60" value="30">
@@ -228,7 +232,7 @@
                         <div class="progress-fill" id="groupProgressFill" style="width: 0%;"></div>
                     </div>
                     <div class="group-actions">
-                        <button class="btn-finish-group" id="btnFinishGroup" onclick="generateGroupPlan()">📊 Generar
+                        <button class="btn-finish-group" id="btnFinishGroup" onclick="generateGroupPlan()">Generar
                             Planeación Consolidada</button>
                         <button class="btn-reset-group" onclick="resetGroupAssessment()">Reiniciar</button>
                     </div>
@@ -243,14 +247,19 @@
                         <strong>Evidencia Visual del Estudiante</strong>
                         <span class="upload-subtitle" id="currentSkillSubtitle">(Detección Automática)</span>
                     </div>
-                    <button class="help-btn" onclick="openModal()">📸 Guía de Grabación</button>
+                    <button class="help-btn" onclick="openModal()">Guía de Grabación</button>
                 </div>
 
                 <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
-                    <div class="uz-icon" id="uzIcon">🎬</div>
-                    <div class="uz-title" id="uzTitle">Haz clic o arrastra un video o foto del estudiante</div>
-                    <div class="uz-sub" id="uzSub">Formatos: MP4, MOV, WEBM, JPG, PNG (Recomendado: 3 a 5 segundos)
+                    <div class="uz-icon" id="uzIcon">
+                        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
                     </div>
+                    <div class="uz-title" id="uzTitle">Seleccionar o arrastrar video o fotografía</div>
+                    <div class="uz-sub" id="uzSub">Formatos: MP4, MOV, WEBM, JPG, PNG (Recomendado: 3 a 5 segundos)</div>
                 </div>
                 <input type="file" id="fileInput" accept="video/*,image/*" style="display:none"
                     onchange="handleFile(event)">
@@ -258,7 +267,7 @@
                 <!-- TIRA DE FOTOGRAMAS CLAVE (KEYFRAMES STRIP) -->
                 <div class="keyframe-section" id="keyframeSection" style="display: none;">
                     <div class="keyframe-header">
-                        <span>🎞️ Muestreo Adaptativo & Biomecánica (MediaPipe Pose WASM):</span>
+                        <span>Muestreo Adaptativo & Biomecánica Instrumental (MediaPipe Pose WASM):</span>
                         <span class="keyframe-count" id="keyframeCountBadge">0 cuadros</span>
                     </div>
                     <div class="keyframe-strip" id="keyframeStrip"></div>
@@ -268,21 +277,16 @@
             <!-- HISTORIAL DE MENSAJES / REPORTES -->
             <div class="chat-scroll" id="chatScroll">
                 <div class="msg bot">
-                    <div class="msg-av">✨</div>
+                    <div class="msg-av">AG</div>
                     <div class="bubble">
                         <div class="welcome-header">
-                            <strong>¡Bienvenido al Evaluador Biomecánico AULA GLOBAL 360!</strong>
+                            <strong>Sistema de Evaluación Biomecánica AULA GLOBAL 360</strong>
                         </div>
-                        <p>Esta plataforma analiza de forma precisa los patrones motores de niños (5-11 años) basándose
-                            en la <strong>Batería Validada de Habilidades Motrices Básicas (HMB)</strong>.</p>
+                        <p>Plataforma para el análisis del desarrollo motor infantil (5 a 11 años) basándose en la <strong>Batería Validada de Habilidades Motrices Básicas (HMB)</strong>.</p>
                         <div class="welcome-steps">
-                            <div class="w-step"><span>1</span> Selecciona la habilidad en el menú lateral o déjalo en
-                                <em>Detección Automática</em>.
-                            </div>
-                            <div class="w-step"><span>2</span> Sube un video corto (3 a 5 seg) o fotografía del
-                                estudiante en acción.</div>
-                            <div class="w-step"><span>3</span> El sistema extraerá los fotogramas clave, evaluará los
-                                criterios articulares y generará el informe y plan de clase en Word.</div>
+                            <div class="w-step"><span>1</span> Selecciona la habilidad en el menú lateral o mantén <em>Detección Automática</em>.</div>
+                            <div class="w-step"><span>2</span> Sube un video corto (3 a 5 seg) o fotografía del estudiante en movimiento.</div>
+                            <div class="w-step"><span>3</span> El sistema extraerá los fotogramas clave, evaluará los criterios articulares y generará el informe y plan de clase en Word.</div>
                         </div>
                     </div>
                 </div>
@@ -296,7 +300,7 @@
                         onkeydown="handleKey(event)" rows="1"></textarea>
                 </div>
                 <button class="send-btn" id="sendBtn" onclick="sendMsg()" title="Analizar evidencia">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                         stroke-linecap="round" stroke-linejoin="round">
                         <line x1="22" y1="2" x2="11" y2="13"></line>
                         <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
@@ -308,7 +312,8 @@
         <!-- PANEL DERECHO: VISUALIZACIÓN ANATÓMICA Y TELEMETRÍA -->
         <aside class="right-panel" id="rightPanel">
             <div class="right-header">
-                <span class="icon-3d">🧬</span> Telemetría y Biomecánica 3D
+                <span class="right-header-dot"></span>
+                <span id="headerEngineBadge">TELEMETRÍA Y BIOMECÁNICA</span>
             </div>
 
             <div class="sim-container">
@@ -320,8 +325,10 @@
                     </div>
                     <div class="player-area" id="studentPlayerArea">
                         <div class="placeholder-text" id="studentPlaceholder">
-                            <span style="font-size: 28px;">📥</span>
-                            Esperando video / imagen...
+                            <span class="placeholder-icon">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line><line x1="2" y1="7" x2="7" y2="7"></line><line x1="2" y1="17" x2="7" y2="17"></line><line x1="17" y1="17" x2="22" y2="17"></line><line x1="17" y1="7" x2="22" y2="7"></line></svg>
+                            </span>
+                            Esperando video o imagen...
                         </div>
                         <video id="studentVideoPlayer" style="display:none;" autoplay loop muted playsinline></video>
                         <img id="studentImgPreview" style="display:none;" alt="Evidencia estudiante" />
@@ -347,18 +354,17 @@
                     <div class="player-area avatar-dark" id="avatarArea">
                         <div class="avatar-placeholder" id="avatarPlaceholder">
                             <div class="avatar-scanner"></div>
-                            <span class="avatar-robot-ico" id="avatarIcon">🏃‍♂️</span>
+                            <span class="avatar-robot-ico" id="avatarIcon">HMB</span>
                             <span class="avatar-name" id="avatarSkillName">Patrón: Carrera Eficiente</span>
-                            <span class="avatar-desc" id="avatarSkillDesc">Braceo 90° · Impulso Metatarsal ·
-                                Vuelo</span>
+                            <span class="avatar-desc" id="avatarSkillDesc">Braceo 90° · Impulso Metatarsal · Vuelo</span>
                         </div>
                         <video id="avatarVideoPlayer"
                             style="display:none; width: 100%; height: 100%; object-fit: cover; z-index: 5; position: absolute;"
                             autoplay loop muted playsinline></video>
                     </div>
                     <div class="video-box-footer">
-                        <span>CGI Biomecánico TGMD-3</span>
-                        <span style="color: var(--accent2);">✓ Estadio Maduro</span>
+                        <span>Referencia Batería HMB</span>
+                        <span style="color: var(--accent2);">Estadio Maduro</span>
                     </div>
                 </div>
             </div>
@@ -369,7 +375,7 @@
     <div class="modal-overlay" id="recordingModal" onclick="closeModalOnOutside(event)">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 class="modal-title">📸 Protocolo de Grabación para Máxima Precisión</h2>
+                <h2 class="modal-title">Protocolo de Grabación para Evaluación Biomecánica</h2>
                 <button class="modal-close" onclick="closeModal()">&times;</button>
             </div>
 
@@ -378,49 +384,39 @@
                     <div class="step-row">
                         <div class="step-num">1</div>
                         <div class="step-content">
-                            <h4>La Regla de los 3 a 5 Segundos</h4>
-                            <p>Inicia la grabación 1 segundo antes de la acción motriz y finaliza inmediatamente tras el
-                                aterrizaje o suelta. Evita videos largos innecesarios.</p>
+                            <h4>Duración: 3 a 5 Segundos</h4>
+                            <p>Inicia la grabación 1 segundo antes de la acción motriz y finaliza inmediatamente tras el aterrizaje o suelta. Evita tomas excesivamente largas.</p>
                         </div>
                     </div>
                     <div class="step-row">
                         <div class="step-num">2</div>
                         <div class="step-content">
-                            <h4>Encuadre de Cuerpo Entero (Plano General)</h4>
-                            <p>Ubícate a una distancia de 3 a 4 metros. El estudiante debe ser visible desde la
-                                coronilla hasta la punta de los pies en todo momento.</p>
+                            <h4>Encuadre de Cuerpo Completo (Plano General)</h4>
+                            <p>Ubícate a una distancia de 3 a 4 metros. El estudiante debe ser visible desde la cabeza hasta los pies durante toda la acción.</p>
                         </div>
                     </div>
                     <div class="step-row">
                         <div class="step-num">3</div>
                         <div class="step-content">
                             <h4>Cámara Fija a la Altura del Centro de Masa</h4>
-                            <p>Sostén la cámara a la altura del ombligo/cadera del niño sin realizar movimientos bruscos
-                                de paneo.</p>
+                            <p>Sostén la cámara a la altura de la cadera del estudiante evitando movimientos bruscos de paneo o inclinación.</p>
                         </div>
                     </div>
                 </div>
 
-                <div class="sidebar-label" style="color: var(--text); font-weight: bold; margin-bottom: 12px;">Planos
-                    Anatómicos Óptimos por Habilidad:</div>
+                <div class="sidebar-label" style="color: var(--text); font-weight: 600; margin-bottom: 12px;">Planos Anatómicos de Grabación por Habilidad:</div>
                 <div class="angle-grid">
                     <div class="angle-card">
-                        <div class="angle-icon">🏃</div>
                         <h5>Carrera y Salto (Locomoción)</h5>
-                        <p><strong>Plano Sagital (Lateral/Perfil):</strong> Permite calcular el ángulo de flexión de
-                            rodilla, braceo anterior/posterior, fase de vuelo e inclinación del torso.</p>
+                        <p><strong>Plano Sagital (Perfil):</strong> Permite calcular el ángulo de rodilla, braceo anterior/posterior, fase de vuelo e inclinación del tronco.</p>
                     </div>
                     <div class="angle-card">
-                        <div class="angle-icon">⚾</div>
                         <h5>Lanzar y Atrapar (Manipulación)</h5>
-                        <p><strong>Plano Frontal / Diagonal:</strong> Permite evaluar el paso contralateral, rotación de
-                            hombros y codos, y punto de extensión final.</p>
+                        <p><strong>Plano Frontal / Diagonal:</strong> Permite evaluar el paso contralateral, elevación de codo y punto de extensión final.</p>
                     </div>
                     <div class="angle-card">
-                        <div class="angle-icon">🧘</div>
                         <h5>Equilibrio (Estabilidad)</h5>
-                        <p><strong>Plano Frontal:</strong> Permite evaluar la oscilación del tronco, base de
-                            sustentación y alineación de la pelvis.</p>
+                        <p><strong>Plano Frontal:</strong> Permite evaluar la oscilación del tronco, base de sustentación y alineación postural.</p>
                     </div>
                 </div>
             </div>
