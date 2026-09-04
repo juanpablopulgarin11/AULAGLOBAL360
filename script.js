@@ -158,20 +158,40 @@ function useLocalEngine() { setEngineMode('local'); }
 function updateKeyStatus(hasKey) { setEngineMode(hasKey ? 'gemini' : 'local', true); }
 
 // SELECCIÓN DE HABILIDAD
-function selectSkill(btnEl, skillCode, skillName) {
-    document.querySelectorAll('.skill-btn').forEach(b => b.classList.remove('active'));
-    btnEl.classList.add('active');
+function onSkillSelectChange(selectEl) {
+    const val = selectEl.value;
+    const selectedText = selectEl.options[selectEl.selectedIndex].text;
 
-    selectedSkill = skillCode;
-    selectedSkillName = skillName;
+    selectedSkill = val;
+    selectedSkillName = val === 'auto' ? 'Detección Automática' : selectedText;
 
-    document.getElementById('currentSkillSubtitle').textContent = `(${skillName})`;
-    document.getElementById('mainHeaderTitle').textContent = `Análisis: ${skillName}`;
+    const subtitle = document.getElementById('currentSkillSubtitle');
+    if (subtitle) subtitle.textContent = `(${selectedSkillName})`;
 
-    updateCGIModel(skillCode);
+    const mainHeader = document.getElementById('mainHeaderTitle');
+    if (mainHeader) mainHeader.textContent = val === 'auto' ? 'Evaluación Biomecánica de Movimiento' : `Análisis: ${selectedSkillName}`;
+
+    const badge = document.getElementById('skillAutoBadge');
+    if (badge) {
+        if (val === 'auto') {
+            badge.innerHTML = '<span>Detección Automática Activa</span>El motor clasificará e identificará la habilidad motriz directamente a partir del video y los ángulos anatómicos.';
+        } else {
+            badge.innerHTML = `<span>Habilidad Específica</span>Se evaluarán estrictamente los criterios de <strong>${selectedSkillName}</strong>.`;
+        }
+    }
+
+    updateCGIModel(val);
 
     if (window.innerWidth <= 1080) {
         toggleSidebar();
+    }
+}
+
+function selectSkill(btnEl, skillCode, skillName) {
+    const sel = document.getElementById('skillSelect');
+    if (sel) {
+        sel.value = skillCode;
+        onSkillSelectChange(sel);
     }
 }
 

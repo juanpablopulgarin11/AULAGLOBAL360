@@ -271,6 +271,28 @@ body {
     margin: 4px 16px;
 }
 
+.skill-auto-badge {
+    margin-top: 8px;
+    padding: 8px 10px;
+    background: #020617;
+    border: 1px solid #1E293B;
+    border-radius: var(--r-xs);
+    font-size: 11px;
+    color: #94A3B8;
+    line-height: 1.4;
+}
+
+.skill-auto-badge span {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--accent);
+    display: block;
+    margin-bottom: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
 /* SKILL BUTTONS */
 .skill-grid {
     display: flex;

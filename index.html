@@ -46,48 +46,30 @@
 
             <!-- SELECCIÓN DE HABILIDAD MOTRIZ (BATERÍA HMB 5-11 AÑOS · DIALNET 7925607) -->
             <div class="sidebar-section">
-                <div class="sidebar-label">1. Batería HMB (González Palacio et al., 2021)</div>
-                <div class="skill-grid">
-                    <button class="skill-btn active" data-skill="auto"
-                        onclick="selectSkill(this, 'auto', 'Detección Automática')">
-                        <span class="lbl">Detección Automática</span>
-                    </button>
-                    <button class="skill-btn" data-skill="carrera"
-                        onclick="selectSkill(this, 'carrera', '[HMB-L] Carrera')">
-                        <span class="lbl">[HMB-L] Carrera</span>
-                    </button>
-                    <button class="skill-btn" data-skill="salto"
-                        onclick="selectSkill(this, 'salto', '[HMB-L] Salto Horizontal')">
-                        <span class="lbl">[HMB-L] Salto Horizontal</span>
-                    </button>
-                    <button class="skill-btn" data-skill="marcha"
-                        onclick="selectSkill(this, 'marcha', '[HMB-L] Marcha')">
-                        <span class="lbl">[HMB-L] Marcha</span>
-                    </button>
-                    <button class="skill-btn" data-skill="salto_unipodal"
-                        onclick="selectSkill(this, 'salto_unipodal', '[HMB-L] Salto Unipodal')">
-                        <span class="lbl">[HMB-L] Salto Unipodal</span>
-                    </button>
-                    <button class="skill-btn" data-skill="lanzar"
-                        onclick="selectSkill(this, 'lanzar', '[HMB-M] Lanzamiento')">
-                        <span class="lbl">[HMB-M] Lanzamiento</span>
-                    </button>
-                    <button class="skill-btn" data-skill="atrapar"
-                        onclick="selectSkill(this, 'atrapar', '[HMB-M] Recepción y Atrape')">
-                        <span class="lbl">[HMB-M] Recepción y Atrape</span>
-                    </button>
-                    <button class="skill-btn" data-skill="patear"
-                        onclick="selectSkill(this, 'patear', '[HMB-M] Patear')">
-                        <span class="lbl">[HMB-M] Patear</span>
-                    </button>
-                    <button class="skill-btn" data-skill="equilibrio"
-                        onclick="selectSkill(this, 'equilibrio', '[HMB-E] Eq. Dinámico')">
-                        <span class="lbl">[HMB-E] Eq. Dinámico</span>
-                    </button>
-                    <button class="skill-btn" data-skill="equilibrio_estatico"
-                        onclick="selectSkill(this, 'equilibrio_estatico', '[HMB-E] Eq. Estático')">
-                        <span class="lbl">[HMB-E] Eq. Estático</span>
-                    </button>
+                <div class="sidebar-label">1. Habilidad a Evaluar</div>
+                <div style="padding: 0 16px;">
+                    <select id="skillSelect" class="pref-select" onchange="onSkillSelectChange(this)">
+                        <option value="auto" selected>Detección Automática (Recomendado)</option>
+                        <optgroup label="Locomoción [HMB-L]">
+                            <option value="carrera">[HMB-L] Carrera</option>
+                            <option value="salto">[HMB-L] Salto Horizontal</option>
+                            <option value="marcha">[HMB-L] Marcha</option>
+                            <option value="salto_unipodal">[HMB-L] Salto Unipodal</option>
+                        </optgroup>
+                        <optgroup label="Manipulación [HMB-M]">
+                            <option value="lanzar">[HMB-M] Lanzamiento Sobre Hombro</option>
+                            <option value="atrapar">[HMB-M] Recepción y Atrape</option>
+                            <option value="patear">[HMB-M] Patear</option>
+                        </optgroup>
+                        <optgroup label="Estabilidad [HMB-E]">
+                            <option value="equilibrio">[HMB-E] Equilibrio Dinámico</option>
+                            <option value="equilibrio_estatico">[HMB-E] Equilibrio Estático</option>
+                        </optgroup>
+                    </select>
+                    <div class="skill-auto-badge" id="skillAutoBadge">
+                        <span>Detección Automática Activa</span>
+                        El motor clasificará e identificará la habilidad motriz directamente a partir del video y los ángulos anatómicos.
+                    </div>
                 </div>
             </div>
 
