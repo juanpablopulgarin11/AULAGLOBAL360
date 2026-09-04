@@ -242,6 +242,30 @@ body {
     font-weight: 400;
 }
 
+.sidebar-back-landing-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    margin-top: 12px;
+    padding: 7px 12px;
+    background: #0F172A;
+    color: #38BDF8;
+    border: 1px solid #1E293B;
+    border-radius: var(--r-sm);
+    font-size: 11.5px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s var(--ease);
+    width: fit-content;
+}
+
+.sidebar-back-landing-btn:hover {
+    background: #1E293B;
+    color: #F8FAFC;
+    border-color: #38BDF8;
+    box-shadow: 0 2px 8px rgba(56, 189, 248, 0.2);
+}
+
 .sidebar-section {
     padding: 14px 0;
 }
@@ -513,23 +537,34 @@ body {
 .topbar-landing-btn {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 5px 12px;
-    background: #F8FAFC;
-    color: #475569;
-    border: 1px solid #E2E8F0;
+    gap: 7px;
+    padding: 6px 14px;
+    background: #0B1120;
+    color: #F8FAFC;
+    border: 1px solid #1E293B;
     border-radius: var(--r-full);
-    font-size: 11.5px;
+    font-size: 12px;
     font-weight: 600;
     text-decoration: none;
-    transition: all 0.15s var(--ease);
+    transition: all 0.2s var(--ease);
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.15);
+}
+
+.topbar-landing-btn svg {
+    color: #38BDF8;
+    transition: transform 0.2s;
 }
 
 .topbar-landing-btn:hover {
-    background: #F1F5F9;
-    color: #0F172A;
-    border-color: #CBD5E1;
-    box-shadow: var(--shadow-xs);
+    background: #0F172A;
+    color: #38BDF8;
+    border-color: #38BDF8;
+    box-shadow: 0 2px 8px rgba(56, 189, 248, 0.25);
+    transform: translateY(-1px);
+}
+
+.topbar-landing-btn:hover svg {
+    transform: translateX(-2px);
 }
 
 .topbar-badge {
