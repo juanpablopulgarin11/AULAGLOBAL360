@@ -77,14 +77,6 @@ function setEngineMode(mode, silent = false) {
         }
 
         updateGeminiKeyUI();
-
-        if (!silent) {
-            if (apiKey) {
-                addMsg('bot', '<strong>Modo Gemini Vision IA Activado.</strong> El análisis multimodal y la orientación curricular se procesan en la nube con visión por computadora.');
-            } else {
-                addMsg('bot', '<strong>Modo Gemini Vision IA Activado.</strong> Ingresa tu clave API de Google AI Studio en la barra superior para habilitar el análisis en la nube, o cambia a <strong>Modo Local</strong> para evaluar sin clave.');
-            }
-        }
     } else {
         // Modo Local
         if (appRoot) {
@@ -102,10 +94,6 @@ function setEngineMode(mode, silent = false) {
         }
         if (userInput) {
             userInput.placeholder = 'Modo Local: Carga un video o consulta los criterios de la batería motriz en el navegador...';
-        }
-
-        if (!silent) {
-            addMsg('bot', '<strong>Modo Local Autónomo Activado.</strong> El análisis cinemático se procesa 100% en el navegador con MediaPipe Pose (WASM) y la Batería Validada (Dialnet 7925607). <em>Privacidad total sin clave API ni consumo de cuotas.</em>');
         }
     }
 }

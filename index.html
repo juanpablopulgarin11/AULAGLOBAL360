@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AULA GLOBAL 360 · Evaluación Biomecánica HMB</title>
+    <link rel="icon" type="image/svg+xml" href="logo-icon.svg">
     <link rel="stylesheet" href="styles.css">
 </head>
 
@@ -209,7 +210,10 @@
                     </svg>
                 </button>
                 <div class="topbar-title-wrap">
-                    <span class="topbar-title" id="mainHeaderTitle">Evaluación Biomecánica de Movimiento</span>
+                    <div class="topbar-heading">
+                        <img src="logo-icon.svg" class="topbar-logo-icon" width="20" height="20" alt="Aula Global 360">
+                        <span class="topbar-title" id="mainHeaderTitle">Evaluación Biomecánica de Movimiento</span>
+                    </div>
                     <span class="engine-indicator-pill" id="engineHeaderBadge">Motor Local Autónomo</span>
                 </div>
                 <span class="topbar-badge" id="modeBadge">MODO INDIVIDUAL</span>
@@ -297,11 +301,7 @@
 
                 <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
                     <div class="uz-icon" id="uzIcon">
-                        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                            <polyline points="17 8 12 3 7 8"></polyline>
-                            <line x1="12" y1="3" x2="12" y2="15"></line>
-                        </svg>
+                        <img src="logo-icon.svg" class="uz-brand-icon" width="44" height="44" alt="Aula Global 360">
                     </div>
                     <div class="uz-title" id="uzTitle">Seleccionar o arrastrar video o fotografía</div>
                     <div class="uz-sub" id="uzSub">Formatos: MP4, MOV, WEBM, JPG, PNG (Recomendado: 3 a 5 segundos)</div>
@@ -325,6 +325,7 @@
                     <div class="msg-av">AG</div>
                     <div class="bubble">
                         <div class="welcome-header">
+                            <img src="logo-icon.svg" class="welcome-logo-badge" width="22" height="22" alt="Aula Global 360">
                             <strong>Sistema de Evaluación Biomecánica AULA GLOBAL 360</strong>
                         </div>
                         <p>Plataforma para el análisis del desarrollo motor infantil (5 a 11 años) basándose en la <strong>Batería Validada de Habilidades Motrices Básicas (HMB)</strong>.</p>
@@ -357,7 +358,7 @@
         <!-- PANEL DERECHO: VISUALIZACIÓN ANATÓMICA Y TELEMETRÍA -->
         <aside class="right-panel" id="rightPanel">
             <div class="right-header">
-                <span class="right-header-dot"></span>
+                <img src="logo-icon.svg" class="right-header-logo" width="18" height="18" alt="Aula Global 360">
                 <span id="headerEngineBadge">TELEMETRÍA Y BIOMECÁNICA</span>
             </div>
 
@@ -399,7 +400,9 @@
                     <div class="player-area avatar-dark" id="avatarArea">
                         <div class="avatar-placeholder" id="avatarPlaceholder">
                             <div class="avatar-scanner"></div>
-                            <span class="avatar-robot-ico" id="avatarIcon">HMB</span>
+                            <span class="avatar-robot-ico" id="avatarIcon">
+                                <img src="logo-icon.svg" width="36" height="36" alt="Aula Global 360" style="border-radius: 8px;">
+                            </span>
                             <span class="avatar-name" id="avatarSkillName">Patrón: Carrera Eficiente</span>
                             <span class="avatar-desc" id="avatarSkillDesc">Braceo 90° · Impulso Metatarsal · Vuelo</span>
                         </div>
@@ -420,7 +423,10 @@
     <div class="modal-overlay" id="recordingModal" onclick="closeModalOnOutside(event)">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 class="modal-title">Protocolo de Grabación para Evaluación Biomecánica</h2>
+                <h2 class="modal-title" style="display: flex; align-items: center; gap: 8px;">
+                    <img src="logo-icon.svg" width="22" height="22" style="border-radius: 5px;" alt="Aula Global 360">
+                    Protocolo de Grabación para Evaluación Biomecánica
+                </h2>
                 <button class="modal-close" onclick="closeModal()">&times;</button>
             </div>
 

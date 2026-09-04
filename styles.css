@@ -457,6 +457,18 @@ body {
     flex-direction: column;
 }
 
+.topbar-heading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.topbar-logo-icon {
+    border-radius: 4px;
+    flex-shrink: 0;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
+}
+
 .topbar-title {
     font-size: 15px;
     font-weight: 700;
@@ -864,8 +876,16 @@ body {
     background: var(--accent-subtle);
 }
 
-.uz-icon-svg {
-    margin-bottom: 4px;
+.uz-brand-icon {
+    border-radius: 10px;
+    margin-bottom: 6px;
+    transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease);
+    box-shadow: 0 3px 8px rgba(15, 23, 42, 0.08);
+}
+
+.upload-zone:hover .uz-brand-icon {
+    transform: scale(1.08) translateY(-2px);
+    box-shadow: 0 6px 16px rgba(13, 148, 136, 0.25);
 }
 
 .uz-title {
@@ -1038,6 +1058,15 @@ body {
     color: var(--accent);
     margin-bottom: 4px;
     letter-spacing: -0.01em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.welcome-logo-badge {
+    border-radius: 4px;
+    flex-shrink: 0;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
 }
 
 .welcome-steps {
@@ -1410,11 +1439,10 @@ body {
     gap: 8px;
 }
 
-.right-header-dot {
-    width: 6px;
-    height: 6px;
-    background: var(--accent);
-    border-radius: 50%;
+.right-header-logo {
+    border-radius: 4px;
+    flex-shrink: 0;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
 }
 
 .sim-container {
