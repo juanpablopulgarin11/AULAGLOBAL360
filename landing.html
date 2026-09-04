@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AulaGlobal360 · Inteligencia Biomecánica y Curricular para la Educación Física Escolar</title>
+    <link rel="icon" type="image/svg+xml" href="logo-icon.svg">
+    <link rel="stylesheet" href="landing.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300..900;1,9..40,300..900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <!-- HEADER DE NAVEGACIÓN -->
+    <header class="header">
+        <div class="nav-container">
+            <a href="landing.html" class="nav-brand">
+                <img src="logo-icon.svg" width="34" height="34" alt="AulaGlobal360 Logo" class="brand-icon">
+                <span class="brand-name">AULA GLOBAL <span class="brand-highlight">360</span></span>
+            </a>
+
+            <nav class="nav-links">
+                <a href="#tecnologia" class="nav-link">Tecnología</a>
+                <a href="#ciencia" class="nav-link">Batería Validada</a>
+                <a href="#doble-motor" class="nav-link">Doble Motor (WASM & IA)</a>
+                <a href="#habilidades" class="nav-link">Habilidades HMB</a>
+                <a href="#impacto" class="nav-link">Impacto Escolar</a>
+            </nav>
+
+            <div class="nav-actions">
+                <a href="index.html" class="btn-nav-dashboard" id="btnGoDashboard">
+                    <span>Dashboard</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                        <polyline points="12 5 19 12 12 19"></polyline>
+                    </svg>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- HERO SECTION -->
+    <section class="hero-section">
+        <div class="hero-container">
+            <div class="hero-badge">
+                <span class="badge-dot"></span>
+                <span>Plataforma EdTech & Biomecánica Escolar 360°</span>
+            </div>
+
+            <h1 class="hero-title">
+                Inteligencia Motriz y Biomecánica<br>
+                para la <span class="title-gradient">Educación Física</span>
+            </h1>
+
+            <p class="hero-subtitle">
+                Transforma cualquier video de 3 a 5 segundos grabado con un teléfono móvil en un 
+                diagnóstico cinemático de alta precisión (33 landmarks) y en una unidad didáctica 
+                progresiva adaptada a las necesidades reales del aula escolar.
+            </p>
+
+            <div class="hero-cta-group">
+                <a href="index.html" class="btn-cta-primary">
+                    <span>Ingresar al Dashboard de Evaluación</span>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                        <polyline points="12 5 19 12 12 19"></polyline>
+                    </svg>
+                </a>
+                <a href="#ciencia" class="btn-cta-secondary">
+                    <span>Ver Fundamento Científico (Dialnet 7925607)</span>
+                </a>
+            </div>
+
+            <!-- MOCKUP VISUAL INTERACTIVO DEL SISTEMA -->
+            <div class="hero-preview-wrapper">
+                <div class="preview-glass-card">
+                    <div class="preview-header">
+                        <div class="preview-dots">
+                            <span class="dot red"></span>
+                            <span class="dot yellow"></span>
+                            <span class="dot green"></span>
+                        </div>
+                        <div class="preview-address-bar">
+                            <span>aulaglobal360.app · Motor Biomecánico HMB (MediaPipe Pose WASM + Gemini Vision IA)</span>
+                        </div>
+                        <div class="preview-badge-status">
+                            ● Activo · 33 Landmarks Articulares
+                        </div>
+                    </div>
+
+                    <div class="preview-content-grid">
+                        <!-- Módulo Cinemático Izquierdo -->
+                        <div class="preview-card-col">
+                            <div class="preview-mini-header">Cinemática en Tiempo Real</div>
+                            <div class="telemetry-chip-list">
+                                <div class="telemetry-chip">
+                                    <span class="chip-label">Flexión Mín. Rodilla:</span>
+                                    <span class="chip-value text-teal">84.2° (Maduro)</span>
+                                </div>
+                                <div class="telemetry-chip">
+                                    <span class="chip-label">Ángulo Codo (Braceo):</span>
+                                    <span class="chip-value text-teal">91.8° (Plano Sagital)</span>
+                                </div>
+                                <div class="telemetry-chip">
+                                    <span class="chip-label">Inclinación Tronco:</span>
+                                    <span class="chip-value text-blue">9.4° (Propulsión)</span>
+                                </div>
+                                <div class="telemetry-chip">
+                                    <span class="chip-label">Fase Aérea / Vuelo:</span>
+                                    <span class="chip-value text-green">✓ Confirmada</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Visor de Figura Anatómica 360 -->
+                        <div class="preview-center-col">
+                            <div class="preview-motion-box">
+                                <div class="motion-orbit-ring"></div>
+                                <img src="logo-icon.svg" width="90" height="90" alt="Biomechanical Pose" class="motion-center-avatar">
+                                <div class="motion-tag">Patrón: Carrera Eficiente</div>
+                                <div class="motion-stage-tag">Estadio Gallahue: Maduro (92%)</div>
+                            </div>
+                        </div>
+
+                        <!-- Módulo de Prescripción Didáctica -->
+                        <div class="preview-card-col">
+                            <div class="preview-mini-header">Planificación Curricular Adaptativa</div>
+                            <div class="plan-preview-box">
+                                <div class="plan-preview-title">Unidad Didáctica · 12 Clases</div>
+                                <div class="plan-preview-sub">Ciclo 1 Primaria · Batería Validada Dialnet</div>
+                                <div class="plan-phase-item">
+                                    <span class="phase-badge phase-1">Fase 1</span>
+                                    <span>Apoyos reactivos sobre metatarso</span>
+                                </div>
+                                <div class="plan-phase-item">
+                                    <span class="phase-badge phase-2">Fase 2</span>
+                                    <span>Recobro de rodilla en talón-glúteo</span>
+                                </div>
+                                <div class="plan-phase-item">
+                                    <span class="phase-badge phase-3">Fase 3</span>
+                                    <span>Salidas reactivas y desaceleración</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- METRICS STRIP -->
+    <section class="stats-strip">
+        <div class="stats-container">
+            <div class="stat-item">
+                <div class="stat-number">33</div>
+                <div class="stat-desc">Landmarks anatómicos procesados en tiempo real</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">10</div>
+                <div class="stat-desc">Habilidades Motrices Básicas validadas (HMB)</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">100%</div>
+                <div class="stat-desc">Privacidad en dispositivo con WebAssembly</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">12</div>
+                <div class="stat-desc">Clases curriculares por unidad descargables en .doc</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- PROBLEMA VS SOLUCIÓN -->
+    <section class="section problem-solution-section" id="tecnologia">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">El Desafío Escolar</span>
+                <h2 class="section-title">De la evaluación subjetiva a la evidencia cinemática</h2>
+                <p class="section-desc">
+                    Durante décadas, la educación física evaluó el desarrollo motriz a simple vista o mediante pruebas de rendimiento físico que ignoraban la técnica articular.
+                </p>
+            </div>
+
+            <div class="comparison-grid">
+                <div class="comp-card comp-old">
+                    <div class="comp-header">
+                        <span class="comp-icon">✕</span>
+                        <h3>Evaluación Tradicional</h3>
+                    </div>
+                    <ul class="comp-list">
+                        <li>Evaluación a simple vista sujeta a sesgos de percepción.</li>
+                        <li>Falta de datos cuantitativos sobre ángulos articulares clave.</li>
+                        <li>Equipos de laboratorio biomecánico inaccesibles para escuelas públicas.</li>
+                        <li>Planeaciones genéricas desconectadas de las fallas del estudiante.</li>
+                        <li>Reportes manuales lentos que consumen semanas lectivas.</li>
+                    </ul>
+                </div>
+
+                <div class="comp-card comp-new">
+                    <div class="comp-header">
+                        <span class="comp-icon">✓</span>
+                        <h3>Metodología AulaGlobal360</h3>
+                    </div>
+                    <ul class="comp-list">
+                        <li>Visión por computadora directa desde cualquier celular o tablet.</li>
+                        <li>Medición objetiva en grados: flexión de rodilla, braceo sagital y tronco.</li>
+                        <li>Cero costo de infraestructura: corre en el navegador web del profesor.</li>
+                        <li>Unidades didácticas generadas automáticamente según los criterios fallados.</li>
+                        <li>Exportación inmediata de informes individuales y grupales en Word (.doc).</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- DOBLE MOTOR: WASM vs GEMINI IA -->
+    <section class="section engine-section" id="doble-motor">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">Arquitectura de Vanguardia</span>
+                <h2 class="section-title">Arquitectura Híbrida Adaptativa: Local & Nube</h2>
+                <p class="section-desc">
+                    El docente tiene el control absoluto. Elige entre privacidad local absoluta sin internet o la potencia generativa de la inteligencia artificial multimodal en la nube.
+                </p>
+            </div>
+
+            <div class="engine-cards-grid">
+                <!-- Tarjeta Motor Local -->
+                <div class="engine-feature-card card-local">
+                    <div class="engine-badge-pill local-pill">Modo Local Autónomo (Sin IA)</div>
+                    <h3 class="engine-card-title">Procesamiento Edge 100% en el Navegador</h3>
+                    <p class="engine-card-desc">
+                        Utiliza <strong>MediaPipe Pose Tasks compilado en WebAssembly (WASM)</strong>. Extrae 33 puntos articulares frame a frame y contrasta contra la tabla de reglas biomédicas sin enviar ningún dato fuera del dispositivo.
+                    </p>
+                    <div class="engine-benefits">
+                        <div class="benefit-row">
+                            <span class="benefit-bullet">●</span>
+                            <span><strong>Privacidad Total de Menores:</strong> Los videos nunca salen del dispositivo escolar.</span>
+                        </div>
+                        <div class="benefit-row">
+                            <span class="benefit-bullet">●</span>
+                            <span><strong>100% Offline:</strong> Funciona en patios escolares o zonas rurales sin internet.</span>
+                        </div>
+                        <div class="benefit-row">
+                            <span class="benefit-bullet">●</span>
+                            <span><strong>Cero Consumo de API:</strong> Sin requerir registro de tarjetas ni consumo de cuotas.</span>
+                        </div>
+                    </div>
+                    <a href="index.html" class="btn-engine-card">Probar Modo Local</a>
+                </div>
+
+                <!-- Tarjeta Motor Gemini IA -->
+                <div class="engine-feature-card card-gemini">
+                    <div class="engine-badge-pill gemini-pill">Modo Gemini Vision IA (Nube)</div>
+                    <h3 class="engine-card-title">Visión Multimodal y Pedagogía Generativa</h3>
+                    <p class="engine-card-desc">
+                        Integra la API de <strong>Gemini 1.5 Flash</strong> para analizar secuencias de fotogramas, razonar sobre la postura del niño y redactar planes de clase con pedagogía contextualizada.
+                    </p>
+                    <div class="engine-benefits">
+                        <div class="benefit-row">
+                            <span class="benefit-bullet">●</span>
+                            <span><strong>"El Lenguaje del Profe":</strong> Consignas verbales metafóricas e intuitivas para el niño.</span>
+                        </div>
+                        <div class="benefit-row">
+                            <span class="benefit-bullet">●</span>
+                            <span><strong>Preguntas Problematizadoras:</strong> Generación curricular por competencias MEN.</span>
+                        </div>
+                        <div class="benefit-row">
+                            <span class="benefit-bullet">●</span>
+                            <span><strong>Chat Consultor en Vivo:</strong> Diálogo pedagógico para resolver dudas sobre el estudiante.</span>
+                        </div>
+                    </div>
+                    <a href="index.html" class="btn-engine-card btn-gemini-card">Conectar Gemini IA</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- BATERÍA CIENTÍFICA VALIDADA -->
+    <section class="section science-section" id="ciencia">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">Fundamento Científico</span>
+                <h2 class="section-title">Construido sobre investigación universitaria validada</h2>
+                <p class="section-desc">
+                    AulaGlobal360 no inventa baremos ni escalas arbitrarias. Cada criterio y ángulo articular se sustenta en literatura científica de educación física y desarrollo motor infantil.
+                </p>
+            </div>
+
+            <div class="science-grid">
+                <div class="science-card">
+                    <div class="science-source">Dialnet 7925607 · Universidad de Antioquia</div>
+                    <h4 class="science-title">Batería de Habilidades Motrices Básicas (5 a 11 años)</h4>
+                    <p class="science-authors">González Palacio, Montoya Grisales, Cardona, Marín & Muñoz (2021)</p>
+                    <p class="science-text">
+                        Batería validada mediante juicio de expertos y consistencia psicométrica, definiendo 4 criterios biomecánicos evaluables por cada habilidad motriz infantil.
+                    </p>
+                </div>
+
+                <div class="science-card">
+                    <div class="science-source">Gallahue & Ozmun (2012)</div>
+                    <h4 class="science-title">Estadios de Desarrollo Motor</h4>
+                    <p class="science-authors">Understanding Motor Development: Infants, Children, Adolescents</p>
+                    <p class="science-text">
+                        Clasificación evolutiva en Estadios <strong>Inicial, Elemental y Maduro</strong> para calibrar el progreso motriz según la edad cronológica del estudiante.
+                    </p>
+                </div>
+
+                <div class="science-card">
+                    <div class="science-source">Dale A. Ulrich (2019)</div>
+                    <h4 class="science-title">Test of Gross Motor Development (TGMD-3)</h4>
+                    <p class="science-authors">Estandarización Internacional de Baremación</p>
+                    <p class="science-text">
+                        Puntuación dicotómica (1 = Logrado / 0 = En Proceso) que permite contrastar fases de preparación, despegue, vuelo y amortiguación.
+                    </p>
+                </div>
+
+                <div class="science-card">
+                    <div class="science-source">Ministerio de Educación Nacional (MEN)</div>
+                    <h4 class="science-title">Orientaciones Pedagógicas para Educación Física</h4>
+                    <p class="science-authors">Documento No. 15 · Lineamientos Curriculares Colombia</p>
+                    <p class="science-text">
+                        Estructuración de unidades didácticas por competencias en tres dimensiones formativas: Saber (Cognitivo), Hacer (Procedimental) y Ser (Actitudinal).
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- HABILIDADES EVALUADAS -->
+    <section class="section skills-section" id="habilidades">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">Batería Motriz</span>
+                <h2 class="section-title">10 Habilidades Motrices Básicas Evaluadas</h2>
+                <p class="section-desc">
+                    El sistema detecta automáticamente la habilidad o permite seleccionar una específica agrupada en las tres dimensiones fundamentales del movimiento humano.
+                </p>
+            </div>
+
+            <div class="skills-categories-grid">
+                <!-- Locomoción -->
+                <div class="skill-cat-card">
+                    <div class="cat-header cat-loco">
+                        <span class="cat-code">[HMB-L]</span>
+                        <h3>Habilidades de Locomoción</h3>
+                    </div>
+                    <p class="cat-desc">Desplazamientos del centro de gravedad y proyección corporal.</p>
+                    <ul class="cat-skill-list">
+                        <li><strong>Carrera:</strong> Flexión de rodilla de recobro (≤90°), braceo sagital y fase aérea.</li>
+                        <li><strong>Salto Horizontal:</strong> Sentadilla preparatoria, despegue simétrico y aterrizaje suave.</li>
+                        <li><strong>Marcha:</strong> Apoyo talón-metatarso, balanceo recíproco de brazos y postura erecta.</li>
+                        <li><strong>Salto Unipodal:</strong> Despegue con un pie, elevación del muslo y equilibrio en el suelo.</li>
+                    </ul>
+                </div>
+
+                <!-- Manipulación -->
+                <div class="skill-cat-card">
+                    <div class="cat-header cat-mani">
+                        <span class="cat-code">[HMB-M]</span>
+                        <h3>Habilidades de Manipulación</h3>
+                    </div>
+                    <p class="cat-desc">Control, impulsión e intercepción de móviles en el espacio.</p>
+                    <ul class="cat-skill-list">
+                        <li><strong>Lanzamiento Sobre Hombro:</strong> Paso contralateral, codo a 90° y rotación troncal.</li>
+                        <li><strong>Recepción y Atrape:</strong> Amortiguación con codos flexibles y manos en copa.</li>
+                        <li><strong>Patear:</strong> Carrera preparatoria, pie de apoyo lateral y balanceo del muslo.</li>
+                    </ul>
+                </div>
+
+                <!-- Estabilidad -->
+                <div class="skill-cat-card">
+                    <div class="cat-header cat-esta">
+                        <span class="cat-code">[HMB-E]</span>
+                        <h3>Habilidades de Estabilidad</h3>
+                    </div>
+                    <p class="cat-desc">Ajuste postural y control del centro de gravedad sobre la base de apoyo.</p>
+                    <ul class="cat-skill-list">
+                        <li><strong>Equilibrio Dinámico:</strong> Desplazamiento sobre viga sin oscilaciones del tronco.</li>
+                        <li><strong>Equilibrio Estático:</strong> Mantenimiento unipodal durante 5 segundos con balance firme.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- IMPACTO ESCOLAR & REPORTES -->
+    <section class="section impact-section" id="impacto">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">Gestión Institucional</span>
+                <h2 class="section-title">Todo lo que el docente y el colegio necesitan</h2>
+                <p class="section-desc">
+                    Diseñado para la realidad cotidiana de las escuelas: grupos numerosos, poco tiempo de planeación y necesidad de reportes formales descargables.
+                </p>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-box">
+                    <div class="feature-num">01</div>
+                    <h4 class="feature-title">Diagnóstico Individual & Grupal</h4>
+                    <p class="feature-desc">Evalúa un estudiante en 5 segundos o registra una clase completa de 30 estudiantes para identificar qué anomalía biomecánica predomina en el salón.</p>
+                </div>
+
+                <div class="feature-box">
+                    <div class="feature-num">02</div>
+                    <h4 class="feature-title">Muestreo Adaptativo Inteligente</h4>
+                    <p class="feature-desc">Ubica los instantes críticos mediante diferencial de luminancia/pixeles: detecta automáticamente el despegue, el armado o el impacto.</p>
+                </div>
+
+                <div class="feature-box">
+                    <div class="feature-num">03</div>
+                    <h4 class="feature-title">Unidades Didácticas Progresivas</h4>
+                    <p class="feature-desc">Genera secuencias pedagógicas de 1 a 12 clases priorizando los criterios que el estudiante o grupo NO logró en su evaluación.</p>
+                </div>
+
+                <div class="feature-box">
+                    <div class="feature-num">04</div>
+                    <h4 class="feature-title">Exportación en Word (.doc)</h4>
+                    <p class="feature-desc">Descarga informes con telemetría biomecánica y planeaciones curriculares con un solo clic, listos para imprimir o archivar.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CALL TO ACTION BANNER -->
+    <section class="cta-banner-section">
+        <div class="container">
+            <div class="cta-banner-card">
+                <img src="logo.svg" width="220" height="55" alt="AulaGlobal360" class="cta-banner-logo">
+                <h2 class="cta-banner-title">Comienza a evaluar la motricidad con rigor científico hoy mismo</h2>
+                <p class="cta-banner-desc">
+                    Sin suscripciones obligatorias, sin instalaciones de escritorio. Abre la plataforma en tu navegador web y experimenta el futuro de la educación física.
+                </p>
+                <div class="cta-banner-actions">
+                    <a href="index.html" class="btn-cta-banner">
+                        <span>Acceder al Dashboard</span>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                            <polyline points="12 5 19 12 12 19"></polyline>
+                        </svg>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <div class="container footer-content">
+            <div class="footer-col brand-col">
+                <div class="footer-logo">
+                    <img src="logo-icon.svg" width="28" height="28" alt="Logo">
+                    <span>AULA GLOBAL <strong>360</strong></span>
+                </div>
+                <p class="footer-tagline">
+                    Plataforma abierta de analítica biomecánica y planeación didáctica en Educación Física y Deporte Infantil.
+                </p>
+            </div>
+
+            <div class="footer-col">
+                <div class="footer-col-title">Plataforma</div>
+                <ul class="footer-links">
+                    <li><a href="index.html">Dashboard Interactivo</a></li>
+                    <li><a href="#doble-motor">Modo Local WASM</a></li>
+                    <li><a href="#doble-motor">Modo Gemini Vision IA</a></li>
+                    <li><a href="#habilidades">10 Habilidades Motrices</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-col">
+                <div class="footer-col-title">Citas Científicas</div>
+                <ul class="footer-links">
+                    <li><a href="https://dialnet.unirioja.es/servlet/articulo?codigo=7925607" target="_blank" rel="noopener">Batería HMB (Dialnet 7925607)</a></li>
+                    <li><a href="#ciencia">David L. Gallahue (Estadios)</a></li>
+                    <li><a href="#ciencia">Dale A. Ulrich (TGMD-3)</a></li>
+                    <li><a href="#ciencia">Lineamientos MEN Colombia</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-col">
+                <div class="footer-col-title">Acceso Rápido</div>
+                <a href="index.html" class="footer-dash-link">
+                    Ir a la App (Dashboard) &rarr;
+                </a>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <div class="container footer-bottom-inner">
+                <span>&copy; 2026 AulaGlobal360 · EdTech & Biomecánica Escolar. Todos los derechos reservados.</span>
+                <span>Desarrollado con rigor pedagógico y ciencia motriz abierta.</span>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>
