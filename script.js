@@ -412,17 +412,29 @@ function computeJointAngles(landmarks) {
     const trunkDy = midShoulder.y - midHip.y; // En pantalla, Y crece hacia abajo
     const trunkLean = Math.round(Math.abs((Math.atan2(trunkDx, -trunkDy) * 180) / Math.PI));
 
+    // Altura del torso como escala corporal de referencia
+    const torsoHeight = Math.hypot(trunkDx, trunkDy) || 0.25;
+
     // Apertura de zancada (ángulo entre muslos / inter-femoral)
     const hipAngle = calculateAngle3D(landmarks[25], midHip, landmarks[26]);
 
-    // Altura relativa de tobillos para fase aérea y asimetría unipodal
+    // Altura y posición relativa de tobillos
     const lAnkleY = landmarks[27].y;
     const rAnkleY = landmarks[28].y;
-    const ankleYDiff = Math.abs(lAnkleY - rAnkleY);
+    const lAnkleX = landmarks[27].x;
+    const rAnkleX = landmarks[28].x;
 
-    // Distancia euclidiana normalizada entre muñecas y entre tobillos
+    const ankleYDiff = Math.abs(lAnkleY - rAnkleY);
+    const ankleXDiff = Math.abs(lAnkleX - rAnkleX);
+    const ankleDist = Math.hypot(lAnkleX - rAnkleX, lAnkleY - rAnkleY);
+
+    // Detección de pierna delantera vs trasera respecto a la cadera (apertura sagital de golpeo / zancada)
+    const lAnkleRelX = lAnkleX - midHip.x;
+    const rAnkleRelX = rAnkleX - midHip.x;
+    const isLegStraddle = (lAnkleRelX * rAnkleRelX < -0.001) || (ankleXDiff >= 0.14);
+
+    // Distancia euclidiana normalizada entre muñecas
     const wristDist = Math.hypot(landmarks[15].x - landmarks[16].x, landmarks[15].y - landmarks[16].y);
-    const ankleDist = Math.hypot(landmarks[27].x - landmarks[28].x, landmarks[27].y - landmarks[28].y);
 
     // Muñeca sobre hombro (elevación de brazo en lanzamiento/bateo)
     const lWristAboveShoulder = landmarks[15].y < landmarks[11].y;
@@ -445,12 +457,17 @@ function computeJointAngles(landmarks) {
         rHipFlexion,
         hipDiff,
         trunkLean,
+        torsoHeight,
         hipAngle,
         lAnkleY,
         rAnkleY,
+        lAnkleX,
+        rAnkleX,
         ankleYDiff,
-        wristDist,
+        ankleXDiff,
         ankleDist,
+        isLegStraddle,
+        wristDist,
         wristAboveShoulder,
         midHipX: midHip.x,
         midHipY: midHip.y
@@ -931,6 +948,9 @@ function aggregateVideoTelemetry(frames) {
             minWristDist: 0.4,
             avgAnkleYDiff: 0.02,
             maxAnkleYDiff: 0.04,
+            maxAnkleXDiff: 0.08,
+            maxAnkleDist: 0.20,
+            hasStraddleKickFrame: false,
             avgKneeDiff: 10,
             maxKneeDiff: 18,
             maxHipDiff: 15,
@@ -971,38 +991,35 @@ function aggregateVideoTelemetry(frames) {
     const maxAnkleYDiff = Math.max(...ankleYDiffs);
     const avgAnkleYDiff = ankleYDiffs.reduce((s, d) => s + d, 0) / (ankleYDiffs.length || 1);
 
+    const ankleXDeltas = validAngles.map(a => a.ankleXDiff !== undefined ? a.ankleXDiff : 0);
+    const maxAnkleXDiff = Math.max(...ankleXDeltas, 0);
+
+    const ankleDists = validAngles.map(a => a.ankleDist || 0.25);
+    const maxAnkleDist = Math.max(...ankleDists);
+    const ankleDistAvg = ankleDists.reduce((s, d) => s + d, 0) / (ankleDists.length || 1);
+
     const wristDists = validAngles.map(a => a.wristDist || 0.5);
     const minWristDist = Math.min(...wristDists);
 
-    const ankleDists = validAngles.map(a => a.ankleDist || 0.25);
-    const ankleDistAvg = ankleDists.reduce((s, d) => s + d, 0) / (ankleDists.length || 1);
-
     const maxWristAboveShoulder = validAngles.some(a => a.wristAboveShoulder === true);
 
-    // Estimación del nivel del suelo (el punto más bajo alcanzado por los tobillos)
-    const groundLevelY = Math.max(...validAngles.map(a => Math.max(a.lAnkleY, a.rAnkleY)));
+    // Detección de zancada / péndulo de patada (un pie delante y otro pie atrás del eje de la cadera)
+    const hasStraddleKickFrame = validAngles.some(a => (a.isLegStraddle && (a.ankleXDiff >= 0.10 || a.hipAngle >= 16)) || (a.ankleXDiff >= 0.14));
 
-    // Detección estricta de Fase Aérea (Vuelo): AMBOS pies deben despegar simultáneamente del suelo
+    // Detección de Apoyo Unipodal con Péndulo de Golpeo (Pateo)
+    const singleSupportKick = validAngles.some(a => a.isLegStraddle || (a.ankleYDiff >= 0.035 && a.ankleXDiff >= 0.08) || (a.hipDiff >= 15 && a.ankleDist >= 0.14));
+
+    // Detección estricta de Fase Aérea (Vuelo): AMBOS pies deben estar suspendidos Y con flexión profunda (carrera/salto real)
     const flightFrames = [];
-    validAngles.forEach((a, idx) => {
-        if (a.lAnkleY < groundLevelY - 0.045 && a.rAnkleY < groundLevelY - 0.045) {
-            flightFrames.push(idx + 1);
-        }
-    });
+    if (!hasStraddleKickFrame) {
+        const groundLevelY = Math.max(...validAngles.map(a => Math.max(a.lAnkleY, a.rAnkleY)));
+        validAngles.forEach((a, idx) => {
+            if (a.lAnkleY < groundLevelY - 0.055 && a.rAnkleY < groundLevelY - 0.055 && a.kneeMin <= 105) {
+                flightFrames.push(idx + 1);
+            }
+        });
+    }
     const flightDetected = flightFrames.length > 0;
-
-    // Detección de Apoyo Unipodal con Péndulo de Patada (Pateo):
-    // Un pie permanece firmemente en el suelo (apoyo) mientras el otro pie se eleva en el aire para el impacto
-    let singleSupportKick = false;
-    validAngles.forEach(a => {
-        const lowestAnkle = Math.max(a.lAnkleY, a.rAnkleY);
-        const highestAnkle = Math.min(a.lAnkleY, a.rAnkleY);
-        const ankleSeparation = lowestAnkle - highestAnkle;
-        // Pie de apoyo cerca del suelo Y pie ejecutante elevado
-        if (lowestAnkle >= groundLevelY - 0.035 && ankleSeparation >= 0.055) {
-            singleSupportKick = true;
-        }
-    });
 
     // Variación dinámica angular rápida entre fotogramas consecutivos (delta de flexión de rodilla)
     let rapidKneeDelta = 0;
@@ -1035,6 +1052,9 @@ function aggregateVideoTelemetry(frames) {
         minWristDist,
         avgAnkleYDiff,
         maxAnkleYDiff,
+        maxAnkleXDiff,
+        maxAnkleDist,
+        hasStraddleKickFrame,
         avgKneeDiff,
         maxKneeDiff,
         maxHipDiff,
@@ -1084,23 +1104,25 @@ function classifySkillFromKinematics(telemetry, userText) {
         'Carrera': 0
     };
 
-    // A. PATEAR [HMB-M]: Apoyo unipodal en suelo con péndulo/oscilación dinámica de la pierna ejecutante
-    if (telemetry.singleSupportKick) scores['Patear'] += 80;
-    if (telemetry.maxAnkleYDiff >= 0.055) scores['Patear'] += 45;
-    if (telemetry.maxKneeDiff >= 16) scores['Patear'] += 35;
-    if (telemetry.maxHipAngle >= 22 || telemetry.maxHipDiff >= 18) scores['Patear'] += 30;
-    if (telemetry.rapidKneeDelta >= 15) scores['Patear'] += 25;
-    if (!telemetry.maxWristAboveShoulder && telemetry.minWristDist > 0.20) scores['Patear'] += 20;
-    if (!telemetry.flightDetected) scores['Patear'] += 25;
+    // A. PATEAR [HMB-M]: Apoyo unipodal en suelo con péndulo/oscilación dinámica o zancada de golpeo
+    if (telemetry.hasStraddleKickFrame) scores['Patear'] += 120;
+    if (telemetry.singleSupportKick) scores['Patear'] += 90;
+    if (telemetry.maxAnkleXDiff >= 0.12) scores['Patear'] += 55;
+    if (telemetry.maxAnkleYDiff >= 0.035) scores['Patear'] += 40;
+    if (telemetry.maxHipAngle >= 18 || telemetry.maxHipDiff >= 15) scores['Patear'] += 35;
+    if (telemetry.rapidKneeDelta >= 12) scores['Patear'] += 25;
+    if (!telemetry.maxWristAboveShoulder) scores['Patear'] += 25;
+    if (telemetry.minWristDist > 0.18) scores['Patear'] += 20;
+    if (!telemetry.flightDetected) scores['Patear'] += 30;
 
     // B. LANZAMIENTO SOBRE HOMBRO [HMB-M]: Elevación de muñeca sobre el plano del hombro
-    if (telemetry.maxWristAboveShoulder) scores['Lanzamiento Sobre Hombro'] += 85;
+    if (telemetry.maxWristAboveShoulder) scores['Lanzamiento Sobre Hombro'] += 95;
     if (telemetry.maxElbowDiff >= 24) scores['Lanzamiento Sobre Hombro'] += 40;
     if (telemetry.maxElbowAngle >= 140) scores['Lanzamiento Sobre Hombro'] += 30;
     if (telemetry.maxHipAngle >= 24) scores['Lanzamiento Sobre Hombro'] += 15;
 
     // C. RECEPCIÓN Y ATRAPE [HMB-M]: Muñecas juntas en copa frente al pecho
-    if (telemetry.minWristDist <= 0.26) scores['Recepción y Atrape'] += 80;
+    if (telemetry.minWristDist <= 0.26) scores['Recepción y Atrape'] += 90;
     if (telemetry.avgElbowAngle >= 70 && telemetry.avgElbowAngle <= 130) scores['Recepción y Atrape'] += 35;
     if (!telemetry.maxWristAboveShoulder && telemetry.maxKneeDiff < 20) scores['Recepción y Atrape'] += 25;
 
@@ -1113,21 +1135,21 @@ function classifySkillFromKinematics(telemetry, userText) {
     if (telemetry.flightDetected && telemetry.maxKneeDiff >= 20) scores['Salto Unipodal'] += 35;
 
     // F. EQUILIBRIO ESTÁTICO UNIPODAL [HMB-E]: Un pie suspendido con desplazamiento de masa casi nulo
-    if (telemetry.hipDisplacement <= 0.07 && telemetry.avgAnkleYDiff >= 0.06) scores['Equilibrio Estático Unipodal'] += 75;
-    if (!telemetry.flightDetected && telemetry.avgAnkleYDiff >= 0.06) scores['Equilibrio Estático Unipodal'] += 35;
+    if (telemetry.hipDisplacement <= 0.07 && telemetry.avgAnkleYDiff >= 0.06 && !telemetry.hasStraddleKickFrame) scores['Equilibrio Estático Unipodal'] += 75;
+    if (!telemetry.flightDetected && telemetry.avgAnkleYDiff >= 0.06 && !telemetry.hasStraddleKickFrame) scores['Equilibrio Estático Unipodal'] += 35;
 
     // G. EQUILIBRIO DINÁMICO [HMB-E]: Paso estrecho en línea recta sin vuelo y brazos en abducción
-    if (!telemetry.flightDetected && telemetry.ankleDistAvg <= 0.18 && telemetry.avgTrunkAngle <= 8) scores['Equilibrio Dinámico'] += 50;
-    if (telemetry.minKneeAngle >= 120 && (telemetry.minWristDist >= 0.45 || telemetry.avgElbowAngle >= 105)) scores['Equilibrio Dinámico'] += 35;
+    if (!telemetry.flightDetected && telemetry.ankleDistAvg <= 0.18 && telemetry.avgTrunkAngle <= 8 && !telemetry.hasStraddleKickFrame) scores['Equilibrio Dinámico'] += 50;
+    if (telemetry.minKneeAngle >= 120 && (telemetry.minWristDist >= 0.45 || telemetry.avgElbowAngle >= 105) && !telemetry.hasStraddleKickFrame) scores['Equilibrio Dinámico'] += 35;
 
     // H. MARCHA [HMB-L]: Doble apoyo continuo sin vuelo, tronco erguido y zancadas alternadas simétricas
-    if (!telemetry.flightDetected && telemetry.minKneeAngle >= 112 && telemetry.avgTrunkAngle <= 9) scores['Marcha'] += 45;
-    if (!telemetry.flightDetected && telemetry.maxKneeDiff < 20 && telemetry.maxAnkleYDiff < 0.05 && telemetry.maxHipAngle >= 20) scores['Marcha'] += 35;
+    if (!telemetry.flightDetected && telemetry.minKneeAngle >= 112 && telemetry.avgTrunkAngle <= 9 && !telemetry.hasStraddleKickFrame) scores['Marcha'] += 45;
+    if (!telemetry.flightDetected && telemetry.maxKneeDiff < 20 && telemetry.maxAnkleYDiff < 0.05 && telemetry.maxHipAngle >= 20 && !telemetry.hasStraddleKickFrame) scores['Marcha'] += 35;
 
-    // I. CARRERA [HMB-L]: Fase aérea confirmada + flexión profunda de recobro (≤98°) + braceo sagital
-    if (telemetry.flightDetected && telemetry.minKneeAngle <= 98) scores['Carrera'] += 60;
-    if (telemetry.flightDetected && telemetry.avgElbowAngle >= 75 && telemetry.avgElbowAngle <= 115) scores['Carrera'] += 35;
-    if (telemetry.avgTrunkAngle >= 4 && telemetry.avgTrunkAngle <= 18 && telemetry.flightDetected) scores['Carrera'] += 20;
+    // I. CARRERA [HMB-L]: Fase aérea confirmada + flexión profunda de recobro (≤98°) + braceo sagital (sin straddle de patada)
+    if (telemetry.flightDetected && telemetry.minKneeAngle <= 98 && !telemetry.hasStraddleKickFrame) scores['Carrera'] += 60;
+    if (telemetry.flightDetected && telemetry.avgElbowAngle >= 75 && telemetry.avgElbowAngle <= 115 && !telemetry.hasStraddleKickFrame) scores['Carrera'] += 35;
+    if (telemetry.avgTrunkAngle >= 4 && telemetry.avgTrunkAngle <= 18 && telemetry.flightDetected && !telemetry.hasStraddleKickFrame) scores['Carrera'] += 20;
 
     // Identificar la habilidad ganadora con mayor puntuación acumulada
     let bestSkill = 'Carrera';
@@ -2345,6 +2367,12 @@ async function sendMsg() {
     const grade = document.getElementById('gradeSelect').value;
     const teacherPrefs = getTeacherPreferences();
 
+    const skillSelectEl = document.getElementById('skillSelect');
+    const activeSkillCode = skillSelectEl ? skillSelectEl.value : selectedSkill;
+    const activeSkillName = (skillSelectEl && activeSkillCode !== 'auto') 
+        ? skillSelectEl.options[skillSelectEl.selectedIndex].text 
+        : 'Detección Automática';
+
     try {
         if (currentEngineMode === 'gemini') {
             if (!apiKey) {
@@ -2353,13 +2381,13 @@ async function sendMsg() {
                 return;
             }
             // Modo Nube Multimodal Gemini enriquecido con telemetría MediaPipe
-            const diagnosis = await callGeminiVision(selectedSkillName, grade, userText, capturedKeyframes);
+            const diagnosis = await callGeminiVision(activeSkillName, grade, userText, capturedKeyframes);
             removeTyping();
             handleDiagnosisOutput(diagnosis, teacherPrefs);
         } else {
             // Modo Local Real con MediaPipe WASM y Reglas Biomecánicas
             await new Promise(r => setTimeout(r, 450));
-            const diagnosis = runLocalBiomechanicalEngine(selectedSkill, grade, userText, capturedKeyframes);
+            const diagnosis = runLocalBiomechanicalEngine(activeSkillCode, grade, userText, capturedKeyframes);
             removeTyping();
             handleDiagnosisOutput(diagnosis, teacherPrefs);
         }
@@ -2370,7 +2398,7 @@ async function sendMsg() {
             addMsg('bot', `<strong>Aviso del Asistente:</strong> No se pudo conectar con Gemini Vision (${err.message || 'revisa tu API key o tu conexión'}). Se activó el motor biomecánico local con reglas de respaldo.`);
         }
         // Fallback al motor local con reglas si falla la llamada
-        const fallback = runLocalBiomechanicalEngine(selectedSkill, grade, userText, capturedKeyframes);
+        const fallback = runLocalBiomechanicalEngine(activeSkillCode, grade, userText, capturedKeyframes);
         handleDiagnosisOutput(fallback, teacherPrefs);
     } finally {
         isAnalyzing = false;
