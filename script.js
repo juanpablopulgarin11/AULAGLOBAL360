@@ -394,6 +394,11 @@ function computeJointAngles(landmarks) {
     const lElbow = calculateAngle3D(landmarks[11], landmarks[13], landmarks[15]);
     const rElbow = calculateAngle3D(landmarks[12], landmarks[14], landmarks[16]);
 
+    // Ángulos de cadera individuales (Tronco - Cadera - Rodilla)
+    const lHipFlexion = calculateAngle3D(landmarks[11], landmarks[23], landmarks[25]);
+    const rHipFlexion = calculateAngle3D(landmarks[12], landmarks[24], landmarks[26]);
+    const hipDiff = Math.abs(lHipFlexion - rHipFlexion);
+
     // Inclinación de tronco respecto a la vertical
     const midHip = {
         x: (landmarks[23].x + landmarks[24].x) / 2,
@@ -407,25 +412,48 @@ function computeJointAngles(landmarks) {
     const trunkDy = midShoulder.y - midHip.y; // En pantalla, Y crece hacia abajo
     const trunkLean = Math.round(Math.abs((Math.atan2(trunkDx, -trunkDy) * 180) / Math.PI));
 
-    // Apertura de zancada (ángulo entre muslos)
+    // Apertura de zancada (ángulo entre muslos / inter-femoral)
     const hipAngle = calculateAngle3D(landmarks[25], midHip, landmarks[26]);
 
-    // Altura relativa de tobillos para fase aérea
+    // Altura relativa de tobillos para fase aérea y asimetría unipodal
     const lAnkleY = landmarks[27].y;
     const rAnkleY = landmarks[28].y;
+    const ankleYDiff = Math.abs(lAnkleY - rAnkleY);
+
+    // Distancia euclidiana normalizada entre muñecas y entre tobillos
+    const wristDist = Math.hypot(landmarks[15].x - landmarks[16].x, landmarks[15].y - landmarks[16].y);
+    const ankleDist = Math.hypot(landmarks[27].x - landmarks[28].x, landmarks[27].y - landmarks[28].y);
+
+    // Muñeca sobre hombro (elevación de brazo en lanzamiento/bateo)
+    const lWristAboveShoulder = landmarks[15].y < landmarks[11].y;
+    const rWristAboveShoulder = landmarks[16].y < landmarks[12].y;
+    const wristAboveShoulder = lWristAboveShoulder || rWristAboveShoulder;
 
     return {
         lKnee,
         rKnee,
         kneeMin: Math.min(lKnee, rKnee),
         kneeMax: Math.max(lKnee, rKnee),
+        kneeDiff: Math.abs(lKnee - rKnee),
         lElbow,
         rElbow,
         elbowAvg: Math.round((lElbow + rElbow) / 2),
+        elbowMax: Math.max(lElbow, rElbow),
+        elbowMin: Math.min(lElbow, rElbow),
+        elbowDiff: Math.abs(lElbow - rElbow),
+        lHipFlexion,
+        rHipFlexion,
+        hipDiff,
         trunkLean,
         hipAngle,
         lAnkleY,
-        rAnkleY
+        rAnkleY,
+        ankleYDiff,
+        wristDist,
+        ankleDist,
+        wristAboveShoulder,
+        midHipX: midHip.x,
+        midHipY: midHip.y
     };
 }
 
@@ -895,10 +923,25 @@ function aggregateVideoTelemetry(frames) {
             minKneeAngle: 108,
             maxKneeAngle: 168,
             avgElbowAngle: 94,
+            maxElbowAngle: 110,
+            minElbowAngle: 80,
             avgTrunkAngle: 8,
             maxHipAngle: 36,
-            flightDetected: true,
-            flightFrames: [2, 3],
+            maxWristAboveShoulder: false,
+            minWristDist: 0.4,
+            avgAnkleYDiff: 0.02,
+            maxAnkleYDiff: 0.04,
+            avgKneeDiff: 10,
+            maxKneeDiff: 18,
+            maxHipDiff: 15,
+            avgElbowDiff: 12,
+            maxElbowDiff: 20,
+            ankleDistAvg: 0.25,
+            hipDisplacement: 0.15,
+            singleSupportKick: false,
+            rapidKneeDelta: 12,
+            flightDetected: false,
+            flightFrames: [],
             symmetryScore: 86,
             samplingMethod: 'Adaptativo por Diferencial de Luminancia'
         };
@@ -907,36 +950,197 @@ function aggregateVideoTelemetry(frames) {
     const minKnee = Math.min(...validAngles.map(a => a.kneeMin));
     const maxKnee = Math.max(...validAngles.map(a => a.kneeMax));
     const avgElbow = Math.round(validAngles.reduce((s, a) => s + a.elbowAvg, 0) / validAngles.length);
+    const maxElbow = Math.max(...validAngles.map(a => a.elbowMax || a.elbowAvg));
+    const minElbow = Math.min(...validAngles.map(a => a.elbowMin || a.elbowAvg));
     const avgTrunk = Math.round(validAngles.reduce((s, a) => s + a.trunkLean, 0) / validAngles.length);
     const maxHip = Math.max(...validAngles.map(a => a.hipAngle));
 
-    // Detección de fase aérea (vuelo): elevación simultánea de tobillos
-    const maxAnkleY = Math.max(...validAngles.map(a => Math.max(a.lAnkleY, a.rAnkleY)));
+    // Desglose de asimetrías articulares y valores pico (frame a frame)
+    const kneeDiffs = validAngles.map(a => a.kneeDiff !== undefined ? a.kneeDiff : Math.abs(a.lKnee - a.rKnee));
+    const maxKneeDiff = Math.max(...kneeDiffs);
+    const avgKneeDiff = kneeDiffs.reduce((s, d) => s + d, 0) / (kneeDiffs.length || 1);
+
+    const hipDiffs = validAngles.map(a => a.hipDiff !== undefined ? a.hipDiff : 0);
+    const maxHipDiff = Math.max(...hipDiffs, 0);
+
+    const elbowDiffs = validAngles.map(a => a.elbowDiff !== undefined ? a.elbowDiff : Math.abs(a.lElbow - a.rElbow));
+    const maxElbowDiff = Math.max(...elbowDiffs);
+    const avgElbowDiff = elbowDiffs.reduce((s, d) => s + d, 0) / (elbowDiffs.length || 1);
+
+    const ankleYDiffs = validAngles.map(a => a.ankleYDiff !== undefined ? a.ankleYDiff : Math.abs(a.lAnkleY - a.rAnkleY));
+    const maxAnkleYDiff = Math.max(...ankleYDiffs);
+    const avgAnkleYDiff = ankleYDiffs.reduce((s, d) => s + d, 0) / (ankleYDiffs.length || 1);
+
+    const wristDists = validAngles.map(a => a.wristDist || 0.5);
+    const minWristDist = Math.min(...wristDists);
+
+    const ankleDists = validAngles.map(a => a.ankleDist || 0.25);
+    const ankleDistAvg = ankleDists.reduce((s, d) => s + d, 0) / (ankleDists.length || 1);
+
+    const maxWristAboveShoulder = validAngles.some(a => a.wristAboveShoulder === true);
+
+    // Estimación del nivel del suelo (el punto más bajo alcanzado por los tobillos)
+    const groundLevelY = Math.max(...validAngles.map(a => Math.max(a.lAnkleY, a.rAnkleY)));
+
+    // Detección estricta de Fase Aérea (Vuelo): AMBOS pies deben despegar simultáneamente del suelo
     const flightFrames = [];
     validAngles.forEach((a, idx) => {
-        if (a.lAnkleY < maxAnkleY - 0.04 && a.rAnkleY < maxAnkleY - 0.04) {
+        if (a.lAnkleY < groundLevelY - 0.045 && a.rAnkleY < groundLevelY - 0.045) {
             flightFrames.push(idx + 1);
         }
     });
     const flightDetected = flightFrames.length > 0;
 
-    // Cálculo de simetría bilateral (% diferencia media entre extremidades)
-    const kneeDiffs = validAngles.map(a => Math.abs(a.lKnee - a.rKnee));
-    const avgDiff = kneeDiffs.reduce((s, d) => s + d, 0) / (kneeDiffs.length || 1);
-    const symmetryScore = Math.max(65, Math.min(98, Math.round(100 - (avgDiff * 0.7))));
+    // Detección de Apoyo Unipodal con Péndulo de Patada (Pateo):
+    // Un pie permanece firmemente en el suelo (apoyo) mientras el otro pie se eleva en el aire para el impacto
+    let singleSupportKick = false;
+    validAngles.forEach(a => {
+        const lowestAnkle = Math.max(a.lAnkleY, a.rAnkleY);
+        const highestAnkle = Math.min(a.lAnkleY, a.rAnkleY);
+        const ankleSeparation = lowestAnkle - highestAnkle;
+        // Pie de apoyo cerca del suelo Y pie ejecutante elevado
+        if (lowestAnkle >= groundLevelY - 0.035 && ankleSeparation >= 0.055) {
+            singleSupportKick = true;
+        }
+    });
+
+    // Variación dinámica angular rápida entre fotogramas consecutivos (delta de flexión de rodilla)
+    let rapidKneeDelta = 0;
+    for (let i = 1; i < validAngles.length; i++) {
+        const dL = Math.abs(validAngles[i].lKnee - validAngles[i - 1].lKnee);
+        const dR = Math.abs(validAngles[i].rKnee - validAngles[i - 1].rKnee);
+        rapidKneeDelta = Math.max(rapidKneeDelta, dL, dR);
+    }
+
+    // Desplazamiento del centro de masa (cadera) entre el primer y último frame
+    let hipDisplacement = 0.15;
+    if (validAngles.length >= 2 && validAngles[0].midHipX !== undefined) {
+        const first = validAngles[0];
+        const last = validAngles[validAngles.length - 1];
+        hipDisplacement = Math.hypot((last.midHipX || 0) - (first.midHipX || 0), (last.midHipY || 0) - (first.midHipY || 0));
+    }
+
+    const symmetryScore = Math.max(65, Math.min(98, Math.round(100 - (avgKneeDiff * 0.7))));
 
     return {
         hasLandmarks: true,
         minKneeAngle: minKnee,
         maxKneeAngle: maxKnee,
         avgElbowAngle: avgElbow,
+        maxElbowAngle: maxElbow,
+        minElbowAngle: minElbow,
         avgTrunkAngle: avgTrunk,
         maxHipAngle: maxHip,
+        maxWristAboveShoulder,
+        minWristDist,
+        avgAnkleYDiff,
+        maxAnkleYDiff,
+        avgKneeDiff,
+        maxKneeDiff,
+        maxHipDiff,
+        avgElbowDiff,
+        maxElbowDiff,
+        ankleDistAvg,
+        hipDisplacement,
+        singleSupportKick,
+        rapidKneeDelta,
         flightDetected,
-        flightFrames: flightFrames.length ? flightFrames : [3],
+        flightFrames: flightFrames.length ? flightFrames : [],
         symmetryScore,
         samplingMethod: 'Adaptativo por Diferencial de Luminancia'
     };
+}
+
+// CLASIFICADOR INTELIGENTE DE HABILIDAD MOTRIZ (AUTO-DETECCIÓN CINEMÁTICA Y SEMÁNTICA)
+function classifySkillFromKinematics(telemetry, userText) {
+    // 1. Análisis semántico prioritario si el docente escribe una palabra clave en el chat
+    if (userText && typeof userText === 'string') {
+        const txt = userText.toLowerCase();
+        if (txt.includes('pate') || txt.includes('chut') || txt.includes('balon') || txt.includes('balón') || txt.includes('pelota') || txt.includes('futbol') || txt.includes('fútbol') || txt.includes('golpe') || txt.includes('remat') || txt.includes('tiro')) return 'Patear';
+        if (txt.includes('lanz') || txt.includes('arroja') || txt.includes('tirar') || txt.includes('lanzamiento') || txt.includes('sobre hombro')) return 'Lanzamiento Sobre Hombro';
+        if (txt.includes('atrap') || txt.includes('recep') || txt.includes('coger') || txt.includes('recibir') || txt.includes('guante')) return 'Recepción y Atrape';
+        if (txt.includes('pata sola') || txt.includes('salto unipodal') || txt.includes('unipodal') || txt.includes('un solo pie') || txt.includes('un pie') || txt.includes('cojito')) return 'Salto Unipodal';
+        if (txt.includes('salto horizontal') || txt.includes('salto largo') || txt.includes('saltar') || txt.includes('brinc') || txt.includes('salto')) return 'Salto Horizontal';
+        if (txt.includes('estatico') || txt.includes('estático') || txt.includes('flamenco') || txt.includes('parado') || txt.includes('equilibrio estatico')) return 'Equilibrio Estático Unipodal';
+        if (txt.includes('dinamico') || txt.includes('dinámico') || txt.includes('linea') || txt.includes('línea') || txt.includes('viga') || txt.includes('caminar linea')) return 'Equilibrio Dinámico';
+        if (txt.includes('marcha') || txt.includes('caminar') || txt.includes('paso') || txt.includes('caminata')) return 'Marcha';
+        if (txt.includes('corre') || txt.includes('carrera') || txt.includes('sprint') || txt.includes('velocidad') || txt.includes('trote')) return 'Carrera';
+    }
+
+    if (!telemetry || !telemetry.hasLandmarks) {
+        return 'Carrera';
+    }
+
+    // 2. Clasificador Cinemático Diferencial por Puntuación Biomecánica Ponderada
+    const scores = {
+        'Patear': 0,
+        'Lanzamiento Sobre Hombro': 0,
+        'Recepción y Atrape': 0,
+        'Salto Horizontal': 0,
+        'Salto Unipodal': 0,
+        'Equilibrio Estático Unipodal': 0,
+        'Equilibrio Dinámico': 0,
+        'Marcha': 0,
+        'Carrera': 0
+    };
+
+    // A. PATEAR [HMB-M]: Apoyo unipodal en suelo con péndulo/oscilación dinámica de la pierna ejecutante
+    if (telemetry.singleSupportKick) scores['Patear'] += 80;
+    if (telemetry.maxAnkleYDiff >= 0.055) scores['Patear'] += 45;
+    if (telemetry.maxKneeDiff >= 16) scores['Patear'] += 35;
+    if (telemetry.maxHipAngle >= 22 || telemetry.maxHipDiff >= 18) scores['Patear'] += 30;
+    if (telemetry.rapidKneeDelta >= 15) scores['Patear'] += 25;
+    if (!telemetry.maxWristAboveShoulder && telemetry.minWristDist > 0.20) scores['Patear'] += 20;
+    if (!telemetry.flightDetected) scores['Patear'] += 25;
+
+    // B. LANZAMIENTO SOBRE HOMBRO [HMB-M]: Elevación de muñeca sobre el plano del hombro
+    if (telemetry.maxWristAboveShoulder) scores['Lanzamiento Sobre Hombro'] += 85;
+    if (telemetry.maxElbowDiff >= 24) scores['Lanzamiento Sobre Hombro'] += 40;
+    if (telemetry.maxElbowAngle >= 140) scores['Lanzamiento Sobre Hombro'] += 30;
+    if (telemetry.maxHipAngle >= 24) scores['Lanzamiento Sobre Hombro'] += 15;
+
+    // C. RECEPCIÓN Y ATRAPE [HMB-M]: Muñecas juntas en copa frente al pecho
+    if (telemetry.minWristDist <= 0.26) scores['Recepción y Atrape'] += 80;
+    if (telemetry.avgElbowAngle >= 70 && telemetry.avgElbowAngle <= 130) scores['Recepción y Atrape'] += 35;
+    if (!telemetry.maxWristAboveShoulder && telemetry.maxKneeDiff < 20) scores['Recepción y Atrape'] += 25;
+
+    // D. SALTO HORIZONTAL [HMB-L]: Despegue y vuelo bipodal simétrico con flexión previa
+    if (telemetry.flightDetected && telemetry.minKneeAngle <= 125 && telemetry.maxKneeAngle >= 150) scores['Salto Horizontal'] += 60;
+    if (telemetry.maxKneeDiff <= 22 && telemetry.maxAnkleYDiff <= 0.06 && telemetry.flightDetected) scores['Salto Horizontal'] += 45;
+
+    // E. SALTO UNIPODAL [HMB-L]: Fase aérea de vuelo pero manteniendo asimetría vertical continua
+    if (telemetry.flightDetected && telemetry.avgAnkleYDiff >= 0.07) scores['Salto Unipodal'] += 65;
+    if (telemetry.flightDetected && telemetry.maxKneeDiff >= 20) scores['Salto Unipodal'] += 35;
+
+    // F. EQUILIBRIO ESTÁTICO UNIPODAL [HMB-E]: Un pie suspendido con desplazamiento de masa casi nulo
+    if (telemetry.hipDisplacement <= 0.07 && telemetry.avgAnkleYDiff >= 0.06) scores['Equilibrio Estático Unipodal'] += 75;
+    if (!telemetry.flightDetected && telemetry.avgAnkleYDiff >= 0.06) scores['Equilibrio Estático Unipodal'] += 35;
+
+    // G. EQUILIBRIO DINÁMICO [HMB-E]: Paso estrecho en línea recta sin vuelo y brazos en abducción
+    if (!telemetry.flightDetected && telemetry.ankleDistAvg <= 0.18 && telemetry.avgTrunkAngle <= 8) scores['Equilibrio Dinámico'] += 50;
+    if (telemetry.minKneeAngle >= 120 && (telemetry.minWristDist >= 0.45 || telemetry.avgElbowAngle >= 105)) scores['Equilibrio Dinámico'] += 35;
+
+    // H. MARCHA [HMB-L]: Doble apoyo continuo sin vuelo, tronco erguido y zancadas alternadas simétricas
+    if (!telemetry.flightDetected && telemetry.minKneeAngle >= 112 && telemetry.avgTrunkAngle <= 9) scores['Marcha'] += 45;
+    if (!telemetry.flightDetected && telemetry.maxKneeDiff < 20 && telemetry.maxAnkleYDiff < 0.05 && telemetry.maxHipAngle >= 20) scores['Marcha'] += 35;
+
+    // I. CARRERA [HMB-L]: Fase aérea confirmada + flexión profunda de recobro (≤98°) + braceo sagital
+    if (telemetry.flightDetected && telemetry.minKneeAngle <= 98) scores['Carrera'] += 60;
+    if (telemetry.flightDetected && telemetry.avgElbowAngle >= 75 && telemetry.avgElbowAngle <= 115) scores['Carrera'] += 35;
+    if (telemetry.avgTrunkAngle >= 4 && telemetry.avgTrunkAngle <= 18 && telemetry.flightDetected) scores['Carrera'] += 20;
+
+    // Identificar la habilidad ganadora con mayor puntuación acumulada
+    let bestSkill = 'Carrera';
+    let maxScore = -1;
+    for (const [skillName, score] of Object.entries(scores)) {
+        if (score > maxScore) {
+            maxScore = score;
+            bestSkill = skillName;
+        }
+    }
+
+    console.log('🔍 [Auto-Detección Cinemática HMB] Puntuaciones:', scores, '=> Clasificación final:', bestSkill);
+    return bestSkill;
 }
 
 // TABLA CIENTÍFICA DE REGLAS DE EVALUACIÓN BIOMECÁNICA
@@ -1911,7 +2115,6 @@ const biomechanicalRulesTable = {
 // MOTOR DETERMINISTA BASADO EN LANDMARKS Y REGLAS CUANTITATIVAS (BATERÍA HMB)
 function runLocalBiomechanicalEngine(skillCode, gradeCode, obsText, frames) {
     const skillMap = {
-        'auto': 'Carrera',
         'carrera': 'Carrera',
         'salto': 'Salto Horizontal',
         'salto_horizontal': 'Salto Horizontal',
@@ -1927,14 +2130,21 @@ function runLocalBiomechanicalEngine(skillCode, gradeCode, obsText, frames) {
         'equilibrio_estatico': 'Equilibrio Estático Unipodal'
     };
 
-    const resolvedSkill = skillMap[skillCode] || 'Carrera';
-    const ruleSet = biomechanicalRulesTable[resolvedSkill] || biomechanicalRulesTable['Carrera'];
-
     // 1. Extraer telemetría real de los fotogramas
     const telemetry = aggregateVideoTelemetry(frames);
     lastAnalyzedTelemetry = telemetry;
 
-    // 2. Evaluar cada criterio contra las reglas cuantitativas de la Batería HMB
+    // 2. Resolver la habilidad: si es 'auto', clasificar inteligentemente a partir de la cinemática
+    let resolvedSkill = skillMap[skillCode];
+    let isAutoDetected = false;
+    if (!resolvedSkill || skillCode === 'auto') {
+        resolvedSkill = classifySkillFromKinematics(telemetry, obsText);
+        isAutoDetected = true;
+    }
+
+    const ruleSet = biomechanicalRulesTable[resolvedSkill] || biomechanicalRulesTable['Carrera'];
+
+    // 3. Evaluar cada criterio contra las reglas cuantitativas de la Batería HMB
     const evaluatedCriteria = [];
     const criticalErrors = [];
 
@@ -1961,8 +2171,11 @@ function runLocalBiomechanicalEngine(skillCode, gradeCode, obsText, frames) {
     if (maturityPct >= 80) estadio = 'Maduro';
     else if (maturityPct < 40) estadio = 'Inicial';
 
+    const detectionOrigin = isAutoDetected ? `🔍 [Detección Automática por Cinemática WASM: ${resolvedSkill}]` : `[Evaluación Dirigida: ${resolvedSkill}]`;
+
     return {
         habilidad_detectada: resolvedSkill,
+        es_deteccion_automatica: isAutoDetected,
         componente_hmb: ruleSet.componente || '[HMB-L] Locomoción',
         prueba_nro: ruleSet.prueba_nro || 1,
         puntaje_obtenido: `${passedCount}/${totalCount}`,
@@ -1970,7 +2183,7 @@ function runLocalBiomechanicalEngine(skillCode, gradeCode, obsText, frames) {
         edad_calibrada: gradeCode.replace('_', ' '),
         estadio_gallahue: estadio,
         porcentaje_madurez: maturityPct,
-        resumen_biomecanico: `Evaluación cinemática instrumental según la **Batería de HMB (González Palacio & Montoya Grisales, 2021 · Dialnet 7925607)** mediante **MediaPipe Pose Tasks (WASM)**. El estudiante obtiene un puntaje de **${passedCount}/${totalCount} puntos (${maturityPct}%)**, ubicándose en **Estadio ${estadio}**. Parámetros articulares medidos: flexión de rodilla ${telemetry.minKneeAngle}°, braceo medio ${telemetry.avgElbowAngle}°, inclinación de tronco ${telemetry.avgTrunkAngle}° y simetría bilateral ${telemetry.symmetryScore}%.`,
+        resumen_biomecanico: `${detectionOrigin} Evaluación cinemática instrumental según la **Batería de HMB (González Palacio & Montoya Grisales, 2021 · Dialnet 7925607)** mediante **MediaPipe Pose Tasks (WASM)**. El estudiante obtiene un puntaje de **${passedCount}/${totalCount} puntos (${maturityPct}%)**, ubicándose en **Estadio ${estadio}**. Parámetros articulares medidos: flexión de rodilla ${telemetry.minKneeAngle}°, braceo medio ${telemetry.avgElbowAngle}°, inclinación de tronco ${telemetry.avgTrunkAngle}° y simetría bilateral ${telemetry.symmetryScore}%.`,
         criterios: evaluatedCriteria,
         analisis_articular: {
             angulos_principales: `Flexión mínima rodilla: ${telemetry.minKneeAngle}°, Ángulo medio codo: ${telemetry.avgElbowAngle}°, Inclinación tronco: ${telemetry.avgTrunkAngle}°`,
@@ -1992,25 +2205,50 @@ async function callGeminiVision(skill, grade, obsText, frames) {
     const telemetry = aggregateVideoTelemetry(frames);
     lastAnalyzedTelemetry = telemetry;
 
+    const isAuto = (!skill || skill === 'auto' || skill === 'Detección Automática' || skill.includes('Automática'));
+    const suggestedSkill = classifySkillFromKinematics(telemetry, obsText);
+
+    const skillInstruction = isAuto 
+        ? `ESTÁS EN MODO DETECCIÓN AUTOMÁTICA:
+Analiza los fotogramas y la cinemática para CLASIFICAR cuál de las 9 habilidades de la Batería HMB se está ejecutando:
+- "Carrera"
+- "Salto Horizontal"
+- "Marcha"
+- "Salto Unipodal"
+- "Lanzamiento Sobre Hombro"
+- "Recepción y Atrape"
+- "Patear"
+- "Equilibrio Dinámico"
+- "Equilibrio Estático Unipodal"
+(Sugerencia estimada por cinemática local de MediaPipe: "${suggestedSkill}").
+Coloca obligatoriamente el nombre exacto de la habilidad identificada en el campo "habilidad_detectada".`
+        : `Habilidad Específica Seleccionada por el Docente: "${skill}". Evalúa estrictamente los criterios de esta habilidad.`;
+
     const sysPrompt = `Eres un Biomecánico Deportivo y Docente Experto en Desarrollo Motor Infantil especializado en la evaluación de Habilidades Motrices Básicas (HMB) mediante la Batería Validada de Habilidades Motrices Básicas para Niños entre 5 y 11 Años (González Palacio, Montoya Grisales, Cardona, Marín & Muñoz, 2021 · Dialnet 7925607) y los estadios evolutivos de David L. Gallahue.
 Debes contrastar los fotogramas del estudiante contra la siguiente telemetría instrumental ya medida en el navegador mediante MediaPipe Pose (33 landmarks):
 
 DATOS CINEMÁTICOS REALES MEDIDOS EN EL NAVEGADOR:
-- Habilidad Evaluada: ${skill}
+${skillInstruction}
 - Edad Calibrada: ${grade}
-- Flexión mínima de rodilla medida: ${telemetry.minKneeAngle}° (Criterio maduro ≤90°)
-- Ángulo medio de codos (braceo): ${telemetry.avgElbowAngle}° (Criterio maduro 75°-105°)
-- Inclinación promedio de tronco: ${telemetry.avgTrunkAngle}° (Criterio maduro 5°-15°)
+- Flexión mínima de rodilla medida: ${telemetry.minKneeAngle}°
+- Ángulo medio de codos (braceo): ${telemetry.avgElbowAngle}°
+- Inclinación promedio de tronco: ${telemetry.avgTrunkAngle}°
 - Apertura máxima de zancada / cadera: ${telemetry.maxHipAngle}°
-- Fase de vuelo / despegue aéreo: ${telemetry.flightDetected ? 'DETECTADA' : 'NO DETECTADA'}
+- Apoyo unipodal con oscilación de patada (Pateo): ${telemetry.singleSupportKick ? 'DETECTADO (Un pie en suelo y pierna contraria en péndulo de golpeo)' : 'NO'}
+- Elevación de muñeca sobre hombro: ${telemetry.maxWristAboveShoulder ? 'SÍ (Gesto elevado / lanzamiento)' : 'NO'}
+- Distancia mínima entre muñecas: ${telemetry.minWristDist.toFixed(2)} (Manos juntas en copa: ${telemetry.minWristDist < 0.26 ? 'SÍ' : 'NO'})
+- Asimetría vertical máxima de tobillos: ${telemetry.maxAnkleYDiff.toFixed(2)}
+- Asimetría máxima entre rodillas: ${telemetry.maxKneeDiff}°
+- Fase de vuelo / despegue aéreo bilateral: ${telemetry.flightDetected ? 'DETECTADA (Ambos pies en aire)' : 'NO DETECTADA'}
 - Simetría bilateral: ${telemetry.symmetryScore}%
 
 INSTRUCCIÓN VITAL:
-Usa estrictamente estos datos cuantitativos reales medidos por MediaPipe. NO inventes otras mediciones numéricas. Evalúa los criterios dicotómicos (1 = logrado, 0 = en proceso) de la Batería HMB según los umbrales observados. Tu función es la interpretación pedagógica, la justificación cualitativa según González Palacio & Montoya Grisales y la redacción de consignas verbales para el niño ("El Lenguaje del Profe").
+Usa estrictamente estos datos cuantitativos reales medidos por MediaPipe. Evalúa los criterios dicotómicos (1 = logrado, 0 = en proceso) de la Batería HMB según los umbrales observados para la habilidad identificada. Tu función es la interpretación pedagógica, la justificación cualitativa según González Palacio & Montoya Grisales y la redacción de consignas verbales para el niño ("El Lenguaje del Profe").
 
 DEBES RESPONDER EXCLUSIVAMENTE CON UN OBJETO JSON VÁLIDO CON LA SIGUIENTE ESTRUCTURA:
 {
-  "habilidad_detectada": "${skill}",
+  "habilidad_detectada": "${isAuto ? suggestedSkill : skill}",
+  "es_deteccion_automatica": ${isAuto},
   "componente_hmb": "[HMB-L] Locomoción | [HMB-M] Manipulación | [HMB-E] Estabilidad-Equilibrio",
   "bateria_referencia": "Batería de Habilidades Motrices Básicas (González Palacio et al., 2021 · Dialnet 7925607)",
   "puntaje_obtenido": "4/5",
@@ -2035,7 +2273,7 @@ DEBES RESPONDER EXCLUSIVAMENTE CON UN OBJETO JSON VÁLIDO CON LA SIGUIENTE ESTRU
   ]
 }`;
 
-    const parts = [{ text: `Analiza los siguientes ${frames.length} fotogramas adaptativos del estudiante considerando la telemetría angular proporcionada:` }];
+    const parts = [{ text: `Analiza los siguientes ${frames.length} fotogramas adaptativos del estudiante considerando la telemetría angular proporcionada e identifica la HMB:` }];
 
     frames.forEach(f => {
         parts.push({
@@ -2072,6 +2310,7 @@ DEBES RESPONDER EXCLUSIVAMENTE CON UN OBJETO JSON VÁLIDO CON LA SIGUIENTE ESTRU
 
     const parsed = JSON.parse(cleanJSON(rawText));
     parsed.telemetria_medida = telemetry;
+    parsed.es_deteccion_automatica = isAuto;
     return parsed;
 }
 
@@ -2143,6 +2382,26 @@ async function sendMsg() {
 function handleDiagnosisOutput(data, teacherPrefs) {
     globalDiagnosticoData = data;
 
+    // Actualizar dinámicamente el modelo visual CGI si estaba en modo detección automática
+    if (selectedSkill === 'auto' && data && data.habilidad_detectada) {
+        const nameToCode = {
+            'Carrera': 'carrera',
+            'Salto Horizontal': 'salto',
+            'Marcha': 'marcha',
+            'Salto Unipodal': 'salto_unipodal',
+            'Lanzamiento Sobre Hombro': 'lanzar',
+            'Recepción y Atrape': 'atrapar',
+            'Patear': 'patear',
+            'Equilibrio Dinámico': 'equilibrio',
+            'Equilibrio Estático Unipodal': 'equilibrio_estatico'
+        };
+        const detectedCode = nameToCode[data.habilidad_detectada] || 'carrera';
+        updateCGIModel(detectedCode);
+
+        const subtitle = document.getElementById('currentSkillSubtitle');
+        if (subtitle) subtitle.textContent = `(Auto: ${data.habilidad_detectada})`;
+    }
+
     if (!isGroupActive) {
         // Modo individual: Mostrar reporte individual completo + Unidad didáctica individual
         addMsg('bot', renderDiagnosticoHTML(data, null), true);
@@ -2159,7 +2418,7 @@ function handleDiagnosisOutput(data, teacherPrefs) {
         addMsg('bot', renderDiagnosticoHTML(data, evaluatedStudents), true);
 
         if (evaluatedStudents < targetStudents) {
-            addMsg('bot', `<strong>Estudiante ${evaluatedStudents} registrado con éxito.</strong><br>Por favor carga la evidencia del <strong>Estudiante ${evaluatedStudents + 1}</strong> para continuar.`);
+            addMsg('bot', `<strong>Estudiante ${evaluatedStudents} registrado con éxito (${data.habilidad_detectada}).</strong><br>Por favor carga la evidencia del <strong>Estudiante ${evaluatedStudents + 1}</strong> para continuar.`);
         } else {
             addMsg('bot', `<strong>Se han completado los ${targetStudents} diagnósticos individuales del grupo.</strong><br>Haz clic en el panel para consolidar la <strong>Unidad Didáctica Colectiva</strong>.`);
         }
@@ -2195,6 +2454,12 @@ function renderDiagnosticoHTML(data, studentNum = null) {
     `).join('');
 
     let phrasesHTML = data.frases_profe.map(f => `<li>"${f}"</li>`).join('');
+
+    const autoBadgeHTML = data.es_deteccion_automatica
+        ? `<div style="background:rgba(56, 189, 248, 0.12); border:1px solid #38BDF8; color:#0284C7; font-size:11px; font-weight:700; padding:4px 8px; border-radius:4px; margin-bottom:8px; display:inline-flex; align-items:center; gap:6px;">
+            <span>🔍 Detección Automática Cinemática:</span> <strong>${data.habilidad_detectada}</strong>
+           </div>`
+        : '';
 
     const titleText = studentNum ? `ESTUDIANTE #${studentNum} · INFORME BIOMECÁNICO` : `INFORME BIOMECÁNICO DE MOVIMIENTO`;
 
@@ -2235,6 +2500,7 @@ function renderDiagnosticoHTML(data, studentNum = null) {
 
     return `
         <div class="diag-card">
+            ${autoBadgeHTML}
             <div class="diag-header-bar">
                 <div>
                     <div class="diag-title">${titleText}</div>
@@ -3103,73 +3369,237 @@ function generateGroupPlan() {
 }
 
 // EXPORTACIÓN A MICROSOFT WORD (.DOC) - FORMATO INSTITUCIONAL DE REPORTE BIOMECÁNICO
+// EXPORTACIÓN A MICROSOFT WORD (.DOC) - FORMATO INSTITUCIONAL DE REPORTE BIOMECÁNICO (100% RESPONSIVE Y SIN DISTORSIÓN)
 function exportDiagnosticoToWord() {
     if (!globalDiagnosticoData) return;
     const d = globalDiagnosticoData;
     const hoy = new Date().toLocaleDateString('es-CO');
 
-    let filasCriterios = d.criterios.map(c => `
+    let filasCriterios = d.criterios.map((c, idx) => {
+        const estadoColor = c.puntaje === 1 ? '#059669' : '#DC2626';
+        const estadoBg = c.puntaje === 1 ? '#ECFDF5' : '#FEF2F2';
+        const estadoText = c.puntaje === 1 ? '✓ LOGRADO' : '✗ EN PROCESO';
+        const medidoInfo = c.medido ? `<br><span style="font-family:Consolas, monospace; font-size:8.5pt; color:#0284C7;">[Medido: ${c.medido} | Umbral: ${c.umbral || '--'}]</span>` : '';
+        const obsInfo = c.observacion ? `<br><span style="font-size:8.5pt; color:#64748B;">Observación: ${c.observacion}</span>` : '';
+        
+        return `
         <tr>
-            <td style="padding:8px; border:1px solid #000;"><strong>${c.criterio}</strong><br><span style="font-size:9pt; color:#555;">Fase: ${c.fase || 'General'}</span></td>
-            <td style="padding:8px; border:1px solid #000; text-align:center; font-weight:bold; color:${c.puntaje === 1 ? '#059669' : '#DC2626'};">${c.puntaje === 1 ? 'LOGRADO' : 'EN PROCESO'}</td>
+            <td style="padding:7px 10px; border:1px solid #CBD5E1; vertical-align:top;">
+                <strong>${idx + 1}. ${c.criterio}</strong>
+                <span style="display:block; font-size:8.5pt; color:#475569; margin-top:2px;">Fase: <strong>${c.fase || 'Ejecución'}</strong></span>
+                ${medidoInfo}
+                ${obsInfo}
+            </td>
+            <td style="padding:7px 10px; border:1px solid #CBD5E1; text-align:center; vertical-align:middle; background-color:${estadoBg}; width:120px;">
+                <span style="font-weight:bold; font-size:9pt; color:${estadoColor};">${estadoText}</span>
+            </td>
         </tr>
+    `;
+    }).join('');
+
+    let erroresText = d.errores_criticos.map(e => `
+        <li style="margin-bottom:6px;">
+            <strong style="color:#B91C1C;">${e.error}:</strong> 
+            <span style="color:#334155;">${e.impacto_biomecanico}</span>
+        </li>
     `).join('');
 
-    let erroresText = d.errores_criticos.map(e => `<li><strong>${e.error}:</strong> ${e.impacto_biomecanico}</li>`).join('');
-    let frasesText = d.frases_profe.map(f => `<li>"${f}"</li>`).join('');
+    let frasesText = d.frases_profe.map(f => `
+        <li style="margin-bottom:5px; font-style:italic; color:#0F172A;">"${f}"</li>
+    `).join('');
+
+    const t = d.telemetria_medida;
+    const flightText = t ? (t.flightDetected ? 'DETECTADA Y CONFIRMADA' : 'NO EVIDENTE / DOBLE APOYO') : 'DETECTADA';
 
     const docHtml = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-    <head><meta charset='utf-8'><title>Reporte Biomecánico Aula Global 360</title>
+    <head>
+    <meta charset='utf-8'>
+    <title>Reporte Biomecánico HMB - Aula Global 360</title>
+    <!--[if gte mso 9]>
+    <xml>
+    <w:WordDocument>
+        <w:View>Print</w:View>
+        <w:Zoom>100</w:Zoom>
+        <w:DoNotOptimizeForBrowser/>
+    </w:WordDocument>
+    </xml>
+    <![endif]-->
     <style>
-        body { font-family: 'Calibri', 'Arial', sans-serif; font-size: 11pt; color: #1E293B; line-height: 1.3; }
-        h1 { text-align: center; color: #0284C7; font-size: 16pt; margin-bottom: 4px; }
-        .sub { text-align: center; color: #64748B; font-size: 10pt; margin-bottom: 20px; }
-        table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
-        th { background-color: #E2E8F0; padding: 8px; border: 1px solid #000; text-align: left; }
-        td { padding: 6px 8px; border: 1px solid #000; }
-    </style></head>
+        @page {
+            size: letter portrait;
+            margin: 1.8cm 1.8cm 1.8cm 1.8cm;
+            mso-page-orientation: portrait;
+        }
+        body {
+            font-family: 'Calibri', 'Arial', sans-serif;
+            font-size: 10pt;
+            color: #0F172A;
+            line-height: 1.35;
+            background-color: #FFFFFF;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 12px;
+            table-layout: fixed;
+            word-wrap: break-word;
+            mso-table-lspace: 0pt;
+            mso-table-rspace: 0pt;
+        }
+        th, td {
+            border: 1px solid #CBD5E1;
+            padding: 6px 9px;
+            vertical-align: top;
+            font-size: 9.5pt;
+        }
+        .header-title {
+            text-align: center;
+            font-size: 14pt;
+            font-weight: bold;
+            color: #0369A1;
+            text-transform: uppercase;
+            margin-bottom: 2px;
+        }
+        .header-sub {
+            text-align: center;
+            font-size: 9pt;
+            color: #64748B;
+            margin-bottom: 14px;
+        }
+        .hdr-main {
+            background-color: #0284C7;
+            color: #FFFFFF;
+            font-weight: bold;
+            text-align: left;
+            padding: 6px 10px;
+            font-size: 10pt;
+            text-transform: uppercase;
+        }
+        .hdr-sub {
+            background-color: #F1F5F9;
+            font-weight: bold;
+            font-size: 9pt;
+            color: #334155;
+        }
+        ul, ol {
+            margin: 4px 0 4px 18px;
+            padding: 0;
+        }
+    </style>
+    </head>
     <body>
-        <h1>INFORME DE EVALUACIÓN BIOMECÁNICA HMB</h1>
-        <div class="sub">Plataforma AULA GLOBAL 360 · Batería Validada · Fecha: ${hoy}</div>
+        <div class="header-title">INFORME DE EVALUACIÓN BIOMECÁNICA HMB</div>
+        <div class="header-sub">Plataforma AULA GLOBAL 360 · Batería Validada (Dialnet 7925607) · Fecha: ${hoy}</div>
 
+        <!-- TABLA 1: DATOS Y RESUMEN DE MADUREZ -->
         <table>
-            <tr><td colspan="2" style="background:#F1F5F9; padding:8px; font-weight:bold;">DATOS DEL ESTUDIANTE Y EVALUACIÓN INSTRUMENTAL</td></tr>
-            <tr><td><strong>Habilidad Evaluada:</strong> ${d.habilidad_detectada.toUpperCase()}</td><td><strong>Estadio Motor:</strong> ${d.estadio_gallahue.toUpperCase()}</td></tr>
-            <tr><td><strong>Componente HMB:</strong> ${d.componente_hmb || '[HMB-L] Locomoción'}</td><td><strong>Puntuación Batería HMB:</strong> ${d.puntaje_obtenido || d.porcentaje_madurez + '%'}</td></tr>
-            <tr><td><strong>Índice de Madurez:</strong> ${d.porcentaje_madurez}%</td><td><strong>Calibración Etaria:</strong> ${d.edad_calibrada || '5 a 11 años'}</td></tr>
-            <tr><td colspan="2" style="font-size:8.5pt; color:#475569; background:#F8FAFC;"><strong>Marco Científico:</strong> Batería de Habilidades Motrices Básicas para Niños entre 5 y 11 Años (González Palacio, Montoya Grisales, Cardona, Marín & Muñoz, 2021 · Dialnet 7925607).</td></tr>
-        </table>
-
-        <!-- TABLA TELEMETRÍA MEDIAPIPE -->
-        <h3>1. Telemetría Cinemática Medida (MediaPipe Pose WASM · 33 Landmarks)</h3>
-        <table>
-            <tr><th style="width:50%;">Variable Cinemática</th><th style="width:50%;">Medición Obtenida / Estado</th></tr>
-            <tr><td><strong>Flexión Mínima de Rodilla (Recobro):</strong></td><td>${d.telemetria_medida ? d.telemetria_medida.minKneeAngle + '° (Umbral maduro ≤90°)' : '108° (≤90°)'}</td></tr>
-            <tr><td><strong>Ángulo Medio de Codos (Braceo):</strong></td><td>${d.telemetria_medida ? d.telemetria_medida.avgElbowAngle + '° (Rango óptimo 75°-105°)' : '94° (75°-105°)'}</td></tr>
-            <tr><td><strong>Inclinación del Tronco respecto a la Vertical:</strong></td><td>${d.telemetria_medida ? d.telemetria_medida.avgTrunkAngle + '° (Rango fisiológico 5°-15°)' : '8° (5°-15°)'}</td></tr>
-            <tr><td><strong>Fase de Vuelo / Despegue Aéreo:</strong></td><td>${d.telemetria_medida ? (d.telemetria_medida.flightDetected ? 'DETECTADA Y CONFIRMADA' : 'NO DETECTADA') : 'DETECTADA'}</td></tr>
-            <tr><td><strong>Simetría Bilateral de Movimiento:</strong></td><td>${d.telemetria_medida ? d.telemetria_medida.symmetryScore + '%' : '86%'}</td></tr>
-            <tr><td><strong>Método de Muestreo:</strong></td><td>Adaptativo por Diferencial de Luminancia y Picos de Energía</td></tr>
-        </table>
-
-        <h3>2. Batería de Criterios Biomecánicos Contrastados</h3>
-        <table>
-            <thead><tr><th>Criterio Evaluado</th><th style="width:130px; text-align:center;">Estado</th></tr></thead>
-            <tbody>${filasCriterios}</tbody>
-        </table>
-
-        <h3>2. Diagnóstico y Anomalías Cinemáticas</h3>
-        <p style="background:#F8FAFC; border:1px solid #E2E8F0; padding:10px;">${d.resumen_biomecanico}</p>
-        <ul>${erroresText}</ul>
-
-        <h3>3. Orientaciones Pedagógicas ("El Lenguaje del Profe")</h3>
-        <ul>${frasesText}</ul>
-
-        <br><br>
-        <table style="border:none; margin-top:30px;">
             <tr>
-                <td style="border:none; text-align:center; width:50%;">___________________________________<br><strong>Firma Docente Evaluador</strong></td>
-                <td style="border:none; text-align:center; width:50%;">___________________________________<br><strong>Firma Acudiente / Padre de Familia</strong></td>
+                <td colspan="2" class="hdr-main">1. DATOS GENERALES Y RESULTADO EVOLUTIVO</td>
+            </tr>
+            <tr>
+                <td style="width:50%;"><strong>Habilidad Evaluada:</strong> ${d.habilidad_detectada.toUpperCase()}</td>
+                <td style="width:50%;"><strong>Componente:</strong> ${d.componente_hmb || '[HMB-L] Locomoción'}</td>
+            </tr>
+            <tr>
+                <td><strong>Puntuación Batería HMB:</strong> ${d.puntaje_obtenido || d.porcentaje_madurez + '%'} (${d.porcentaje_madurez}% de madurez)</td>
+                <td><strong>Estadio de Desarrollo (Gallahue):</strong> <span style="font-weight:bold; color:#0284C7;">${d.estadio_gallahue.toUpperCase()}</span></td>
+            </tr>
+            <tr>
+                <td><strong>Calibración por Edad / Grado:</strong> ${d.edad_calibrada || '5 a 11 años'}</td>
+                <td><strong>Modalidad:</strong> ${d.es_deteccion_automatica ? 'Detección Automática por Cinemática' : 'Evaluación Dirigida'}</td>
+            </tr>
+            <tr>
+                <td colspan="2" style="background:#F8FAFC; font-size:8.5pt; color:#475569;">
+                    <strong>Marco Científico:</strong> Batería de Habilidades Motrices Básicas para Niños entre 5 y 11 Años (González Palacio, Montoya Grisales, Cardona, Marín & Muñoz, 2021 · Dialnet 7925607) y Estadios de Desarrollo Motor (David L. Gallahue).
+                </td>
+            </tr>
+        </table>
+
+        <!-- TABLA 2: TELEMETRÍA ARTICULAR -->
+        <table>
+            <tr>
+                <td colspan="2" class="hdr-main">2. TELEMETRÍA CINEMÁTICA ARTICULAR (MEDIAPIPE POSE WASM · 33 LANDMARKS)</td>
+            </tr>
+            <tr>
+                <td class="hdr-sub" style="width:55%;">Variable Articular Medida</td>
+                <td class="hdr-sub" style="width:45%; text-align:center;">Medición Obtenida / Rango Maduro</td>
+            </tr>
+            <tr>
+                <td><strong>Flexión Mínima de Rodilla (Recobro / Carga):</strong></td>
+                <td style="text-align:center;">${t ? t.minKneeAngle + '°' : '108°'} <span style="font-size:8.5pt; color:#64748B;">(Criterio maduro ≤90°)</span></td>
+            </tr>
+            <tr>
+                <td><strong>Ángulo Medio de Codos (Braceo Sagital):</strong></td>
+                <td style="text-align:center;">${t ? t.avgElbowAngle + '°' : '94°'} <span style="font-size:8.5pt; color:#64748B;">(Rango óptimo 75°-105°)</span></td>
+            </tr>
+            <tr>
+                <td><strong>Inclinación del Tronco respecto a la Vertical:</strong></td>
+                <td style="text-align:center;">${t ? t.avgTrunkAngle + '°' : '8°'} <span style="font-size:8.5pt; color:#64748B;">(Fisiológico 5°-15°)</span></td>
+            </tr>
+            <tr>
+                <td><strong>Apertura Angular de Cadera / Zancada:</strong></td>
+                <td style="text-align:center;">${t ? t.maxHipAngle + '°' : '32°'} <span style="font-size:8.5pt; color:#64748B;">(Apertura activa)</span></td>
+            </tr>
+            <tr>
+                <td><strong>Fase Aérea / Despegue de Vuelo:</strong></td>
+                <td style="text-align:center; font-weight:bold; color:${t && t.flightDetected ? '#059669' : '#D97706'};">${flightText}</td>
+            </tr>
+            <tr>
+                <td><strong>Simetría Bilateral Cinemática:</strong></td>
+                <td style="text-align:center; font-weight:bold;">${t ? t.symmetryScore + '%' : '86%'}</td>
+            </tr>
+        </table>
+
+        <!-- TABLA 3: CRITERIOS CONTRASTADOS -->
+        <table>
+            <tr>
+                <td colspan="2" class="hdr-main">3. BATERÍA DE CRITERIOS BIOMECÁNICOS CONTRASTADOS (0 / 1)</td>
+            </tr>
+            <tr>
+                <td class="hdr-sub" style="width:75%;">Criterio Técnico Evaluado y Mediciones Articulares</td>
+                <td class="hdr-sub" style="width:25%; text-align:center;">Resultado</td>
+            </tr>
+            ${filasCriterios}
+        </table>
+
+        <!-- DIAGNÓSTICO CUALITATIVO Y RECOMENDACIONES -->
+        <table>
+            <tr>
+                <td class="hdr-main">4. SÍNTESIS BIOMECÁNICA Y ANOMALÍAS CINEMÁTICAS OBSERVADAS</td>
+            </tr>
+            <tr>
+                <td style="padding:10px; background:#F8FAFC; line-height:1.45;">
+                    <div style="margin-bottom:8px;">${d.resumen_biomecanico}</div>
+                    <div style="font-weight:bold; color:#B91C1C; margin-top:8px; margin-bottom:4px; font-size:9pt; text-transform:uppercase;">Anomalías detectadas en la cadena cinética:</div>
+                    <ul>${erroresText}</ul>
+                </td>
+            </tr>
+        </table>
+
+        <table>
+            <tr>
+                <td class="hdr-main">5. CONSIGNAS VERBALES PARA EL ESTUDIANTE ("EL LENGUAJE DEL PROFE")</td>
+            </tr>
+            <tr>
+                <td style="padding:10px; background:#F8FAFC;">
+                    <ul>${frasesText}</ul>
+                </td>
+            </tr>
+        </table>
+
+        <!-- FIRMAS INSTITUCIONALES -->
+        <table style="border:none; margin-top:35px; page-break-inside:avoid;">
+            <tr>
+                <td style="border:none; text-align:center; width:50%; vertical-align:bottom;">
+                    ____________________________________________<br>
+                    <strong>Firma Docente Evaluador</strong><br>
+                    <span style="font-size:8.5pt; color:#64748B;">Docente de Educación Física</span>
+                </td>
+                <td style="border:none; text-align:center; width:50%; vertical-align:bottom;">
+                    ____________________________________________<br>
+                    <strong>Firma Acudiente / Padre de Familia</strong><br>
+                    <span style="font-size:8.5pt; color:#64748B;">C.C. ________________________</span>
+                </td>
             </tr>
         </table>
     </body></html>`;
@@ -3177,44 +3607,49 @@ function exportDiagnosticoToWord() {
     downloadDocFile(docHtml, `Reporte_Estudiante_${d.habilidad_detectada.replace(/\s+/g, '_')}.doc`);
 }
 
-// EXPORTACIÓN DE UNIDAD DIDÁCTICA COMPLETA CON TODAS LAS CLASES DEL PERÍODO EN FORMATO INSTITUCIONAL EXACTO (.DOC)
+// EXPORTACIÓN DE UNIDAD DIDÁCTICA COMPLETA CON TODAS LAS CLASES DEL PERÍODO EN FORMATO INSTITUCIONAL EXACTO (100% RESPONSIVE Y SIN DISTORSIÓN)
 function exportToWord() {
     if (!globalDidacticaData) return;
     const d = globalDidacticaData;
     const hoy = new Date().toLocaleDateString('es-CO');
 
-    const objEspHtml = d.objetivos_especificos.map(o => `<li>${o}</li>`).join('');
-    const retroHtml = d.retroalimentacion_tips.map(t => `<li>${t}</li>`).join('');
+    const objEspHtml = d.objetivos_especificos.map(o => `<li style="margin-bottom:3px;">${o}</li>`).join('');
+    const retroHtml = d.retroalimentacion_tips.map(t => `<li style="margin-bottom:3px; font-style:italic;">"${t}"</li>`).join('');
 
-    // Generación de las filas de cada clase de la secuencia progresiva
+    // Generación modular vertical de las clases (inmune a distorsiones en pantallas móviles)
     const clasesDocHtml = d.clases_secuencia.map(c => `
-        <table style="margin-top:10px; margin-bottom:14px; page-break-inside:avoid;">
+        <table style="margin-top:8px; margin-bottom:12px; page-break-inside:avoid; width:100%; border:1px solid #CBD5E1;">
             <tr>
-                <td colspan="4" class="hdr-main" style="background-color:#E2E8F0; text-align:left; font-size:10pt;">
-                    <strong>CLASE ${c.numero} DE ${d.total_clases}: ${c.titulo.toUpperCase()}</strong> &nbsp;|&nbsp; <span style="font-weight:normal; font-size:9pt;">${c.fase_pedagogica} · Duración: ${d.duracion_clase}</span>
+                <td colspan="2" class="hdr-main" style="background-color:#0284C7; color:#FFFFFF; text-align:left; font-size:10pt;">
+                    <strong>SESIÓN ${c.numero} DE ${d.total_clases}: ${c.titulo.toUpperCase()}</strong> &nbsp;|&nbsp; 
+                    <span style="font-weight:normal; font-size:8.5pt;">${c.fase_pedagogica} · Duración: ${d.duracion_clase}</span>
                 </td>
             </tr>
             <tr>
-                <td class="hdr-col" style="width:25%;">OBJETIVO ESPECÍFICO</td>
-                <td colspan="3">${c.objetivo}</td>
+                <td class="hdr-col" style="width:28%;"><strong>OBJETIVO ESPECÍFICO</strong></td>
+                <td style="width:72%;">${c.objetivo}</td>
             </tr>
             <tr>
-                <td class="hdr-sub" style="width:25%;">PARTE INICIAL (${d.duraciones.inicial})</td>
-                <td class="hdr-sub" style="width:50%;" colspan="2">PARTE CENTRAL (${d.duraciones.central})</td>
-                <td class="hdr-sub" style="width:25%;">PARTE FINAL (${d.duraciones.final})</td>
-            </tr>
-            <tr>
+                <td class="hdr-sub"><strong>PARTE INICIAL (${d.duraciones.inicial})</strong><br><span style="font-size:8pt; font-weight:normal; color:#64748B;">Activación y Movilidad</span></td>
                 <td>${c.actividad_inicial}</td>
-                <td colspan="2">
-                    <strong>1. Montaje y Distribución Espacial (${d.formato}):</strong><br>${c.distribucion}<br><br>
-                    <strong>2. Desarrollo de la Tarea Motriz:</strong><br>${c.actividad_central}<br><br>
-                    <strong>3. Consigna Clave ("El Lenguaje del Profe"):</strong><br><em>"${c.consigna}"</em>
+            </tr>
+            <tr>
+                <td class="hdr-sub"><strong>PARTE CENTRAL (${d.duraciones.central})</strong><br><span style="font-size:8pt; font-weight:normal; color:#64748B;">Desarrollo y Tareas Motrices</span></td>
+                <td>
+                    <div style="margin-bottom:6px;"><strong>1. Montaje y Distribución Espacial (${d.formato}):</strong><br>${c.distribucion}</div>
+                    <div style="margin-bottom:6px;"><strong>2. Desarrollo de la Tarea Motriz:</strong><br>${c.actividad_central}</div>
+                    <div style="background:#F1F5F9; padding:5px 8px; border-radius:3px; border-left:3px solid #0284C7;">
+                        <strong>3. Consigna Clave ("El Lenguaje del Profe"):</strong><br><em>"${c.consigna}"</em>
+                    </div>
                 </td>
+            </tr>
+            <tr>
+                <td class="hdr-sub"><strong>PARTE FINAL (${d.duraciones.final})</strong><br><span style="font-size:8pt; font-weight:normal; color:#64748B;">Vuelta a la Calma</span></td>
                 <td>${c.actividad_final}</td>
             </tr>
             <tr>
-                <td class="hdr-col">INDICADOR DE AVANCE / CRITERIO EVALUATIVO</td>
-                <td colspan="3">${c.criterio_eval}</td>
+                <td class="hdr-col"><strong>INDICADOR DE EVALUACIÓN</strong></td>
+                <td style="background:#F8FAFC;"><strong>Criterio de logro:</strong> ${c.criterio_eval}</td>
             </tr>
         </table>
     `).join('');
@@ -3234,64 +3669,58 @@ function exportToWord() {
     <![endif]-->
     <style>
         @page {
-            size: letter;
-            margin: 2cm 2cm 2cm 2cm;
+            size: letter portrait;
+            margin: 1.8cm 1.8cm 1.8cm 1.8cm;
             mso-page-orientation: portrait;
         }
         body {
             font-family: 'Calibri', 'Arial', sans-serif;
             font-size: 10pt;
-            color: #000000;
-            line-height: 1.25;
+            color: #0F172A;
+            line-height: 1.3;
+            background-color: #FFFFFF;
         }
         table {
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 12px;
+            table-layout: fixed;
+            word-wrap: break-word;
             mso-table-lspace: 0pt;
             mso-table-rspace: 0pt;
         }
         th, td {
-            border: 1px solid #000000;
+            border: 1px solid #CBD5E1;
             padding: 5px 8px;
             vertical-align: top;
             font-size: 9.5pt;
         }
         .hdr-main {
-            background-color: #CBD5E1;
+            background-color: #0284C7;
+            color: #FFFFFF;
             font-weight: bold;
             text-align: center;
-            font-size: 11pt;
+            font-size: 10.5pt;
             text-transform: uppercase;
+            padding: 6px 8px;
         }
         .hdr-sub {
-            background-color: #E2E8F0;
-            font-weight: bold;
-            text-align: center;
-            font-size: 9.5pt;
-        }
-        .hdr-col {
             background-color: #F1F5F9;
             font-weight: bold;
-            font-size: 9.5pt;
+            font-size: 9pt;
+            color: #334155;
+            padding: 5px 8px;
         }
-        .time-cell {
+        .hdr-col {
             background-color: #F8FAFC;
             font-weight: bold;
-            text-align: center;
-        }
-        .total-time-cell {
-            background-color: #E2E8F0;
-            font-weight: bold;
-            text-align: center;
-            font-size: 10pt;
+            font-size: 9pt;
+            color: #0F172A;
+            padding: 5px 8px;
         }
         ul, ol {
             margin: 3px 0 3px 18px;
             padding: 0;
-        }
-        li {
-            margin-bottom: 3px;
         }
     </style>
     </head>
@@ -3303,7 +3732,7 @@ function exportToWord() {
                 <td colspan="4" class="hdr-main">UNIDAD DIDÁCTICA · FORMATO INSTITUCIONAL DE PLANEACIÓN CURRICULAR</td>
             </tr>
             <tr>
-                <td colspan="4" class="hdr-sub" style="font-size:10pt;">${d.institucion}</td>
+                <td colspan="4" class="hdr-sub" style="font-size:10pt; text-align:center;">${d.institucion}</td>
             </tr>
             <tr>
                 <td style="width:28%;"><strong>ÁREA:</strong> ${d.area}</td>
@@ -3329,7 +3758,7 @@ function exportToWord() {
         <!-- TABLA 2: ESTRUCTURA PEDAGÓGICA, OBJETIVOS Y LINEAMIENTOS MEN -->
         <table>
             <tr>
-                <td class="hdr-col" style="width:30%;">PREGUNTA PROBLEMATIZADORA DEL PERÍODO</td>
+                <td class="hdr-col" style="width:30%;"><strong>PREGUNTA PROBLEMATIZADORA DEL PERÍODO</strong></td>
                 <td colspan="3" class="hdr-main" style="width:70%;">OBJETIVOS DE APRENDIZAJE DE LA UNIDAD DIDÁCTICA</td>
             </tr>
             <tr>
@@ -3345,10 +3774,7 @@ function exportToWord() {
                 <td colspan="3" class="hdr-sub">OBJETIVOS ESPECÍFICOS</td>
             </tr>
             <tr>
-                <td colspan="4" style="padding:0; border:none;"></td>
-            </tr>
-            <tr>
-                <td colspan="4">
+                <td colspan="4" style="padding:8px;">
                     <ul>${objEspHtml}</ul>
                 </td>
             </tr>
@@ -3381,7 +3807,7 @@ function exportToWord() {
         </table>
 
         <!-- TABLA 3: MATRIZ DE PROGRESIÓN PEDAGÓGICA Y SECUENCIA DE CLASES DEL PERÍODO -->
-        <div style="margin-top:16px; margin-bottom:6px; text-align:center; font-weight:bold; font-size:11pt; background:#CBD5E1; padding:6px; border:1px solid #000;">
+        <div style="margin-top:16px; margin-bottom:8px; text-align:center; font-weight:bold; font-size:11pt; background:#0284C7; color:#FFFFFF; padding:6px; border:1px solid #0369A1;">
             SECUENCIA DIDÁCTICA Y MATRIZ DE PROGRESIÓN DE CLASES (${d.total_clases} SESIONES)
         </div>
         ${clasesDocHtml}
@@ -3392,45 +3818,45 @@ function exportToWord() {
                 <td class="hdr-main" colspan="2">LINEAMIENTOS METODOLÓGICOS, INCLUSIÓN DUA/PIAR Y SISTEMA EVALUATIVO</td>
             </tr>
             <tr>
-                <td class="hdr-col" style="width:32%;">TAREA Y REPASO EXTRACURRICULAR</td>
+                <td class="hdr-col" style="width:32%;"><strong>TAREA Y REPASO EXTRACURRICULAR</strong></td>
                 <td style="width:68%;">${d.tarea_extracurricular}</td>
             </tr>
             <tr>
-                <td class="hdr-col">MÉTODOS DE ENSEÑANZA</td>
+                <td class="hdr-col"><strong>MÉTODOS DE ENSEÑANZA</strong></td>
                 <td>${d.metodos_ensenanza}</td>
             </tr>
             <tr>
-                <td class="hdr-col">ESTILO DE ENSEÑANZA</td>
+                <td class="hdr-col"><strong>ESTILO DE ENSEÑANZA</strong></td>
                 <td>${d.estilo_ensenanza}</td>
             </tr>
             <tr>
-                <td class="hdr-col">ADAPTACIONES PARA ESTUDIANTES CON NECESIDADES ESPECIALES (PIAR / DUA)</td>
+                <td class="hdr-col"><strong>ADAPTACIONES RAZONABLES (PIAR / DUA)</strong></td>
                 <td>${d.adaptaciones_piar}</td>
             </tr>
             <tr>
-                <td class="hdr-col">EVALUACIÓN Y CRITERIOS CONTINUOS</td>
+                <td class="hdr-col"><strong>EVALUACIÓN FORMATIVA Y CRITERIOS</strong></td>
                 <td>${d.evaluacion}</td>
             </tr>
             <tr>
-                <td class="hdr-col">REFLEXIÓN PEDAGÓGICA Y AUTORREGULACIÓN</td>
+                <td class="hdr-col"><strong>REFLEXIÓN PEDAGÓGICA Y AUTORREGULACIÓN</strong></td>
                 <td>${d.reflexion_pedagogica}</td>
             </tr>
             <tr>
-                <td class="hdr-col">RETROALIMENTACIÓN CONSTANTE ("El Lenguaje del Profe")</td>
+                <td class="hdr-col"><strong>CONSIGNAS CLAVE ("El Lenguaje del Profe")</strong></td>
                 <td><ul>${retroHtml}</ul></td>
             </tr>
             <tr>
-                <td class="hdr-col">LINK DE PROFUNDIZACIÓN Y RECURSOS</td>
+                <td class="hdr-col"><strong>LINK DE PROFUNDIZACIÓN Y RECURSOS</strong></td>
                 <td><a href="${d.video_profundizacion}">${d.video_profundizacion}</a></td>
             </tr>
             <tr>
-                <td class="hdr-col">BIBLIOGRAFÍA Y REFERENTES CURRICULARES</td>
+                <td class="hdr-col"><strong>BIBLIOGRAFÍA Y REFERENTES CURRICULARES</strong></td>
                 <td>${d.bibliografia}</td>
             </tr>
         </table>
 
         <!-- FIRMAS INSTITUCIONALES -->
-        <table style="border:none; margin-top:40px; page-break-inside:avoid;">
+        <table style="border:none; margin-top:35px; page-break-inside:avoid;">
             <tr>
                 <td style="border:none; text-align:center; width:50%;">
                     ____________________________________________<br>
