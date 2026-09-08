@@ -951,6 +951,9 @@ function aggregateVideoTelemetry(frames) {
             maxAnkleXDiff: 0.08,
             maxAnkleDist: 0.20,
             hasStraddleKickFrame: false,
+            unipodalHoldFrames: 0,
+            unipodalHoldRatio: 0,
+            transientKickPeak: false,
             avgKneeDiff: 10,
             maxKneeDiff: 18,
             maxHipDiff: 15,
@@ -958,8 +961,6 @@ function aggregateVideoTelemetry(frames) {
             maxElbowDiff: 20,
             ankleDistAvg: 0.25,
             hipDisplacement: 0.15,
-            singleSupportKick: false,
-            rapidKneeDelta: 12,
             flightDetected: false,
             flightFrames: [],
             symmetryScore: 86,
@@ -1003,15 +1004,27 @@ function aggregateVideoTelemetry(frames) {
 
     const maxWristAboveShoulder = validAngles.some(a => a.wristAboveShoulder === true);
 
-    // Detección de zancada / péndulo de patada (un pie delante y otro pie atrás del eje de la cadera)
-    const hasStraddleKickFrame = validAngles.some(a => (a.isLegStraddle && (a.ankleXDiff >= 0.10 || a.hipAngle >= 16)) || (a.ankleXDiff >= 0.14));
+    // 1. Detección de Postura de Equilibrio Estático Unipodal (Flamenco sostenido en el tiempo):
+    // Una pierna de apoyo extendida (≥145°) mientras la pierna libre se sostiene flexionada (≤120°) con asimetría en tobillos
+    let unipodalHoldFrames = 0;
+    validAngles.forEach(a => {
+        const isOneLegBentOneStraight = (a.kneeMax >= 145 && a.kneeMin <= 120 && a.kneeDiff >= 35);
+        const hasAnkleElevation = (a.ankleYDiff >= 0.04);
+        if (isOneLegBentOneStraight && hasAnkleElevation) {
+            unipodalHoldFrames++;
+        }
+    });
+    const unipodalHoldRatio = unipodalHoldFrames / validAngles.length;
 
-    // Detección de Apoyo Unipodal con Péndulo de Golpeo (Pateo)
-    const singleSupportKick = validAngles.some(a => a.isLegStraddle || (a.ankleYDiff >= 0.035 && a.ankleXDiff >= 0.08) || (a.hipDiff >= 15 && a.ankleDist >= 0.14));
+    // 2. Detección de Golpeo / Patada Dinámica (Pateo):
+    // Ocurre como un pico TRANSITORIO (1 o 2 fotogramas) con zancada sagital (un pie delante y otro atrás), NO sostenido en todo el video
+    const straddleFrames = validAngles.filter(a => (a.isLegStraddle && (a.ankleXDiff >= 0.10 || a.hipAngle >= 16)) || (a.ankleXDiff >= 0.14));
+    const hasStraddleKickFrame = straddleFrames.length >= 1 && unipodalHoldRatio < 0.45;
+    const transientKickPeak = (straddleFrames.length >= 1 && straddleFrames.length <= 3 && unipodalHoldRatio < 0.45);
 
-    // Detección estricta de Fase Aérea (Vuelo): AMBOS pies deben estar suspendidos Y con flexión profunda (carrera/salto real)
+    // 3. Detección estricta de Fase Aérea (Vuelo): AMBOS pies deben despegar Y con flexión profunda (carrera/salto real)
     const flightFrames = [];
-    if (!hasStraddleKickFrame) {
+    if (unipodalHoldRatio < 0.45 && !hasStraddleKickFrame) {
         const groundLevelY = Math.max(...validAngles.map(a => Math.max(a.lAnkleY, a.rAnkleY)));
         validAngles.forEach((a, idx) => {
             if (a.lAnkleY < groundLevelY - 0.055 && a.rAnkleY < groundLevelY - 0.055 && a.kneeMin <= 105) {
@@ -1054,7 +1067,10 @@ function aggregateVideoTelemetry(frames) {
         maxAnkleYDiff,
         maxAnkleXDiff,
         maxAnkleDist,
+        unipodalHoldFrames,
+        unipodalHoldRatio,
         hasStraddleKickFrame,
+        transientKickPeak,
         avgKneeDiff,
         maxKneeDiff,
         maxHipDiff,
@@ -1062,7 +1078,6 @@ function aggregateVideoTelemetry(frames) {
         maxElbowDiff,
         ankleDistAvg,
         hipDisplacement,
-        singleSupportKick,
         rapidKneeDelta,
         flightDetected,
         flightFrames: flightFrames.length ? flightFrames : [],
@@ -1076,13 +1091,13 @@ function classifySkillFromKinematics(telemetry, userText) {
     // 1. Análisis semántico prioritario si el docente escribe una palabra clave en el chat
     if (userText && typeof userText === 'string') {
         const txt = userText.toLowerCase();
+        if (txt.includes('estatico') || txt.includes('estático') || txt.includes('flamenco') || txt.includes('parado') || txt.includes('equilibrio estatico')) return 'Equilibrio Estático Unipodal';
+        if (txt.includes('dinamico') || txt.includes('dinámico') || txt.includes('linea') || txt.includes('línea') || txt.includes('viga') || txt.includes('caminar linea')) return 'Equilibrio Dinámico';
         if (txt.includes('pate') || txt.includes('chut') || txt.includes('balon') || txt.includes('balón') || txt.includes('pelota') || txt.includes('futbol') || txt.includes('fútbol') || txt.includes('golpe') || txt.includes('remat') || txt.includes('tiro')) return 'Patear';
         if (txt.includes('lanz') || txt.includes('arroja') || txt.includes('tirar') || txt.includes('lanzamiento') || txt.includes('sobre hombro')) return 'Lanzamiento Sobre Hombro';
         if (txt.includes('atrap') || txt.includes('recep') || txt.includes('coger') || txt.includes('recibir') || txt.includes('guante')) return 'Recepción y Atrape';
         if (txt.includes('pata sola') || txt.includes('salto unipodal') || txt.includes('unipodal') || txt.includes('un solo pie') || txt.includes('un pie') || txt.includes('cojito')) return 'Salto Unipodal';
         if (txt.includes('salto horizontal') || txt.includes('salto largo') || txt.includes('saltar') || txt.includes('brinc') || txt.includes('salto')) return 'Salto Horizontal';
-        if (txt.includes('estatico') || txt.includes('estático') || txt.includes('flamenco') || txt.includes('parado') || txt.includes('equilibrio estatico')) return 'Equilibrio Estático Unipodal';
-        if (txt.includes('dinamico') || txt.includes('dinámico') || txt.includes('linea') || txt.includes('línea') || txt.includes('viga') || txt.includes('caminar linea')) return 'Equilibrio Dinámico';
         if (txt.includes('marcha') || txt.includes('caminar') || txt.includes('paso') || txt.includes('caminata')) return 'Marcha';
         if (txt.includes('corre') || txt.includes('carrera') || txt.includes('sprint') || txt.includes('velocidad') || txt.includes('trote')) return 'Carrera';
     }
@@ -1093,63 +1108,68 @@ function classifySkillFromKinematics(telemetry, userText) {
 
     // 2. Clasificador Cinemático Diferencial por Puntuación Biomecánica Ponderada
     const scores = {
+        'Equilibrio Estático Unipodal': 0,
         'Patear': 0,
         'Lanzamiento Sobre Hombro': 0,
         'Recepción y Atrape': 0,
         'Salto Horizontal': 0,
         'Salto Unipodal': 0,
-        'Equilibrio Estático Unipodal': 0,
         'Equilibrio Dinámico': 0,
         'Marcha': 0,
         'Carrera': 0
     };
 
-    // A. PATEAR [HMB-M]: Apoyo unipodal en suelo con péndulo/oscilación dinámica o zancada de golpeo
-    if (telemetry.hasStraddleKickFrame) scores['Patear'] += 120;
-    if (telemetry.singleSupportKick) scores['Patear'] += 90;
-    if (telemetry.maxAnkleXDiff >= 0.12) scores['Patear'] += 55;
-    if (telemetry.maxAnkleYDiff >= 0.035) scores['Patear'] += 40;
-    if (telemetry.maxHipAngle >= 18 || telemetry.maxHipDiff >= 15) scores['Patear'] += 35;
-    if (telemetry.rapidKneeDelta >= 12) scores['Patear'] += 25;
-    if (!telemetry.maxWristAboveShoulder) scores['Patear'] += 25;
-    if (telemetry.minWristDist > 0.18) scores['Patear'] += 20;
-    if (!telemetry.flightDetected) scores['Patear'] += 30;
+    // A. EQUILIBRIO ESTÁTICO UNIPODAL [HMB-E]:
+    // Postura mantenida en un solo pie durante la secuencia (pierna libre sostenida en flexión ≥ 3 frames)
+    if (telemetry.unipodalHoldFrames >= 3 || telemetry.unipodalHoldRatio >= 0.45) scores['Equilibrio Estático Unipodal'] += 180;
+    if (telemetry.avgKneeDiff >= 40) scores['Equilibrio Estático Unipodal'] += 70;
+    if (telemetry.avgAnkleYDiff >= 0.05) scores['Equilibrio Estático Unipodal'] += 50;
+    if (!telemetry.flightDetected) scores['Equilibrio Estático Unipodal'] += 40;
 
-    // B. LANZAMIENTO SOBRE HOMBRO [HMB-M]: Elevación de muñeca sobre el plano del hombro
-    if (telemetry.maxWristAboveShoulder) scores['Lanzamiento Sobre Hombro'] += 95;
-    if (telemetry.maxElbowDiff >= 24) scores['Lanzamiento Sobre Hombro'] += 40;
+    // B. PATEAR [HMB-M]:
+    // Golpeo dinámico TRANSITORIO a un balón (solo 1 o 2 frames de patada/péndulo, NO sostenido en todo el video)
+    if (telemetry.unipodalHoldRatio < 0.45) {
+        if (telemetry.transientKickPeak) scores['Patear'] += 150;
+        if (telemetry.hasStraddleKickFrame) scores['Patear'] += 100;
+        if (telemetry.maxAnkleXDiff >= 0.12) scores['Patear'] += 55;
+        if (telemetry.maxAnkleYDiff >= 0.035) scores['Patear'] += 40;
+        if (telemetry.maxHipAngle >= 18 || telemetry.maxHipDiff >= 15) scores['Patear'] += 35;
+        if (telemetry.rapidKneeDelta >= 12) scores['Patear'] += 25;
+        if (!telemetry.maxWristAboveShoulder) scores['Patear'] += 25;
+        if (telemetry.minWristDist > 0.18) scores['Patear'] += 20;
+        if (!telemetry.flightDetected) scores['Patear'] += 30;
+    }
+
+    // C. LANZAMIENTO SOBRE HOMBRO [HMB-M]: Elevación de muñeca sobre el plano del hombro
+    if (telemetry.maxWristAboveShoulder) scores['Lanzamiento Sobre Hombro'] += 160;
+    if (telemetry.maxElbowDiff >= 24) scores['Lanzamiento Sobre Hombro'] += 45;
     if (telemetry.maxElbowAngle >= 140) scores['Lanzamiento Sobre Hombro'] += 30;
     if (telemetry.maxHipAngle >= 24) scores['Lanzamiento Sobre Hombro'] += 15;
 
-    // C. RECEPCIÓN Y ATRAPE [HMB-M]: Muñecas juntas en copa frente al pecho
-    if (telemetry.minWristDist <= 0.26) scores['Recepción y Atrape'] += 90;
-    if (telemetry.avgElbowAngle >= 70 && telemetry.avgElbowAngle <= 130) scores['Recepción y Atrape'] += 35;
-    if (!telemetry.maxWristAboveShoulder && telemetry.maxKneeDiff < 20) scores['Recepción y Atrape'] += 25;
+    // D. RECEPCIÓN Y ATRAPE [HMB-M]: Muñecas juntas en copa frente al pecho
+    if (telemetry.minWristDist <= 0.26) scores['Recepción y Atrape'] += 160;
+    if (telemetry.avgElbowAngle >= 70 && telemetry.avgElbowAngle <= 130) scores['Recepción y Atrape'] += 40;
+    if (!telemetry.maxWristAboveShoulder && telemetry.avgKneeDiff < 25) scores['Recepción y Atrape'] += 30;
 
-    // D. SALTO HORIZONTAL [HMB-L]: Despegue y vuelo bipodal simétrico con flexión previa
-    if (telemetry.flightDetected && telemetry.minKneeAngle <= 125 && telemetry.maxKneeAngle >= 150) scores['Salto Horizontal'] += 60;
+    // E. SALTO HORIZONTAL [HMB-L]: Despegue y vuelo bipodal simétrico con flexión previa
+    if (telemetry.flightDetected && telemetry.minKneeAngle <= 125 && telemetry.maxKneeAngle >= 150 && telemetry.unipodalHoldRatio < 0.45) scores['Salto Horizontal'] += 140;
     if (telemetry.maxKneeDiff <= 22 && telemetry.maxAnkleYDiff <= 0.06 && telemetry.flightDetected) scores['Salto Horizontal'] += 45;
 
-    // E. SALTO UNIPODAL [HMB-L]: Fase aérea de vuelo pero manteniendo asimetría vertical continua
-    if (telemetry.flightDetected && telemetry.avgAnkleYDiff >= 0.07) scores['Salto Unipodal'] += 65;
+    // F. SALTO UNIPODAL [HMB-L]: Fase aérea de vuelo pero manteniendo asimetría vertical continua
+    if (telemetry.flightDetected && telemetry.avgAnkleYDiff >= 0.07) scores['Salto Unipodal'] += 150;
     if (telemetry.flightDetected && telemetry.maxKneeDiff >= 20) scores['Salto Unipodal'] += 35;
 
-    // F. EQUILIBRIO ESTÁTICO UNIPODAL [HMB-E]: Un pie suspendido con desplazamiento de masa casi nulo
-    if (telemetry.hipDisplacement <= 0.07 && telemetry.avgAnkleYDiff >= 0.06 && !telemetry.hasStraddleKickFrame) scores['Equilibrio Estático Unipodal'] += 75;
-    if (!telemetry.flightDetected && telemetry.avgAnkleYDiff >= 0.06 && !telemetry.hasStraddleKickFrame) scores['Equilibrio Estático Unipodal'] += 35;
-
     // G. EQUILIBRIO DINÁMICO [HMB-E]: Paso estrecho en línea recta sin vuelo y brazos en abducción
-    if (!telemetry.flightDetected && telemetry.ankleDistAvg <= 0.18 && telemetry.avgTrunkAngle <= 8 && !telemetry.hasStraddleKickFrame) scores['Equilibrio Dinámico'] += 50;
-    if (telemetry.minKneeAngle >= 120 && (telemetry.minWristDist >= 0.45 || telemetry.avgElbowAngle >= 105) && !telemetry.hasStraddleKickFrame) scores['Equilibrio Dinámico'] += 35;
+    if (!telemetry.flightDetected && telemetry.ankleDistAvg <= 0.18 && telemetry.avgTrunkAngle <= 8 && telemetry.unipodalHoldRatio < 0.3) scores['Equilibrio Dinámico'] += 120;
+    if (telemetry.minKneeAngle >= 120 && (telemetry.minWristDist >= 0.45 || telemetry.avgElbowAngle >= 105) && telemetry.unipodalHoldRatio < 0.3) scores['Equilibrio Dinámico'] += 35;
 
     // H. MARCHA [HMB-L]: Doble apoyo continuo sin vuelo, tronco erguido y zancadas alternadas simétricas
-    if (!telemetry.flightDetected && telemetry.minKneeAngle >= 112 && telemetry.avgTrunkAngle <= 9 && !telemetry.hasStraddleKickFrame) scores['Marcha'] += 45;
-    if (!telemetry.flightDetected && telemetry.maxKneeDiff < 20 && telemetry.maxAnkleYDiff < 0.05 && telemetry.maxHipAngle >= 20 && !telemetry.hasStraddleKickFrame) scores['Marcha'] += 35;
+    if (!telemetry.flightDetected && telemetry.minKneeAngle >= 112 && telemetry.avgTrunkAngle <= 9 && telemetry.unipodalHoldRatio < 0.3 && !telemetry.transientKickPeak) scores['Marcha'] += 110;
+    if (!telemetry.flightDetected && telemetry.avgKneeDiff < 20 && telemetry.avgAnkleYDiff < 0.04 && telemetry.unipodalHoldRatio < 0.3) scores['Marcha'] += 35;
 
-    // I. CARRERA [HMB-L]: Fase aérea confirmada + flexión profunda de recobro (≤98°) + braceo sagital (sin straddle de patada)
-    if (telemetry.flightDetected && telemetry.minKneeAngle <= 98 && !telemetry.hasStraddleKickFrame) scores['Carrera'] += 60;
-    if (telemetry.flightDetected && telemetry.avgElbowAngle >= 75 && telemetry.avgElbowAngle <= 115 && !telemetry.hasStraddleKickFrame) scores['Carrera'] += 35;
-    if (telemetry.avgTrunkAngle >= 4 && telemetry.avgTrunkAngle <= 18 && telemetry.flightDetected && !telemetry.hasStraddleKickFrame) scores['Carrera'] += 20;
+    // I. CARRERA [HMB-L]: Fase aérea confirmada + flexión profunda de recobro (≤98°) + braceo sagital (sin hold unipodal)
+    if (telemetry.flightDetected && telemetry.minKneeAngle <= 98 && telemetry.unipodalHoldRatio < 0.3) scores['Carrera'] += 140;
+    if (telemetry.flightDetected && telemetry.avgElbowAngle >= 75 && telemetry.avgElbowAngle <= 115 && telemetry.unipodalHoldRatio < 0.3) scores['Carrera'] += 35;
 
     // Identificar la habilidad ganadora con mayor puntuación acumulada
     let bestSkill = 'Carrera';
