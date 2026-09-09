@@ -27,12 +27,178 @@ const chatScroll = document.getElementById('chatScroll');
 document.addEventListener('DOMContentLoaded', () => {
     setEngineMode(currentEngineMode, true);
     updateCGIModel('auto');
+    initWizardEvents();
 });
 
+// WIZARD DE 3 PASOS
+let currentStep = 1;
+
+function goToStep(step) {
+    currentStep = step;
+    for (let i = 1; i <= 3; i++) {
+        const stepEl = document.getElementById(`wizardStep${i}`);
+        const tabEl = document.querySelector(`.step-tab[data-step="${i}"]`);
+        
+        if (stepEl) {
+            if (i === step) {
+                stepEl.style.display = 'flex';
+                stepEl.classList.add('active');
+            } else {
+                stepEl.style.display = 'none';
+                stepEl.classList.remove('active');
+            }
+        }
+        
+        if (tabEl) {
+            if (i === step) {
+                tabEl.classList.add('active');
+            } else {
+                tabEl.classList.remove('active');
+            }
+        }
+    }
+    const wizardMain = document.getElementById('wizardMain');
+    if (wizardMain) wizardMain.scrollTop = 0;
+}
+
+function markStepComplete(step) {
+    const tabEl = document.querySelector(`.step-tab[data-step="${step}"]`);
+    const badgeEl = document.getElementById(`stepBadge${step}`);
+    if (tabEl) {
+        tabEl.classList.add('completed');
+    }
+    if (badgeEl) {
+        badgeEl.textContent = '✓';
+    }
+    const nextTab = document.querySelector(`.step-tab[data-step="${step + 1}"]`);
+    if (nextTab) {
+        nextTab.disabled = false;
+    }
+}
+
+function selectSkillCard(cardEl, skillCode) {
+    document.querySelectorAll('.skill-card').forEach(c => c.classList.remove('active'));
+    if (cardEl) cardEl.classList.add('active');
+
+    const selectEl = document.getElementById('skillSelect');
+    if (selectEl) {
+        selectEl.value = skillCode;
+        onSkillSelectChange(selectEl);
+    }
+
+    const iconEl = cardEl ? cardEl.querySelector('.skill-icon') : null;
+    const nameEl = cardEl ? cardEl.querySelector('.skill-name') : null;
+    const selectedIcon = document.getElementById('selectedSkillIcon');
+    const selectedText = document.getElementById('selectedSkillText');
+    if (selectedIcon && iconEl) selectedIcon.textContent = iconEl.textContent;
+    if (selectedText && nameEl) selectedText.textContent = nameEl.textContent;
+
+    markStepComplete(1);
+    goToStep(2);
+}
+
+function startNewEvaluation() {
+    capturedKeyframes = [];
+    globalDiagnosticoData = null;
+    globalDidacticaData = null;
+
+    const fileInput = document.getElementById('fileInput');
+    if (fileInput) fileInput.value = '';
+
+    const userInput = document.getElementById('userInput');
+    if (userInput) userInput.value = '';
+
+    const uzIcon = document.getElementById('uzIcon');
+    if (uzIcon) uzIcon.innerHTML = '<img src="logo-icon.svg" class="uz-brand-icon" width="48" height="48" alt="Aula Global 360">';
+    const uzTitle = document.getElementById('uzTitle');
+    if (uzTitle) uzTitle.textContent = 'Seleccionar o arrastrar video o fotografía';
+    const uzSub = document.getElementById('uzSub');
+    if (uzSub) uzSub.textContent = 'Formatos: MP4, MOV, WEBM, JPG, PNG · Recomendado: 3 a 5 segundos';
+
+    const uploadPreview = document.getElementById('uploadPreview');
+    if (uploadPreview) uploadPreview.style.display = 'none';
+
+    const videoPlayer = document.getElementById('studentVideoPlayer');
+    if (videoPlayer) {
+        videoPlayer.pause();
+        videoPlayer.src = '';
+        videoPlayer.style.display = 'none';
+    }
+    const imgPreview = document.getElementById('studentImgPreview');
+    if (imgPreview) {
+        imgPreview.src = '';
+        imgPreview.style.display = 'none';
+    }
+
+    const keyframeSection = document.getElementById('keyframeSection');
+    if (keyframeSection) keyframeSection.style.display = 'none';
+    const keyframeStrip = document.getElementById('keyframeStrip');
+    if (keyframeStrip) keyframeStrip.innerHTML = '';
+
+    const resultContainer = document.getElementById('resultContainer');
+    if (resultContainer) resultContainer.innerHTML = '';
+
+    const techContainer = document.getElementById('techTelemetryContainer');
+    if (techContainer) techContainer.innerHTML = '';
+
+    const stepTab2 = document.querySelector('.step-tab[data-step="2"]');
+    const stepTab3 = document.querySelector('.step-tab[data-step="3"]');
+    if (stepTab2) {
+        stepTab2.classList.remove('active', 'completed');
+    }
+    if (stepTab3) {
+        stepTab3.classList.remove('active', 'completed');
+        stepTab3.disabled = true;
+    }
+    const stepBadge1 = document.getElementById('stepBadge1');
+    if (stepBadge1) stepBadge1.textContent = '1';
+    const stepBadge2 = document.getElementById('stepBadge2');
+    if (stepBadge2) stepBadge2.textContent = '2';
+    const stepBadge3 = document.getElementById('stepBadge3');
+    if (stepBadge3) stepBadge3.textContent = '3';
+
+    goToStep(1);
+}
+
+function initWizardEvents() {
+    const dropZone = document.getElementById('uploadZone');
+    if (dropZone) {
+        ['dragenter', 'dragover'].forEach(ev => {
+            dropZone.addEventListener(ev, e => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropZone.classList.add('dragover');
+            }, false);
+        });
+        ['dragleave', 'drop'].forEach(ev => {
+            dropZone.addEventListener(ev, e => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropZone.classList.remove('dragover');
+            }, false);
+        });
+        dropZone.addEventListener('drop', e => {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            if (files && files.length) {
+                const fileInput = document.getElementById('fileInput');
+                if (fileInput) fileInput.files = files;
+                handleFile({ target: { files: files } });
+            }
+        });
+    }
+}
+
 // INTERFAZ Y NAVEGACIÓN
+function toggleDrawer() {
+    const drawer = document.getElementById('configDrawer');
+    const overlay = document.getElementById('drawerOverlay');
+    if (drawer) drawer.classList.toggle('open');
+    if (overlay) overlay.classList.toggle('active');
+}
+
 function toggleSidebar() {
-    document.getElementById('sidebar').classList.toggle('open');
-    document.getElementById('sidebarOverlay').classList.toggle('active');
+    toggleDrawer();
 }
 
 function openModal() { document.getElementById('recordingModal').style.display = 'flex'; }
@@ -56,6 +222,7 @@ function setEngineMode(mode, silent = false) {
     const btnGemini = document.getElementById('btnModeGemini');
     const headerBadge = document.getElementById('engineHeaderBadge');
     const rightHeaderBadge = document.getElementById('headerEngineBadge');
+    const geminiSection = document.getElementById('drawerGeminiSection');
     const userInput = document.getElementById('userInput');
 
     if (mode === 'gemini') {
@@ -65,15 +232,16 @@ function setEngineMode(mode, silent = false) {
         }
         if (btnLocal) btnLocal.classList.remove('active');
         if (btnGemini) btnGemini.classList.add('active');
+        if (geminiSection) geminiSection.style.display = 'flex';
 
         if (headerBadge) {
-            headerBadge.textContent = '✦ Gemini Vision IA (Nube Multimodal)';
+            headerBadge.textContent = 'Gemini Vision IA (Nube Multimodal)';
         }
         if (rightHeaderBadge) {
             rightHeaderBadge.textContent = 'VISOR ASISTIDO POR GEMINI IA';
         }
         if (userInput) {
-            userInput.placeholder = 'Modo IA: Pregúntale a Gemini sobre adaptaciones curriculares, progresiones o diagnóstico...';
+            userInput.placeholder = 'Observaciones opcionales para la IA (ej: "Aterriza con fuerza en talón", "Presenta fatiga previa")...';
         }
 
         updateGeminiKeyUI();
@@ -85,15 +253,16 @@ function setEngineMode(mode, silent = false) {
         }
         if (btnLocal) btnLocal.classList.add('active');
         if (btnGemini) btnGemini.classList.remove('active');
+        if (geminiSection) geminiSection.style.display = 'none';
 
         if (headerBadge) {
-            headerBadge.textContent = '● Motor Local Autónomo (WASM · Privacidad Total)';
+            headerBadge.textContent = 'Motor Local Autónomo (WASM · Privacidad Total)';
         }
         if (rightHeaderBadge) {
             rightHeaderBadge.textContent = 'TELEMETRÍA Y BIOMECÁNICA (LOCAL WASM)';
         }
         if (userInput) {
-            userInput.placeholder = 'Modo Local: Carga un video o consulta los criterios de la batería motriz en el navegador...';
+            userInput.placeholder = 'Observaciones opcionales (ej: "Aterriza con fuerza en talón", "Usa calzado plano")...';
         }
     }
 }
@@ -119,18 +288,18 @@ function updateGeminiKeyUI() {
 }
 
 function saveGeminiKey() {
-    const input = document.getElementById('apiKeyInput').value.trim();
+    const inputEl = document.getElementById('apiKeyInput');
+    const input = inputEl ? inputEl.value.trim() : '';
     if (!input) {
         alert('Por favor ingresa una clave API válida de Google AI Studio.');
         return;
     }
     if (!input.startsWith('AIza')) {
-        addMsg('bot', '<strong>Formato de clave no habitual:</strong> Las claves de Google AI Studio suelen comenzar con <code>AIza</code>. Asegúrate de haber copiado la clave correcta desde Google AI Studio.');
+        alert('Aviso: Las claves de Google AI Studio suelen comenzar con "AIza". Asegúrate de que sea la clave correcta.');
     }
     apiKey = input;
     localStorage.setItem('aula360_api_key', apiKey);
     updateGeminiKeyUI();
-    addMsg('bot', '<strong>Clave API Guardada y Conectada.</strong> Gemini Vision IA está listo para procesar la evidencia multimodal en la nube.');
 }
 
 function editGeminiKey() {
@@ -149,7 +318,6 @@ function removeGeminiKey() {
     apiKey = '';
     localStorage.removeItem('aula360_api_key');
     updateGeminiKeyUI();
-    addMsg('bot', '<strong>Clave API Desconectada.</strong> Puedes ingresar una nueva clave o conmutar al Modo Local (Sin IA).');
 }
 
 // Aliases para compatibilidad
@@ -168,6 +336,29 @@ function onSkillSelectChange(selectEl) {
     const subtitle = document.getElementById('currentSkillSubtitle');
     if (subtitle) subtitle.textContent = `(${selectedSkillName})`;
 
+    const selectedIcon = document.getElementById('selectedSkillIcon');
+    const selectedTxt = document.getElementById('selectedSkillText');
+    const skillIcons = {
+        'auto': '🔍',
+        'carrera': '🏃',
+        'salto': '🦘',
+        'marcha': '🚶',
+        'salto_unipodal': '🦿',
+        'lanzar': '⚾',
+        'atrapar': '🧤',
+        'patear': '⚽',
+        'equilibrio': '🧘',
+        'equilibrio_estatico': '🦩'
+    };
+    if (selectedIcon) selectedIcon.textContent = skillIcons[val] || '🔍';
+    if (selectedTxt) selectedTxt.textContent = selectedSkillName;
+
+    // Sincronizar tarjeta activa
+    document.querySelectorAll('.skill-card').forEach(c => {
+        if (c.dataset.skill === val) c.classList.add('active');
+        else c.classList.remove('active');
+    });
+
     const mainHeader = document.getElementById('mainHeaderTitle');
     if (mainHeader) mainHeader.textContent = val === 'auto' ? 'Evaluación Biomecánica de Movimiento' : `Análisis: ${selectedSkillName}`;
 
@@ -181,10 +372,6 @@ function onSkillSelectChange(selectEl) {
     }
 
     updateCGIModel(val);
-
-    if (window.innerWidth <= 1080) {
-        toggleSidebar();
-    }
 }
 
 function selectSkill(btnEl, skillCode, skillName) {
@@ -790,62 +977,70 @@ async function handleFile(event) {
     const uzIcon = document.getElementById('uzIcon');
     const uzTitle = document.getElementById('uzTitle');
     const uzSub = document.getElementById('uzSub');
+    const uploadPreview = document.getElementById('uploadPreview');
     const videoPlayer = document.getElementById('studentVideoPlayer');
     const imgPreview = document.getElementById('studentImgPreview');
-    const placeholder = document.getElementById('studentPlaceholder');
-    const studentStatus = document.getElementById('studentStatus');
     const scanOverlay = document.getElementById('scanOverlay');
     const keyframeStrip = document.getElementById('keyframeStrip');
 
-    uzIcon.textContent = '⏳';
-    uzTitle.textContent = 'Procesando muestreo cinemático adaptativo...';
-    uzSub.textContent = 'Detectando energía de movimiento y articulaciones con MediaPipe WASM...';
-    keyframeStrip.innerHTML = '';
+    if (uzIcon) uzIcon.textContent = '⏳';
+    if (uzTitle) uzTitle.textContent = 'Procesando video del estudiante...';
+    if (uzSub) uzSub.textContent = 'Midiendo articulaciones en el navegador con MediaPipe...';
+    if (keyframeStrip) keyframeStrip.innerHTML = '';
     capturedKeyframes = [];
 
     try {
         const fileUrl = URL.createObjectURL(file);
-        placeholder.style.display = 'none';
-        studentStatus.classList.add('active');
-        scanOverlay.style.display = 'block';
+        if (uploadPreview) uploadPreview.style.display = 'block';
+        if (scanOverlay) scanOverlay.style.display = 'block';
 
         if (file.type.startsWith('video/')) {
-            imgPreview.style.display = 'none';
-            videoPlayer.src = fileUrl;
-            videoPlayer.style.display = 'block';
-            videoPlayer.play();
+            if (imgPreview) imgPreview.style.display = 'none';
+            if (videoPlayer) {
+                videoPlayer.src = fileUrl;
+                videoPlayer.style.display = 'block';
+                videoPlayer.play().catch(e => console.log('Autoplay:', e));
+            }
 
-            document.getElementById('fpsCounter').textContent = 'FPS: 30 (HD)';
-            document.getElementById('frameDensity').textContent = 'Muestreo Adaptativo MediaPipe';
+            const fps = document.getElementById('fpsCounter');
+            const frameDens = document.getElementById('frameDensity');
+            if (fps) fps.textContent = 'Video (30 FPS)';
+            if (frameDens) frameDens.textContent = 'Extrayendo fotogramas...';
 
             capturedKeyframes = await extractAdaptiveVideoKeyframes(file, 6);
         } else if (file.type.startsWith('image/')) {
-            videoPlayer.style.display = 'none';
-            imgPreview.src = fileUrl;
-            imgPreview.style.display = 'block';
+            if (videoPlayer) videoPlayer.style.display = 'none';
+            if (imgPreview) {
+                imgPreview.src = fileUrl;
+                imgPreview.style.display = 'block';
+            }
 
-            document.getElementById('fpsCounter').textContent = 'FOTO: MediaPipe';
-            document.getElementById('frameDensity').textContent = '1 Fotograma Clave';
+            const fps = document.getElementById('fpsCounter');
+            const frameDens = document.getElementById('frameDensity');
+            if (fps) fps.textContent = 'Fotografía';
+            if (frameDens) frameDens.textContent = '1 fotograma capturado';
 
             capturedKeyframes = await extractImageKeyframe(file);
         }
 
+        if (scanOverlay) scanOverlay.style.display = 'none';
+
         // Renderizar miniaturas con esqueletos y ángulos
         renderKeyframeStrip(capturedKeyframes);
 
-        uzIcon.textContent = '✅';
-        uzTitle.textContent = `Evidencia analizada (${capturedKeyframes.length} fotogramas adaptativos)`;
-        uzSub.textContent = 'Articulaciones detectadas. Presiona Enviar para generar el diagnóstico real';
+        if (uzIcon) uzIcon.innerHTML = '✓';
+        if (uzTitle) uzTitle.textContent = `Video listo (${capturedKeyframes.length} fotogramas extraídos)`;
+        if (uzSub) uzSub.textContent = 'Presiona "Analizar movimiento" para ver el resultado y generar la clase';
 
-        addMsg('bot', `📸 <strong>Muestreo cinemático completado.</strong> Se han extraído <strong>${capturedKeyframes.length} fotogramas adaptativos</strong> en los puntos de mayor dinamismo motriz y se trazaron los <strong>33 puntos articulares de MediaPipe</strong>. Presiona el botón de enviar para contrastar con las reglas de evaluación.`);
+        const frameDens = document.getElementById('frameDensity');
+        if (frameDens) frameDens.textContent = `${capturedKeyframes.length} fotogramas analizados`;
 
     } catch (err) {
         console.error('Error al procesar archivo:', err);
-        uzIcon.textContent = '❌';
-        uzTitle.textContent = 'Error al procesar el archivo';
-        uzSub.textContent = 'Intenta con otro formato (MP4, MOV, JPG, PNG)';
-        studentStatus.classList.remove('active');
-        scanOverlay.style.display = 'none';
+        if (uzIcon) uzIcon.textContent = '❌';
+        if (uzTitle) uzTitle.textContent = 'Error al procesar el archivo';
+        if (uzSub) uzSub.textContent = 'Intenta con otro formato (MP4, MOV, JPG, PNG)';
+        if (scanOverlay) scanOverlay.style.display = 'none';
     }
 }
 
@@ -2367,24 +2562,24 @@ function cleanJSON(text) {
 // ENVÍO Y ANÁLISIS PRINCIPAL
 async function sendMsg() {
     if (isAnalyzing) return;
-    const userInput = document.getElementById('userInput');
-    const userText = userInput.value.trim();
 
-    if (!userText && capturedKeyframes.length === 0) {
-        addMsg('bot', 'Por favor, sube un video o foto del estudiante para comenzar el análisis.');
+    if (capturedKeyframes.length === 0) {
+        alert('Por favor sube un video o foto del estudiante antes de analizar el movimiento.');
         return;
     }
 
-    if (userText) {
-        addMsg('user', userText);
-        userInput.value = '';
-    }
+    const userInput = document.getElementById('userInput');
+    const userText = userInput ? userInput.value.trim() : '';
 
     isAnalyzing = true;
-    document.getElementById('sendBtn').disabled = true;
-    showTyping();
+    const sendBtn = document.getElementById('sendBtn');
+    if (sendBtn) sendBtn.disabled = true;
 
-    const grade = document.getElementById('gradeSelect').value;
+    const procBar = document.getElementById('processingBar');
+    if (procBar) procBar.style.display = 'flex';
+
+    const gradeEl = document.getElementById('gradeSelect');
+    const grade = gradeEl ? gradeEl.value : '7_anos';
     const teacherPrefs = getTeacherPreferences();
 
     const skillSelectEl = document.getElementById('skillSelect');
@@ -2396,41 +2591,96 @@ async function sendMsg() {
     try {
         if (currentEngineMode === 'gemini') {
             if (!apiKey) {
-                removeTyping();
-                addMsg('bot', '<strong>Modo Gemini IA:</strong> Para analizar con visión por computadora en la nube, ingresa tu clave de Google AI Studio en el panel superior, o conmuta al <strong>Modo Local (Sin IA)</strong> para evaluar sin clave y con total privacidad.');
+                alert('Modo con IA: Para analizar con Gemini Vision en la nube, ingresa tu clave de Google AI Studio en "Configurar clase", o cambia al modo de "Análisis rápido (sin internet)".');
                 return;
             }
-            // Modo Nube Multimodal Gemini enriquecido con telemetría MediaPipe
             const diagnosis = await callGeminiVision(activeSkillName, grade, userText, capturedKeyframes);
-            removeTyping();
             handleDiagnosisOutput(diagnosis, teacherPrefs);
         } else {
-            // Modo Local Real con MediaPipe WASM y Reglas Biomecánicas
             await new Promise(r => setTimeout(r, 450));
             const diagnosis = runLocalBiomechanicalEngine(activeSkillCode, grade, userText, capturedKeyframes);
-            removeTyping();
             handleDiagnosisOutput(diagnosis, teacherPrefs);
         }
     } catch (err) {
         console.error('Error en diagnóstico:', err);
-        removeTyping();
         if (currentEngineMode === 'gemini') {
-            addMsg('bot', `<strong>Aviso del Asistente:</strong> No se pudo conectar con Gemini Vision (${err.message || 'revisa tu API key o tu conexión'}). Se activó el motor biomecánico local con reglas de respaldo.`);
+            alert(`No se pudo conectar con Gemini Vision (${err.message || 'error de conexión'}). Se ejecutó el análisis con el motor local como respaldo.`);
         }
-        // Fallback al motor local con reglas si falla la llamada
         const fallback = runLocalBiomechanicalEngine(activeSkillCode, grade, userText, capturedKeyframes);
         handleDiagnosisOutput(fallback, teacherPrefs);
     } finally {
         isAnalyzing = false;
-        document.getElementById('sendBtn').disabled = false;
+        if (sendBtn) sendBtn.disabled = false;
+        if (procBar) procBar.style.display = 'none';
     }
+}
+
+// ACTUALIZAR DETALLES TÉCNICOS AL PIE DE PÁGINA
+function updateTechDetails(data) {
+    const container = document.getElementById('techTelemetryContainer');
+    if (!container) return;
+
+    const t = data.telemetria_medida;
+    if (!t) return;
+
+    let framesHTML = '';
+    if (capturedKeyframes && capturedKeyframes.length) {
+        framesHTML = `
+            <div style="margin-top:14px;">
+                <span class="tech-label" style="display:block; margin-bottom:6px;">Fotogramas adaptativos analizados (${capturedKeyframes.length}):</span>
+                <div class="keyframe-strip">
+                    ${capturedKeyframes.map((f, idx) => `
+                        <div class="keyframe-card">
+                            <img src="${f.previewUrl}" alt="Cuadro ${idx+1}">
+                            <div class="keyframe-tag">#${idx+1} · ${f.time}</div>
+                            ${f.angles ? `<div class="keyframe-angles"><span>🦵 ${f.angles.kneeMin}°</span><span>💪 ${f.angles.elbowAvg}°</span><span>📐 ${f.angles.trunkLean}°</span></div>` : ''}
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    container.innerHTML = `
+        <div class="telemetry-box" style="margin-top:12px;">
+            <div class="telemetry-header">Telemetría Articular Medida (MediaPipe Pose WASM · 33 Landmarks)</div>
+            <div class="telemetry-grid">
+                <div class="telemetry-item">
+                    <span class="telemetry-lbl">Flexión Mín. Rodilla:</span>
+                    <span class="telemetry-val">${t.minKneeAngle}°</span>
+                </div>
+                <div class="telemetry-item">
+                    <span class="telemetry-lbl">Ángulo Codo (Braceo):</span>
+                    <span class="telemetry-val">${t.avgElbowAngle}°</span>
+                </div>
+                <div class="telemetry-item">
+                    <span class="telemetry-lbl">Inclinación Tronco:</span>
+                    <span class="telemetry-val">${t.avgTrunkAngle}°</span>
+                </div>
+                <div class="telemetry-item">
+                    <span class="telemetry-lbl">Fase Aérea / Vuelo:</span>
+                    <span class="telemetry-val" style="color:${t.flightDetected ? '#16A34A' : '#DC2626'};">${t.flightDetected ? '✓ Detectada' : '✗ No evidente'}</span>
+                </div>
+                <div class="telemetry-item">
+                    <span class="telemetry-lbl">Simetría Bilateral:</span>
+                    <span class="telemetry-val">${t.symmetryScore}%</span>
+                </div>
+                <div class="telemetry-item">
+                    <span class="telemetry-lbl">Apertura Cadera:</span>
+                    <span class="telemetry-val">${t.maxHipAngle}°</span>
+                </div>
+            </div>
+            ${framesHTML}
+        </div>
+    `;
 }
 
 // PROCESAMIENTO DE SALIDA DEL DIAGNÓSTICO
 function handleDiagnosisOutput(data, teacherPrefs) {
     globalDiagnosticoData = data;
+    const didactica = generateDidacticPlan(data, teacherPrefs, isGroupActive);
+    globalDidacticaData = didactica;
 
-    // Actualizar dinámicamente el modelo visual CGI si estaba en modo detección automática
     if (selectedSkill === 'auto' && data && data.habilidad_detectada) {
         const nameToCode = {
             'Carrera': 'carrera',
@@ -2450,36 +2700,48 @@ function handleDiagnosisOutput(data, teacherPrefs) {
         if (subtitle) subtitle.textContent = `(Auto: ${data.habilidad_detectada})`;
     }
 
-    if (!isGroupActive) {
-        // Modo individual: Mostrar reporte individual completo + Unidad didáctica individual
-        addMsg('bot', renderDiagnosticoHTML(data, null), true);
+    updateTechDetails(data);
 
-        // Generar unidad didáctica individual
-        const didactica = generateDidacticPlan(data, teacherPrefs, false);
-        addMsg('bot', renderDidacticaHTML(didactica), true);
+    const resultContainer = document.getElementById('resultContainer');
+
+    if (!isGroupActive) {
+        if (resultContainer) {
+            resultContainer.innerHTML = renderResultStepHTML(data, didactica);
+        }
     } else {
-        // Modo grupal: Guardar en memoria y avanzar
         evaluatedStudents++;
         groupMemory.push(data);
         updateGroupUI();
-
-        addMsg('bot', renderDiagnosticoHTML(data, evaluatedStudents), true);
-
-        if (evaluatedStudents < targetStudents) {
-            addMsg('bot', `<strong>Estudiante ${evaluatedStudents} registrado con éxito (${data.habilidad_detectada}).</strong><br>Por favor carga la evidencia del <strong>Estudiante ${evaluatedStudents + 1}</strong> para continuar.`);
-        } else {
-            addMsg('bot', `<strong>Se han completado los ${targetStudents} diagnósticos individuales del grupo.</strong><br>Haz clic en el panel para consolidar la <strong>Unidad Didáctica Colectiva</strong>.`);
+        if (resultContainer) {
+            resultContainer.innerHTML = renderResultStepHTML(data, didactica, evaluatedStudents);
         }
     }
+
+    markStepComplete(2);
+    markStepComplete(3);
+    goToStep(3);
 }
 
-// RENDERIZADOR HTML DE DIAGNÓSTICO BIOMECÁNICO
-function renderDiagnosticoHTML(data, studentNum = null) {
+// RENDERIZADOR HTML LIMPIO PARA EL PASO 3
+function renderResultStepHTML(data, didactica, studentNum = null) {
     const stageClass = {
         'Inicial': 'stage-inicial',
         'Elemental': 'stage-elemental',
         'Maduro': 'stage-maduro'
     }[data.estadio_gallahue] || 'stage-elemental';
+
+    const skillIcons = {
+        'Carrera': '🏃',
+        'Salto Horizontal': '🦘',
+        'Marcha': '🚶',
+        'Salto Unipodal': '🦿',
+        'Lanzamiento Sobre Hombro': '⚾',
+        'Recepción y Atrape': '🧤',
+        'Patear': '⚽',
+        'Equilibrio Dinámico': '🧘',
+        'Equilibrio Estático Unipodal': '🦩'
+    };
+    const skillIcon = skillIcons[data.habilidad_detectada] || '🏃';
 
     let criteriaRows = data.criterios.map(c => {
         const badge = c.puntaje === 1
@@ -2497,75 +2759,62 @@ function renderDiagnosticoHTML(data, studentNum = null) {
     let errorsHTML = data.errores_criticos.map(e => `
         <div class="error-box">
             <strong>Anomalía técnica:</strong> ${e.error}<br>
-            <span style="font-size:11px; opacity:0.9;"><strong>Impacto biomecánico:</strong> ${e.impacto_biomecanico}</span>
+            <span style="font-size:11.5px; opacity:0.95;"><strong>Impacto biomecánico:</strong> ${e.impacto_biomecanico}</span>
         </div>
     `).join('');
 
     let phrasesHTML = data.frases_profe.map(f => `<li>"${f}"</li>`).join('');
 
     const autoBadgeHTML = data.es_deteccion_automatica
-        ? `<div style="background:rgba(56, 189, 248, 0.12); border:1px solid #38BDF8; color:#0284C7; font-size:11px; font-weight:700; padding:4px 8px; border-radius:4px; margin-bottom:8px; display:inline-flex; align-items:center; gap:6px;">
-            <span>🔍 Detección Automática Cinemática:</span> <strong>${data.habilidad_detectada}</strong>
+        ? `<div style="background:var(--accent-soft); border:1px solid var(--accent-subtle); color:var(--accent); font-size:11px; font-weight:700; padding:4px 8px; border-radius:4px; margin-bottom:10px; display:inline-flex; align-items:center; gap:6px;">
+            <span>🔍 Detección automática:</span> <strong>${data.habilidad_detectada}</strong>
            </div>`
         : '';
 
-    const titleText = studentNum ? `ESTUDIANTE #${studentNum} · INFORME BIOMECÁNICO` : `INFORME BIOMECÁNICO DE MOVIMIENTO`;
+    const titleText = studentNum ? `Estudiante #${studentNum} · Diagnóstico biomecánico` : `Diagnóstico biomecánico`;
 
-    const t = data.telemetria_medida;
-    const telemetryBoxHTML = t ? `
-        <div class="telemetry-box">
-            <div class="telemetry-header">
-                Telemetría Cinemática Articular (MediaPipe Pose WASM · 33 Landmarks)
+    const didactClasesHTML = didactica ? didactica.clases_secuencia.map(c => `
+        <div style="background:#FFFFFF; border:1px solid #E2E8F0; border-left:3px solid var(--accent); padding:10px 12px; border-radius:6px; margin-bottom:8px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                <strong style="color:var(--text); font-size:12.5px;">Sesión ${c.numero} de ${didactica.total_clases}: ${c.titulo}</strong>
+                <span style="font-size:10px; background:var(--accent-soft); color:var(--accent); padding:2px 6px; border-radius:4px; font-weight:600; font-family:var(--font-mono);">${c.fase_pedagogica}</span>
             </div>
-            <div class="telemetry-grid">
-                <div class="telemetry-item">
-                    <span class="telemetry-lbl">Flexión Mín. Rodilla:</span>
-                    <span class="telemetry-val">${t.minKneeAngle}° <span style="font-size:9px; color:#94A3B8;">(≤90° maduro)</span></span>
-                </div>
-                <div class="telemetry-item">
-                    <span class="telemetry-lbl">Ángulo Codo (Braceo):</span>
-                    <span class="telemetry-val">${t.avgElbowAngle}° <span style="font-size:9px; color:#94A3B8;">(75°-105°)</span></span>
-                </div>
-                <div class="telemetry-item">
-                    <span class="telemetry-lbl">Inclinación Tronco:</span>
-                    <span class="telemetry-val">${t.avgTrunkAngle}° <span style="font-size:9px; color:#94A3B8;">(5°-15°)</span></span>
-                </div>
-                <div class="telemetry-item">
-                    <span class="telemetry-lbl">Fase Aérea / Vuelo:</span>
-                    <span class="telemetry-val" style="color:${t.flightDetected ? '#34D399' : '#F87171'};">${t.flightDetected ? '✓ Detectada' : '✗ No evidente'}</span>
-                </div>
-                <div class="telemetry-item">
-                    <span class="telemetry-lbl">Simetría Bilateral:</span>
-                    <span class="telemetry-val">${t.symmetryScore}%</span>
-                </div>
-                <div class="telemetry-item">
-                    <span class="telemetry-lbl">Muestreo de Frames:</span>
-                    <span class="telemetry-val" style="font-size:9.5px; color:#38BDF8;">Adaptativo por Luminancia</span>
-                </div>
+            <div style="font-size:11.5px; color:var(--text-muted); margin-bottom:6px;"><strong>Objetivo de sesión:</strong> ${c.objetivo}</div>
+            <div style="font-size:11.5px; line-height:1.45; color:var(--text);">
+                <div style="margin-bottom:2px;"><span style="font-family:var(--font-mono); font-size:10px; color:#64748B; font-weight:700;">[INICIAL]</span> ${c.actividad_inicial}</div>
+                <div style="margin-bottom:2px;"><span style="font-family:var(--font-mono); font-size:10px; color:var(--accent); font-weight:700;">[DESARROLLO · ${didactica.duraciones.central}]</span> ${c.actividad_central}</div>
+                <div><span style="font-family:var(--font-mono); font-size:10px; color:#16A34A; font-weight:700;">[CIERRE]</span> ${c.actividad_final}</div>
+            </div>
+            <div style="margin-top:6px; font-size:11px; background:#F8FAFC; border:1px solid #E2E8F0; padding:5px 8px; border-radius:4px; color:var(--text);">
+                <strong>Consigna verbal:</strong> "${c.consigna}"
             </div>
         </div>
-    ` : '';
+    `).join('') : '';
 
     return `
+        <!-- TARJETA LIMPIA: DIAGNÓSTICO DEL ESTUDIANTE -->
         <div class="diag-card">
             ${autoBadgeHTML}
             <div class="diag-header-bar">
-                <div>
-                    <div class="diag-title">${titleText}</div>
-                    <div class="diag-meta">Habilidad: <strong>${data.habilidad_detectada.toUpperCase()}</strong> | Componente: <strong>${data.componente_hmb || '[HMB-L] Locomoción'}</strong> | Puntaje: <strong>${data.puntaje_obtenido || data.porcentaje_madurez + '%'}</strong></div>
-                    <div style="font-size:10.5px; color:var(--text-subtle); margin-top:3px;">
-                        <em>Instrumento: Batería Validada de Habilidades Motrices Básicas (HMB - Dialnet 7925607)</em>
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <span style="font-size:32px; line-height:1;">${skillIcon}</span>
+                    <div>
+                        <div class="diag-title">${titleText}</div>
+                        <div class="diag-meta">Habilidad: <strong>${data.habilidad_detectada}</strong> · Componente: <strong>${data.componente_hmb || 'Locomoción'}</strong> · Puntaje: <strong>${data.puntaje_obtenido || data.porcentaje_madurez + '%'}</strong></div>
+                        <div style="font-size:11px; color:var(--text-subtle); margin-top:2px;">
+                            Batería Validada de Habilidades Motrices Básicas (5 a 11 años)
+                        </div>
                     </div>
                 </div>
-                <span class="stage-badge ${stageClass}">Estadio: ${data.estadio_gallahue}</span>
+                <span class="stage-badge ${stageClass}">Estadio ${data.estadio_gallahue}</span>
             </div>
 
             <!-- MEDIDOR DE MADUREZ -->
             <div class="maturity-gauge-row">
                 <div class="gauge-circle">${data.porcentaje_madurez}%</div>
                 <div class="gauge-details">
-                    <div style="display:flex; justify-content:space-between; font-size:11.5px; font-weight:700; color:var(--text);">
-                        <span>Índice de Madurez Motriz</span>
+                    <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:700; color:var(--text);">
+                        <span>Índice de madurez motriz</span>
                         <span style="color:var(--accent);">${data.porcentaje_madurez} / 100 pts</span>
                     </div>
                     <div class="gauge-bar-track">
@@ -2574,42 +2823,109 @@ function renderDiagnosticoHTML(data, studentNum = null) {
                 </div>
             </div>
 
-            <p style="font-size:12.5px; color:var(--text-muted); margin-bottom:12px; line-height:1.5;">${data.resumen_biomecanico}</p>
-
-            ${telemetryBoxHTML}
-
-            <!-- TABLA DE CRITERIOS -->
-            <div style="font-family:var(--font-mono); font-size:10.5px; font-weight:700; color:var(--accent); text-transform:uppercase; margin-bottom:6px;">Batería de Criterios Validados y Mediciones</div>
-            <table class="diag-table">
-                <thead>
-                    <tr>
-                        <th>Criterio Biomecánico, Mediciones y Fase</th>
-                        <th style="text-align:center;">Estado</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${criteriaRows}
-                </tbody>
-            </table>
-
-            <!-- ERRORES CRÍTICOS -->
-            <div style="font-family:var(--font-mono); font-size:10.5px; font-weight:700; color:#DC2626; text-transform:uppercase; margin:12px 0 6px;">Anomalías Cinemáticas Observadas</div>
-            ${errorsHTML}
+            <!-- RESUMEN BREVE -->
+            <p style="font-size:13px; color:var(--text-muted); margin-bottom:14px; line-height:1.5;">${data.resumen_biomecanico}</p>
 
             <!-- LENGUAJE DEL PROFE -->
             <div class="profe-cue-box">
-                <div style="font-weight:700; margin-bottom:4px;">Consignas Verbales para el Estudiante ("El Lenguaje del Profe"):</div>
-                <ul style="padding-left: 18px; line-height:1.5; font-size:12px;">
+                <div style="font-weight:700; margin-bottom:4px;">Consignas verbales para el estudiante ("El lenguaje del profe"):</div>
+                <ul style="padding-left: 18px; line-height:1.5; font-size:12.5px;">
                     ${phrasesHTML}
                 </ul>
             </div>
 
-            <!-- BOTONES DE EXPORTACIÓN -->
+            <!-- BOTÓN DE DESCARGA INFORME -->
             <button class="btn-export-doc" onclick="exportDiagnosticoToWord()">
-                Descargar Reporte del Estudiante (.doc con Telemetría e Historial)
+                Descargar reporte del estudiante (.doc)
+            </button>
+
+            <!-- SECCIONES DESPLEGABLES -->
+            <details style="margin-top:14px; border-top:1px solid var(--border); padding-top:10px;">
+                <summary style="font-size:12px; font-weight:600; color:var(--text-muted); cursor:pointer; padding:6px 0;">
+                    Ver criterios evaluados (${data.puntaje_obtenido || ''})
+                </summary>
+                <div style="margin-top:10px;">
+                    <table class="diag-table">
+                        <thead>
+                            <tr>
+                                <th>Criterio biomecánico y fase</th>
+                                <th style="text-align:center;">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${criteriaRows}
+                        </tbody>
+                    </table>
+                </div>
+            </details>
+
+            <details style="margin-top:8px; border-top:1px solid var(--border); padding-top:10px;">
+                <summary style="font-size:12px; font-weight:600; color:var(--text-muted); cursor:pointer; padding:6px 0;">
+                    Ver fallas y observaciones técnicas (${data.errores_criticos ? data.errores_criticos.length : 0})
+                </summary>
+                <div style="margin-top:10px;">
+                    ${errorsHTML}
+                </div>
+            </details>
+        </div>
+
+        ${didactica ? `
+        <!-- TARJETA: UNIDAD DIDÁCTICA INSTITUCIONAL -->
+        <div class="didact-card">
+            <div class="diag-header-bar">
+                <div>
+                    <div class="diag-title">Unidad didáctica institucional · Período ${didactica.periodo}</div>
+                    <div class="diag-meta"><strong>${didactica.tema}</strong> · Grado: <strong>${didactica.grado}</strong></div>
+                    <div style="font-size:11px; color:var(--text-subtle); margin-top:2px;">
+                        Secuencia de <strong>${didactica.total_clases} sesiones progresivas</strong> · ${didactica.duracion_clase} por sesión
+                    </div>
+                </div>
+                <span class="stage-badge stage-maduro">${didactica.total_clases} sesiones</span>
+            </div>
+
+            <!-- PREGUNTA PROBLEMATIZADORA Y OBJETIVOS -->
+            <div style="background:var(--bg); border:1px solid var(--border); padding:10px 12px; border-radius:6px; font-size:12px; margin-bottom:12px;">
+                <div style="font-weight:700; color:var(--accent); margin-bottom:4px;">Pregunta problematizadora del período:</div>
+                <div style="font-style:italic; margin-bottom:8px;">${didactica.pregunta_problematizadora}</div>
+                <div style="font-weight:700; color:var(--text); margin-bottom:2px;">Objetivo general:</div>
+                <div>${didactica.objetivo_general}</div>
+            </div>
+
+            <!-- INDICADORES SABER, HACER, SER -->
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:8px; margin-bottom:12px; font-size:11.5px;">
+                <div style="background:var(--bg); border-left:3px solid var(--accent); padding:8px; border-radius:4px; border:1px solid var(--border);">
+                    <strong>Saber (Cognitivo):</strong><br>${didactica.indicadores.saber}
+                </div>
+                <div style="background:var(--bg); border-left:3px solid #16A34A; padding:8px; border-radius:4px; border:1px solid var(--border);">
+                    <strong>Hacer (Procedimental):</strong><br>${didactica.indicadores.hacer}
+                </div>
+                <div style="background:var(--bg); border-left:3px solid #D97706; padding:8px; border-radius:4px; border:1px solid var(--border);">
+                    <strong>Ser (Actitudinal):</strong><br>${didactica.indicadores.ser}
+                </div>
+            </div>
+
+            <!-- SECUENCIA DE CLASES -->
+            <details style="margin-bottom:12px;" open>
+                <summary style="font-weight:700; font-size:12px; color:var(--text); cursor:pointer; padding:6px 0;">
+                    Secuencia didáctica (${didactica.total_clases} clases planificadas)
+                </summary>
+                <div style="max-height:340px; overflow-y:auto; padding-right:4px; margin-top:8px;">
+                    ${didactClasesHTML}
+                </div>
+            </details>
+
+            <!-- BOTÓN DE DESCARGA UNIDAD DIDÁCTICA -->
+            <button class="btn-export-plan" onclick="exportToWord()">
+                Descargar plan de clase en Word (${didactica.total_clases} clases)
             </button>
         </div>
+        ` : ''}
     `;
+}
+
+// Función de compatibilidad
+function renderDiagnosticoHTML(data, studentNum = null) {
+    return renderResultStepHTML(data, globalDidacticaData, studentNum);
 }
 
 // HELPER DE GRADO Y CICLO PEDAGÓGICO MEN
