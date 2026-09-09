@@ -23,6 +23,181 @@ let groupMemory = []; // Colección de diagnósticos individuales
 
 const chatScroll = document.getElementById('chatScroll');
 
+// ============================================================================
+// SISTEMA DE ALERTAS Y CONFIRMACIONES PERSONALIZADAS (CON LOGO AULAGLOBAL360)
+// ============================================================================
+let activeAlertResolve = null;
+
+function ensureAlertModalDOM() {
+    if (document.getElementById('customAlertOverlay')) return;
+    const div = document.createElement('div');
+    div.innerHTML = `
+        <div class="custom-alert-overlay" id="customAlertOverlay" style="display: none;" onclick="handleAlertBackdropClick(event)">
+            <div class="custom-alert-card" id="customAlertCard" role="alertdialog" aria-modal="true" aria-labelledby="customAlertTitle" aria-describedby="customAlertMessage">
+                <div class="custom-alert-header">
+                    <div class="custom-alert-brand">
+                        <img src="logo-icon.svg" width="24" height="24" alt="Aula Global 360" class="custom-alert-logo">
+                        <span class="custom-alert-title" id="customAlertTitle">Aula Global 360</span>
+                    </div>
+                    <button type="button" class="custom-alert-close" onclick="closeCustomAlert()" aria-label="Cerrar">&times;</button>
+                </div>
+                <div class="custom-alert-body">
+                    <div class="custom-alert-icon-wrap" id="customAlertIconWrap">
+                        <span id="customAlertIcon">💡</span>
+                    </div>
+                    <div class="custom-alert-text">
+                        <p id="customAlertMessage">Mensaje de alerta</p>
+                    </div>
+                </div>
+                <div class="custom-alert-footer" id="customAlertFooter">
+                    <button type="button" class="btn-alert-cancel" id="customAlertCancelBtn" style="display: none;" onclick="onCustomAlertCancel()">Cancelar</button>
+                    <button type="button" class="btn-alert-confirm" id="customAlertConfirmBtn" onclick="onCustomAlertConfirm()">Entendido</button>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(div.firstElementChild);
+}
+
+function showAlert(message, options = {}) {
+    ensureAlertModalDOM();
+    return new Promise(resolve => {
+        activeAlertResolve = resolve;
+
+        const overlay = document.getElementById('customAlertOverlay');
+        const titleEl = document.getElementById('customAlertTitle');
+        const msgEl = document.getElementById('customAlertMessage');
+        const iconEl = document.getElementById('customAlertIcon');
+        const iconWrap = document.getElementById('customAlertIconWrap');
+        const cancelBtn = document.getElementById('customAlertCancelBtn');
+        const confirmBtn = document.getElementById('customAlertConfirmBtn');
+
+        const type = options.type || (
+            /error|fallo|no se pudo/i.test(message) ? 'error' :
+            /aviso|advertencia|atención|atencion/i.test(message) ? 'warning' :
+            /éxito|guardada|completad/i.test(message) ? 'success' : 'info'
+        );
+
+        const defaultIcons = {
+            'info': '💡',
+            'warning': '⚠️',
+            'error': '❌',
+            'success': '✅'
+        };
+
+        if (titleEl) titleEl.textContent = options.title || 'Aula Global 360';
+        if (msgEl) msgEl.innerHTML = message;
+        if (iconEl) iconEl.textContent = options.icon || defaultIcons[type] || '💡';
+
+        if (iconWrap) {
+            iconWrap.className = `custom-alert-icon-wrap type-${type}`;
+        }
+
+        if (cancelBtn) cancelBtn.style.display = 'none';
+        if (confirmBtn) {
+            confirmBtn.textContent = options.confirmText || 'Entendido';
+            setTimeout(() => confirmBtn.focus(), 60);
+        }
+
+        if (overlay) {
+            overlay.style.display = 'flex';
+            requestAnimationFrame(() => overlay.classList.add('active'));
+        }
+    });
+}
+
+function showConfirm(message, options = {}) {
+    ensureAlertModalDOM();
+    return new Promise(resolve => {
+        activeAlertResolve = resolve;
+
+        const overlay = document.getElementById('customAlertOverlay');
+        const titleEl = document.getElementById('customAlertTitle');
+        const msgEl = document.getElementById('customAlertMessage');
+        const iconEl = document.getElementById('customAlertIcon');
+        const iconWrap = document.getElementById('customAlertIconWrap');
+        const cancelBtn = document.getElementById('customAlertCancelBtn');
+        const confirmBtn = document.getElementById('customAlertConfirmBtn');
+
+        const type = options.type || 'warning';
+
+        if (titleEl) titleEl.textContent = options.title || 'Confirmar acción';
+        if (msgEl) msgEl.innerHTML = message;
+        if (iconEl) iconEl.textContent = options.icon || '⚠️';
+
+        if (iconWrap) {
+            iconWrap.className = `custom-alert-icon-wrap type-${type}`;
+        }
+
+        if (cancelBtn) {
+            cancelBtn.style.display = 'inline-flex';
+            cancelBtn.textContent = options.cancelText || 'Cancelar';
+        }
+
+        if (confirmBtn) {
+            confirmBtn.textContent = options.confirmText || 'Confirmar';
+            setTimeout(() => confirmBtn.focus(), 60);
+        }
+
+        if (overlay) {
+            overlay.style.display = 'flex';
+            requestAnimationFrame(() => overlay.classList.add('active'));
+        }
+    });
+}
+
+function closeCustomAlert(result = false) {
+    const overlay = document.getElementById('customAlertOverlay');
+    if (overlay) {
+        overlay.classList.remove('active');
+        setTimeout(() => {
+            overlay.style.display = 'none';
+            if (activeAlertResolve) {
+                const res = activeAlertResolve;
+                activeAlertResolve = null;
+                res(result);
+            }
+        }, 180);
+    } else if (activeAlertResolve) {
+        const res = activeAlertResolve;
+        activeAlertResolve = null;
+        res(result);
+    }
+}
+
+function onCustomAlertConfirm() {
+    closeCustomAlert(true);
+}
+
+function onCustomAlertCancel() {
+    closeCustomAlert(false);
+}
+
+function handleAlertBackdropClick(event) {
+    if (event.target === document.getElementById('customAlertOverlay')) {
+        closeCustomAlert(false);
+    }
+}
+
+// Reemplazar window.alert por el diálogo con diseño y logo institucional
+window.alert = function(msg) {
+    return showAlert(msg);
+};
+
+// Atajos de teclado (Escape y Enter) para el diálogo
+document.addEventListener('keydown', (e) => {
+    const overlay = document.getElementById('customAlertOverlay');
+    if (overlay && overlay.classList.contains('active')) {
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            closeCustomAlert(false);
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            closeCustomAlert(true);
+        }
+    }
+});
+
 // INICIALIZACIÓN
 document.addEventListener('DOMContentLoaded', () => {
     setEngineMode(currentEngineMode, true);
@@ -291,15 +466,28 @@ function saveGeminiKey() {
     const inputEl = document.getElementById('apiKeyInput');
     const input = inputEl ? inputEl.value.trim() : '';
     if (!input) {
-        alert('Por favor ingresa una clave API válida de Google AI Studio.');
+        showAlert('Por favor ingresa una clave API válida de Google AI Studio.', {
+            title: 'Clave requerida',
+            type: 'warning',
+            icon: '🔑'
+        });
         return;
     }
     if (!input.startsWith('AIza')) {
-        alert('Aviso: Las claves de Google AI Studio suelen comenzar con "AIza". Asegúrate de que sea la clave correcta.');
+        showAlert('Las claves de Google AI Studio suelen comenzar con <code>AIza</code>. Asegúrate de haber copiado la clave correcta desde Google AI Studio.', {
+            title: 'Formato de clave API',
+            type: 'info',
+            icon: 'ℹ️'
+        });
     }
     apiKey = input;
     localStorage.setItem('aula360_api_key', apiKey);
     updateGeminiKeyUI();
+    showAlert('Clave de Google AI Studio conectada exitosamente.', {
+        title: 'Conexión exitosa',
+        type: 'success',
+        icon: '✅'
+    });
 }
 
 function editGeminiKey() {
@@ -436,8 +624,12 @@ function selectMode(btnEl) {
 // MODO GRUPAL
 function startGroupMode() {
     const val = parseInt(document.getElementById('totalStudents').value, 10);
-    if (isNaN(val) || val < 1) {
-        alert('Por favor ingresa un número válido de estudiantes.');
+    if (isNaN(val) || val < 1 || val > 60) {
+        showAlert('Por favor ingresa un número válido de estudiantes (entre 1 y 60).', {
+            title: 'Número de estudiantes',
+            type: 'warning',
+            icon: '👥'
+        });
         return;
     }
     targetStudents = val;
@@ -470,15 +662,22 @@ function updateGroupUI() {
 }
 
 function resetGroupAssessment() {
-    if (confirm('¿Deseas reiniciar el registro grupal? Se perderán las evaluaciones acumuladas de este salón.')) {
-        isGroupActive = false;
-        groupMemory = [];
-        evaluatedStudents = 0;
-        document.getElementById('groupSetup').style.display = 'flex';
-        document.getElementById('groupProgress').style.display = 'none';
-        updateGroupUI();
-        addMsg('bot', 'Registro grupal reiniciado.');
-    }
+    showConfirm('¿Deseas reiniciar el registro grupal? Se perderán las evaluaciones acumuladas de este salón.', {
+        title: 'Reiniciar evaluación grupal',
+        type: 'warning',
+        icon: '⚠️',
+        confirmText: 'Sí, reiniciar',
+        cancelText: 'Cancelar'
+    }).then(confirmed => {
+        if (confirmed) {
+            isGroupActive = false;
+            groupMemory = [];
+            evaluatedStudents = 0;
+            document.getElementById('groupSetup').style.display = 'flex';
+            document.getElementById('groupProgress').style.display = 'none';
+            updateGroupUI();
+        }
+    });
 }
 
 // ============================================================================
@@ -2564,7 +2763,11 @@ async function sendMsg() {
     if (isAnalyzing) return;
 
     if (capturedKeyframes.length === 0) {
-        alert('Por favor sube un video o foto del estudiante antes de analizar el movimiento.');
+        showAlert('Por favor sube un video o foto del estudiante antes de analizar el movimiento.', {
+            title: 'Evidencia requerida',
+            type: 'info',
+            icon: '📹'
+        });
         return;
     }
 
@@ -2591,7 +2794,11 @@ async function sendMsg() {
     try {
         if (currentEngineMode === 'gemini') {
             if (!apiKey) {
-                alert('Modo con IA: Para analizar con Gemini Vision en la nube, ingresa tu clave de Google AI Studio en "Configurar clase", o cambia al modo de "Análisis rápido (sin internet)".');
+                showAlert('Para analizar con Gemini Vision en la nube, ingresa tu clave de Google AI Studio en <strong>Configurar clase</strong>, o cambia al modo de <strong>Análisis rápido (sin internet)</strong>.', {
+                    title: 'Clave API requerida',
+                    type: 'info',
+                    icon: '🔑'
+                });
                 return;
             }
             const diagnosis = await callGeminiVision(activeSkillName, grade, userText, capturedKeyframes);
@@ -2604,7 +2811,11 @@ async function sendMsg() {
     } catch (err) {
         console.error('Error en diagnóstico:', err);
         if (currentEngineMode === 'gemini') {
-            alert(`No se pudo conectar con Gemini Vision (${err.message || 'error de conexión'}). Se ejecutó el análisis con el motor local como respaldo.`);
+            showAlert(`No se pudo conectar con Gemini Vision (${err.message || 'error de conexión'}). Se ejecutó el análisis con el motor biomecánico local como respaldo.`, {
+                title: 'Aviso de conexión',
+                type: 'warning',
+                icon: '⚡'
+            });
         }
         const fallback = runLocalBiomechanicalEngine(activeSkillCode, grade, userText, capturedKeyframes);
         handleDiagnosisOutput(fallback, teacherPrefs);
@@ -3667,7 +3878,11 @@ function renderDidacticaHTML(didactica) {
 // GENERADOR DE PLANEACIÓN GRUPAL CONSOLIDADA
 function generateGroupPlan() {
     if (groupMemory.length === 0) {
-        alert('No has evaluado a ningún estudiante todavía.');
+        showAlert('No has evaluado a ningún estudiante todavía. Realiza al menos una evaluación individual antes de consolidar el plan del salón.', {
+            title: 'Sin evaluaciones previas',
+            type: 'info',
+            icon: '📋'
+        });
         return;
     }
 

@@ -534,6 +534,33 @@
         </div>
     </div>
 
+    <!-- ============================================================
+         MODAL DE ALERTAS Y CONFIRMACIONES PERSONALIZADAS
+         ============================================================ -->
+    <div class="custom-alert-overlay" id="customAlertOverlay" style="display: none;" onclick="handleAlertBackdropClick(event)">
+        <div class="custom-alert-card" id="customAlertCard" role="alertdialog" aria-modal="true" aria-labelledby="customAlertTitle" aria-describedby="customAlertMessage">
+            <div class="custom-alert-header">
+                <div class="custom-alert-brand">
+                    <img src="logo-icon.svg" width="24" height="24" alt="Aula Global 360" class="custom-alert-logo">
+                    <span class="custom-alert-title" id="customAlertTitle">Aula Global 360</span>
+                </div>
+                <button type="button" class="custom-alert-close" onclick="closeCustomAlert()" aria-label="Cerrar">&times;</button>
+            </div>
+            <div class="custom-alert-body">
+                <div class="custom-alert-icon-wrap" id="customAlertIconWrap">
+                    <span id="customAlertIcon">💡</span>
+                </div>
+                <div class="custom-alert-text">
+                    <p id="customAlertMessage">Mensaje de alerta</p>
+                </div>
+            </div>
+            <div class="custom-alert-footer" id="customAlertFooter">
+                <button type="button" class="btn-alert-cancel" id="customAlertCancelBtn" style="display: none;" onclick="onCustomAlertCancel()">Cancelar</button>
+                <button type="button" class="btn-alert-confirm" id="customAlertConfirmBtn" onclick="onCustomAlertConfirm()">Entendido</button>
+            </div>
+        </div>
+    </div>
+
     <script src="script.js"></script>
 </body>
 
