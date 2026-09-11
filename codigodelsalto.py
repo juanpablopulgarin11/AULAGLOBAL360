@@ -1,62 +1,102 @@
+import cv2
+import mediapipe as mp
 import numpy as np
+import time
 
-def calcular_angulo(a, b, c):
-    # a, b, c son listas o arrays con coordenadas [x, y] de los landmarks
-    a = np.array(a) # Ejemplo: Cadera (Landmark 24)
-    b = np.array(b) # Ejemplo: Rodilla (Landmark 26)
-    c = np.array(c) # Ejemplo: Tobillo (Landmark 28)
-    
-    radianes = np.arctan2(c[1]-b[1], c[0]-b[0]) - np.arctan2(a[1]-b[1], a[0]-b[0])
-    angulo = np.abs(radianes * 180.0 / np.pi)
-    
-    if angulo > 180.0:
-        angulo = 360 - angulo
-    return angulo
-# Inicialización de variables de estado
-estado_salto = "REPOSO"
-y_cadera_inicial = None
+mp_pose = mp.solutions.pose
+pose = mp_pose.Pose(min_detection_confidence=0.7, min_tracking_confidence=0.7)
 
-# ... Dentro de tu bucle de MediaPipe Pose ...
-# Extrae las coordenadas de la pierna (ejemplo: lado derecho)
-cadera = [landmarks[24].x, landmarks[24].y]
-rodilla = [landmarks[26].x, landmarks[26].y]
-tobillo = [landmarks[28].x, landmarks[28].y]
+def calcular_angulo(p1, p2, p3):
+    a, b, c = np.array(p1), np.array(p2), np.array(p3)
+    rad = np.arctan2(c-b, c-b) - np.arctan2(a-b, a-b)
+    ang = np.abs(rad * 180.0 / np.pi)
+    return 360.0 - ang if ang > 180.0 else ang
 
-angulo_rodilla = calcular_angulo(cadera, rodilla, tobillo)
-y_actual_cadera = landmarks[24].y  # En MediaPipe, menor 'y' significa más alto en pantalla
+def calcular_inclinacion_horizontal(p1, p2):
+    """Calcula el ángulo de una línea respecto a la horizontal (ej. hombro a hombro)."""
+    delta_x = p2[0] - p1[0]
+    delta_y = p2[1] - p1[1]
+    angulo = np.arctan2(delta_y, delta_x) * 180.0 / np.pi
+    return np.abs(angulo) # 0 grados significa perfectamente nivelado
 
-# --- MÁQUINA DE ESTADOS ---
+estado_equilibrio = "BIPEDESTACIÓN"
+tiempo_inicio = 0
+tiempo_total = 0
 
-# 1. Detectar inicio del Contramovimiento
-if estado_salto == "REPOSO":
-    if y_cadera_inicial is None:
-        y_cadera_inicial = y_actual_cadera
-    
-    # Si la rodilla se flexiona significativamente por debajo del estado normal (170°)
-    if angulo_rodilla < 140:
-        estado_salto = "CONTRAMOVIMIENTO (BAJANDO)"
+cap = cv2.VideoCapture(0)
 
-# 2. Detectar la zona de máxima flexión (Amortiguación)
-elif estado_salto == "CONTRAMOVIMIENTO (BAJANDO)":
-    if 85 <= angulo_rodilla <= 105:
-        print("Ángulo óptimo de flexión detectado:", angulo_rodilla)
-    
-    # Si la cadera empieza a subir y la rodilla empieza a extenderse
-    if angulo_rodilla > 110 and y_actual_cadera < y_cadera_inicial:
-        estado_salto = "PROPULSIÓN (SUBIENDO)"
+while cap.isOpened():
+    ret, frame = cap.read()
+    if not ret: break
 
-# 3. Detectar la Fase de Vuelo (Despegue efectivo)
-elif estado_salto == "PROPULSIÓN (SUBIENDO)":
-    # Cuando ocurre la triple extensión en el aire y la cadera supera la altura inicial
-    if angulo_rodilla > 170 and y_actual_cadera < (y_cadera_inicial - 0.05): # Ajusta el umbral 0.05 según la distancia de la cámara
-        estado_salto = "EN EL AIRE (VUELO)"
-        print("¡El atleta está saltando!")
+    frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    results = pose.process(frame_rgb)
 
-# 4. Detectar la Caída / Aterrizaje
-elif estado_salto == "EN EL AIRE (VUELO)":
-    # Si la cadera empieza a bajar y la rodilla se flexiona bruscamente para amortiguar
-    if y_actual_cadera > y_cadera_inicial and angulo_rodilla < 150:
-        estado_salto = "ATERRIZAJE"
-        print("Salto completado con éxito.")
-        # Reiniciar para el siguiente salto
-        estado_salto = "REPOSO"
+    if results.pose_landmarks:
+        lm = results.pose_landmarks.landmark
+        
+        # Puntos clave (Hombros, Caderas, Rodillas, Tobillos)
+        hombro_izq = [lm[mp_pose.PoseLandmark.LEFT_SHOULDER].x, lm[mp_pose.PoseLandmark.LEFT_SHOULDER].y]
+        hombro_der = [lm[mp_pose.PoseLandmark.RIGHT_SHOULDER].x, lm[mp_pose.PoseLandmark.RIGHT_SHOULDER].y]
+        
+        cadera_izq  = [lm[mp_pose.PoseLandmark.LEFT_HIP].x, lm[mp_pose.PoseLandmark.LEFT_HIP].y]
+        cadera_der  = [lm[mp_pose.PoseLandmark.RIGHT_HIP].x, lm[mp_pose.PoseLandmark.RIGHT_HIP].y]
+        
+        rodilla_der = [lm[mp_pose.PoseLandmark.RIGHT_KNEE].x, lm[mp_pose.PoseLandmark.RIGHT_KNEE].y]
+        tobillo_der = [lm[mp_pose.PoseLandmark.RIGHT_ANKLE].x, lm[mp_pose.PoseLandmark.RIGHT_ANKLE].y]
+        
+        rodilla_izq = [lm[mp_pose.PoseLandmark.LEFT_KNEE].x, lm[mp_pose.PoseLandmark.LEFT_KNEE].y]
+        tobillo_izq = [lm[mp_pose.PoseLandmark.LEFT_ANKLE].x, lm[mp_pose.PoseLandmark.LEFT_ANKLE].y]
+
+        # --- Métricas Biomecánicas ---
+        # 1. Ángulo de la rodilla de apoyo (ejemplo: evaluando pierna derecha como apoyo)
+        ang_rodilla_apoyo = calcular_angulo(cadera_der, rodilla_der, tobillo_der)
+        
+        # 2. Desalineación o balanceo (Inclinación de la línea de los hombros y caderas)
+        balanceo_hombros = calcular_inclinacion_horizontal(hombro_der, hombro_izq)
+        balanceo_caderas = calcular_inclinacion_horizontal(cadera_der, cadera_izq)
+        
+        # 3. Detectar si el pie izquierdo se levantó (Evaluamos la altura relativa de los tobillos)
+        # En MediaPipe, un valor menor de 'y' significa que está más arriba en la pantalla.
+        pie_izq_elevado = tobillo_izq[1] < (tobillo_der[1] - 0.04) # Umbral de tolerancia de elevación
+
+        # --- MÁQUINA DE ESTADOS PARA EQUILIBRIO ---
+        
+        if estado_equilibrio == "BIPEDESTACIÓN":
+            if pie_izq_elevado and ang_rodilla_apoyo > 165:
+                estado_equilibrio = "ESTABILIZANDO"
+                tiempo_inicio = time.time() # Iniciar conteo
+
+        elif estado_equilibrio == "ESTABILIZANDO":
+            # Si logra quedarse quieto (balanceo bajo) por más de 1 segundo, pasa a mantenimiento
+            if balanceo_hombros < 6.0 and balanceo_caderas < 6.0:
+                if (time.time() - tiempo_inicio) > 1.0:
+                    estado_equilibrio = "MANTENIMIENTO ESTÁTICO"
+
+        elif estado_equilibrio == "MANTENIMIENTO ESTÁTICO":
+            # Calcular tiempo acumulado en equilibrio
+            tiempo_total = time.time() - tiempo_inicio
+            
+            # CRITERIOS DE FALLO (Pérdida de equilibrio):
+            # Si el pie vuelve a tocar el suelo O si hay un balanceo lateral exagerado (compensación mecánica)
+            if not pie_izq_elevado or balanceo_hombros > 15.0 or balanceo_caderas > 12.0 or ang_rodilla_apoyo < 150:
+                estado_equilibrio = "PÉRDIDA DE EQUILIBRIO"
+                print(f"Prueba terminada. Tiempo logrado: {round(tiempo_total, 2)} segundos.")
+
+        elif estado_equilibrio == "PÉRDIDA DE EQUILIBRIO":
+            # Resetear al apoyar ambos pies de forma estable
+            if not pie_izq_elevado and balanceo_hombros < 5.0:
+                estado_equilibrio = "BIPEDESTACIÓN"
+                tiempo_total = 0
+
+        # --- Renderizar Interfaz ---
+        color_texto = (0, 255, 0) if estado_equilibrio == "MANTENIMIENTO ESTÁTICO" else (0, 0, 255)
+        cv2.putText(frame, f"Estado: {estado_equilibrio}", (30, 45), cv2.FONT_HERSHEY_SIMPLEX, 0.7, color_texto, 2)
+        cv2.putText(frame, f"Tiempo: {round(tiempo_total, 1)}s", (30, 85), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 255, 255), 2)
+        cv2.putText(frame, f"Oscilacion Hombros: {int(balanceo_hombros)} deg", (30, 120), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (200, 200, 200), 1)
+
+    cv2.imshow("Test de Equilibrio Unipodal", frame)
+    if cv2.waitKey(1) & 0xFF == ord('q'): break
+
+cap.release()
+cv2.destroyAllWindows()

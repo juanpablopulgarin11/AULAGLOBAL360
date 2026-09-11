@@ -1248,16 +1248,17 @@ class EquilibrioEstaticoFSM {
         if (!landmarks || landmarks.length < 33 || !angles) return;
         const isOneBent = (angles.kneeMax >= 145 && angles.kneeMin <= 125 && angles.kneeDiff >= 30);
         const yElev = (angles.ankleYDiff >= 0.04);
+        const footLifted = angles.unipodalFootRaised || isOneBent || yElev;
 
         if (this.estado === 'INICIO_BIPODAL') {
             this.fasesCumplidas.add('INICIO');
-            if (isOneBent || yElev) {
+            if (footLifted) {
                 this.estado = 'ELEVACION_PIERNA';
                 this.transiciones.push({ estado: this.estado, idx, t, desc: 'Despegue de la pierna libre' });
                 this.fasesCumplidas.add('ELEVACION');
             }
         } else if (this.estado === 'ELEVACION_PIERNA' || this.estado === 'SOSTEN_FLAMENCO') {
-            if (isOneBent && yElev) {
+            if (angles.unipodalMaintained || (isOneBent && yElev) || (angles.unipodalFootRaised && (angles.shoulderTilt || 0) <= 10)) {
                 this.holdCount++;
                 if (this.holdCount >= 2 && this.estado !== 'SOSTEN_FLAMENCO') {
                     this.estado = 'SOSTEN_FLAMENCO';
@@ -1338,6 +1339,121 @@ function executeFSMAnalysis(frames, skillName) {
     return fsm;
 }
 
+// ============================================================================
+// FUNCIONES BIOMECÁNICAS PORTADAS DE REFERENCIA PYTHON (codigodelsalto.py)
+// Cálculo de inclinación horizontal y evaluación cinemática de equilibrio
+// ============================================================================
+
+function calcularInclinacionHorizontal(p1, p2) {
+    if (!p1 || !p2) return 0;
+    const x1 = p1.x !== undefined ? p1.x : (p1[0] !== undefined ? p1[0] : 0);
+    const y1 = p1.y !== undefined ? p1.y : (p1[1] !== undefined ? p1[1] : 0);
+    const x2 = p2.x !== undefined ? p2.x : (p2[0] !== undefined ? p2[0] : 0);
+    const y2 = p2.y !== undefined ? p2.y : (p2[1] !== undefined ? p2[1] : 0);
+    const delta_x = x2 - x1;
+    const delta_y = y2 - y1;
+    const angulo = (Math.atan2(delta_y, delta_x) * 180.0) / Math.PI;
+    let inclinacion = Math.abs(angulo);
+    if (inclinacion > 90) inclinacion = Math.abs(180.0 - inclinacion);
+    return inclinacion; // 0 grados = perfectamente nivelado/horizontal
+}
+
+function analyzeEquilibriumFromPythonReference(landmarks, angles = null) {
+    if (!landmarks || !Array.isArray(landmarks) || landmarks.length < 33 ||
+        !landmarks[11] || !landmarks[12] || !landmarks[23] || !landmarks[24] ||
+        !landmarks[25] || !landmarks[26] || !landmarks[27] || !landmarks[28]) {
+        return {
+            estado: 'BIPEDESTACIÓN',
+            balanceoHombros: 0,
+            balanceoCaderas: 0,
+            inclinacionLateralMax: 0,
+            pieElevado: false,
+            pieElevadoLado: 'ninguno',
+            angRodillaApoyo: 170,
+            esMantenimiento: false,
+            perdidaEquilibrio: false
+        };
+    }
+
+    // Puntos clave de MediaPipe Pose:
+    // Hombros: 11 (LEFT_SHOULDER), 12 (RIGHT_SHOULDER)
+    // Caderas: 23 (LEFT_HIP), 24 (RIGHT_HIP)
+    // Rodillas: 25 (LEFT_KNEE), 26 (RIGHT_KNEE)
+    // Tobillos: 27 (LEFT_ANKLE), 28 (RIGHT_ANKLE)
+    const hombroIzq = landmarks[11];
+    const hombroDer = landmarks[12];
+    const caderaIzq = landmarks[23];
+    const caderaDer = landmarks[24];
+    const rodillaDer = landmarks[26];
+    const tobilloDer = landmarks[28];
+    const rodillaIzq = landmarks[25];
+    const tobilloIzq = landmarks[27];
+
+    // 1. Desalineación o balanceo (Inclinación horizontal de hombros y caderas)
+    const balanceoHombros = Math.round(calcularInclinacionHorizontal(hombroDer, hombroIzq) * 10) / 10;
+    const balanceoCaderas = Math.round(calcularInclinacionHorizontal(caderaDer, caderaIzq) * 10) / 10;
+    const inclinacionLateralMax = Math.max(balanceoHombros, balanceoCaderas);
+
+    // 2. Detectar si un pie se levantó (en MediaPipe, menor Y = más alto en pantalla)
+    // Umbral de tolerancia de elevación podal de 0.04 (idéntico al script de Python)
+    const tobIzqY = tobilloIzq.y !== undefined ? tobilloIzq.y : (tobilloIzq[1] || 0);
+    const tobDerY = tobilloDer.y !== undefined ? tobilloDer.y : (tobilloDer[1] || 0);
+    const pieIzqElevado = tobIzqY < (tobDerY - 0.04);
+    const pieDerElevado = tobDerY < (tobIzqY - 0.04);
+    const pieElevado = pieIzqElevado || pieDerElevado;
+    const pieElevadoLado = pieIzqElevado ? 'izquierdo' : (pieDerElevado ? 'derecho' : 'ninguno');
+
+    // 3. Ángulo de la rodilla de apoyo (la pierna que permanece en contacto)
+    let angRodillaApoyo = 170;
+    if (pieIzqElevado) {
+        angRodillaApoyo = angles && angles.rKnee !== undefined 
+            ? angles.rKnee 
+            : calculateAngle3D(caderaDer, rodillaDer, tobilloDer);
+    } else if (pieDerElevado) {
+        angRodillaApoyo = angles && angles.lKnee !== undefined 
+            ? angles.lKnee 
+            : calculateAngle3D(caderaIzq, rodillaIzq, tobilloIzq);
+    } else {
+        angRodillaApoyo = angles && angles.kneeMax !== undefined ? angles.kneeMax : 170;
+    }
+    angRodillaApoyo = Math.round(angRodillaApoyo);
+
+    // 4. Máquina de estados según el código de Python
+    let estado = 'BIPEDESTACIÓN';
+    let esMantenimiento = false;
+    let perdidaEquilibrio = false;
+
+    if (pieElevado && angRodillaApoyo > 155) {
+        // Criterios de fallo (Pérdida de equilibrio): balanceo excesivo o flexión claudicante
+        if (balanceoHombros > 15.0 || balanceoCaderas > 12.0 || angRodillaApoyo < 150) {
+            estado = 'PÉRDIDA DE EQUILIBRIO';
+            perdidaEquilibrio = true;
+        } else if (balanceoHombros < 6.0 && balanceoCaderas < 6.0) {
+            estado = 'MANTENIMIENTO ESTÁTICO';
+            esMantenimiento = true;
+        } else {
+            estado = 'ESTABILIZANDO';
+        }
+    } else if (pieElevado && (angRodillaApoyo < 150 || balanceoHombros > 15.0)) {
+        estado = 'PÉRDIDA DE EQUILIBRIO';
+        perdidaEquilibrio = true;
+    } else {
+        estado = 'BIPEDESTACIÓN';
+    }
+
+    return {
+        estado,
+        balanceoHombros,
+        balanceoCaderas,
+        inclinacionLateralMax,
+        pieElevado,
+        pieElevadoLado,
+        angRodillaApoyo,
+        esMantenimiento,
+        perdidaEquilibrio
+    };
+}
+
 function computeJointAngles(landmarks) {
     if (!landmarks || landmarks.length < 33) return null;
 
@@ -1395,6 +1511,9 @@ function computeJointAngles(landmarks) {
     const rWristAboveShoulder = landmarks[16].y < landmarks[12].y;
     const wristAboveShoulder = lWristAboveShoulder || rWristAboveShoulder;
 
+    // Métricas biomecánicas de equilibrio e inclinación (Python reference)
+    const eq = analyzeEquilibriumFromPythonReference(landmarks, { lKnee, rKnee, kneeMax: Math.max(lKnee, rKnee) });
+
     return {
         lKnee,
         rKnee,
@@ -1424,7 +1543,13 @@ function computeJointAngles(landmarks) {
         wristDist,
         wristAboveShoulder,
         midHipX: midHip.x,
-        midHipY: midHip.y
+        midHipY: midHip.y,
+        shoulderTilt: eq.balanceoHombros,
+        hipTilt: eq.balanceoCaderas,
+        unipodalFootRaised: eq.pieElevado,
+        unipodalSupportKnee: eq.angRodillaApoyo,
+        unipodalState: eq.estado,
+        unipodalMaintained: eq.esMantenimiento
     };
 }
 
@@ -1494,6 +1619,15 @@ function drawPoseSkeleton(ctx, landmarks, angles) {
 
 function checkExerciseTriggerPose(angles, prevAngles = null) {
     if (!angles) return { triggered: false };
+
+    // 0. Postura de Equilibrio Unipodal (Test de equilibrio estático según referencia python)
+    if (angles.unipodalFootRaised && (angles.unipodalSupportKnee || angles.kneeMax || 0) >= 155 && (angles.shoulderTilt || 0) <= 15) {
+        return { 
+            triggered: true, 
+            reason: `Despegue e inicio de equilibrio unipodal (${angles.unipodalSupportKnee || angles.kneeMax}°)`, 
+            skillHint: 'Equilibrio Estático Unipodal' 
+        };
+    }
 
     // 1. Flexión preparatoria de rodilla bípode (Salto Horizontal o impulso)
     // En bipedestación estática neutra el ángulo es ~165°-180°. Al flexionar simultáneamente baja de 145°.
@@ -2244,7 +2378,9 @@ function assignKeyframeMilestones(frames, skillName = null) {
         let holdIdx = -1;
 
         validFrames.forEach(({ idx, a }) => {
-            const score = (a.kneeDiff * 0.8) + (a.ankleYDiff * 140);
+            const maintBonus = a.unipodalMaintained ? 50 : (a.unipodalFootRaised ? 20 : 0);
+            const tiltPenalty = (a.shoulderTilt || 0) * 1.5;
+            const score = (a.kneeDiff * 0.8) + (a.ankleYDiff * 140) + maintBonus - tiltPenalty;
             if (score > maxHoldScore) {
                 maxHoldScore = score;
                 holdIdx = idx;
@@ -2269,7 +2405,8 @@ function assignKeyframeMilestones(frames, skillName = null) {
                 f.isMilestonePeak = true;
                 f.milestoneBadge = '🦩 SOSTÉN EVIDENCIADO';
                 f.milestoneTitle = '🦩 Sostén Unipodal Evidenciado';
-                f.milestoneDesc = 'Estabilidad estática en un pie';
+                const tiltInfo = (f.angles && f.angles.shoulderTilt !== undefined) ? ` (inclinación: ${f.angles.shoulderTilt}°)` : '';
+                f.milestoneDesc = `Estabilidad estática en un pie${tiltInfo}`;
                 f.milestoneColor = '#06B6D4';
             } else {
                 f.milestoneTitle = 'Ajuste Postural';
@@ -2475,6 +2612,12 @@ function aggregateVideoTelemetry(frames) {
             hasStraddleKickFrame: false,
             unipodalHoldFrames: 0,
             unipodalHoldRatio: 0,
+            avgShoulderTilt: 2.0,
+            maxShoulderTilt: 4.0,
+            avgHipTilt: 2.0,
+            unipodalMaintainedFrames: 0,
+            unipodalRaisedFrames: 0,
+            avgSupportKnee: 165,
             transientKickPeak: false,
             avgKneeDiff: 10,
             maxKneeDiff: 18,
@@ -2497,6 +2640,19 @@ function aggregateVideoTelemetry(frames) {
     const minElbow = Math.min(...validAngles.map(a => a.elbowMin || a.elbowAvg));
     const avgTrunk = Math.round(validAngles.reduce((s, a) => s + a.trunkLean, 0) / validAngles.length);
     const maxHip = Math.max(...validAngles.map(a => a.hipAngle));
+
+    // Métricas de inclinación y equilibrio derivadas del código de Python (codigodelsalto.py)
+    const shoulderTilts = validAngles.map(a => a.shoulderTilt !== undefined ? a.shoulderTilt : 0);
+    const avgShoulderTilt = shoulderTilts.length ? Math.round((shoulderTilts.reduce((s, v) => s + v, 0) / shoulderTilts.length) * 10) / 10 : 0;
+    const maxShoulderTilt = shoulderTilts.length ? Math.max(...shoulderTilts) : 0;
+
+    const hipTilts = validAngles.map(a => a.hipTilt !== undefined ? a.hipTilt : 0);
+    const avgHipTilt = hipTilts.length ? Math.round((hipTilts.reduce((s, v) => s + v, 0) / hipTilts.length) * 10) / 10 : 0;
+
+    const unipodalMaintainedFrames = validAngles.filter(a => a.unipodalMaintained === true).length;
+    const unipodalRaisedFrames = validAngles.filter(a => a.unipodalFootRaised === true).length;
+    const supportKnees = validAngles.filter(a => a.unipodalFootRaised && a.unipodalSupportKnee).map(a => a.unipodalSupportKnee);
+    const avgSupportKnee = supportKnees.length ? Math.round(supportKnees.reduce((s, v) => s + v, 0) / supportKnees.length) : (maxKnee || 165);
 
     // Desglose de asimetrías articulares y valores pico (frame a frame)
     const kneeDiffs = validAngles.map(a => a.kneeDiff !== undefined ? a.kneeDiff : Math.abs(a.lKnee - a.rKnee));
@@ -2596,6 +2752,12 @@ function aggregateVideoTelemetry(frames) {
         maxAnkleDist,
         unipodalHoldFrames,
         unipodalHoldRatio,
+        avgShoulderTilt,
+        maxShoulderTilt,
+        avgHipTilt,
+        unipodalMaintainedFrames,
+        unipodalRaisedFrames,
+        avgSupportKnee,
         hasStraddleKickFrame,
         transientKickPeak,
         avgKneeDiff,
@@ -2653,10 +2815,13 @@ function classifySkillFromKinematics(telemetry, userText) {
     if (telemetry.avgKneeDiff >= 40) scores['Equilibrio Estático Unipodal'] += 70;
     if (telemetry.avgAnkleYDiff >= 0.05) scores['Equilibrio Estático Unipodal'] += 50;
     if (!telemetry.flightDetected) scores['Equilibrio Estático Unipodal'] += 40;
+    if ((telemetry.unipodalMaintainedFrames && telemetry.unipodalMaintainedFrames >= 2) || ((telemetry.unipodalRaisedFrames || 0) >= 3 && (telemetry.avgShoulderTilt || 0) <= 8.5)) {
+        scores['Equilibrio Estático Unipodal'] += 140;
+    }
 
     // B. PATEAR [HMB-M]:
     // Golpeo dinámico TRANSITORIO a un balón con apoyo unípode en suelo (NO en vuelo bipodal)
-    if (telemetry.unipodalHoldRatio < 0.45 && !telemetry.bipodalFlightDetected) {
+    if (telemetry.unipodalHoldRatio < 0.45 && !telemetry.bipodalFlightDetected && (!telemetry.unipodalMaintainedFrames || telemetry.unipodalMaintainedFrames < 2)) {
         if (telemetry.transientKickPeak) scores['Patear'] += 150;
         if (telemetry.hasStraddleKickFrame) scores['Patear'] += 90;
         if (telemetry.maxAnkleXDiff >= 0.14) scores['Patear'] += 50;
@@ -2668,6 +2833,9 @@ function classifySkillFromKinematics(telemetry, userText) {
     }
     if (telemetry.bipodalFlightDetected) {
         scores['Patear'] -= 300; // Un salto bipodal NUNCA es una patada
+    }
+    if (telemetry.unipodalMaintainedFrames && telemetry.unipodalMaintainedFrames >= 2) {
+        scores['Patear'] -= 200; // Si hay mantenimiento de equilibrio estático prolongado, no es un pateo
     }
 
     // C. LANZAMIENTO SOBRE HOMBRO [HMB-M]: Elevación de muñeca sobre el plano del hombro
@@ -3657,14 +3825,16 @@ const biomechanicalRulesTable = {
                 criterio: "Mantiene posición erguida evitando inclinar el cuerpo de lado a lado",
                 fase: "Frontal",
                 evaluar: (t) => {
-                    const pass = t.symmetryScore >= 85;
+                    const tiltOk = t.avgShoulderTilt !== undefined ? t.avgShoulderTilt <= 8.5 : true;
+                    const pass = tiltOk && t.symmetryScore >= 80;
+                    const tiltStr = t.avgShoulderTilt !== undefined ? `${t.avgShoulderTilt}°` : `${100 - t.symmetryScore}%`;
                     return {
                         puntaje: pass ? 1 : 0,
-                        medido: `Alineación lateral: ${t.symmetryScore}%`,
-                        umbral: 'Simetría lateral ≥ 85%',
+                        medido: `Oscilación lateral: ${tiltStr} (Simetría: ${t.symmetryScore}%)`,
+                        umbral: 'Oscilación ≤ 8.5° y Simetría ≥ 80%',
                         observacion: pass
-                            ? 'Estabilidad lateral perfecta sin inclinación hacia la cadera libre.'
-                            : 'Signo de Trendelenburg o inclinación lateral marcada hacia los costados.',
+                            ? `Estabilidad lateral sólida sin balanceo compensatorio (${tiltStr}).`
+                            : `Inclinación lateral o balanceo excesivo de hombros (${tiltStr}).`,
                         error: pass ? null : {
                             error: "Inclinación lateral o caída pélvica",
                             impacto_biomecanico: "Debilidad funcional del glúteo medio de la pierna de apoyo sobre la colchoneta."
@@ -3676,14 +3846,15 @@ const biomechanicalRulesTable = {
                 criterio: "La pierna de apoyo se mantiene firme y extendida (rodilla ≥ 160°)",
                 fase: "Sustentación",
                 evaluar: (t) => {
-                    const pass = t.maxKneeAngle >= 158;
+                    const kneeVal = (t.avgSupportKnee !== undefined && t.avgSupportKnee > 0) ? t.avgSupportKnee : t.maxKneeAngle;
+                    const pass = kneeVal >= 155;
                     return {
                         puntaje: pass ? 1 : 0,
-                        medido: `Extensión rodilla apoyo: ${t.maxKneeAngle}°`,
-                        umbral: '≥ 160° extensión',
+                        medido: `Extensión rodilla apoyo: ${kneeVal}°`,
+                        umbral: '≥ 155° extensión',
                         observacion: pass
-                            ? `Base de sustentación firme con rodilla de apoyo extendida (${t.maxKneeAngle}°).`
-                            : `Rodilla de apoyo semiflexionada o claudicante (${t.maxKneeAngle}°).`,
+                            ? `Base de sustentación firme con rodilla de apoyo extendida (${kneeVal}°).`
+                            : `Rodilla de apoyo semiflexionada o claudicante (${kneeVal}°).`,
                         error: pass ? null : {
                             error: "Rodilla de apoyo flexionada o inestable",
                             impacto_biomecanico: "Genera fatiga prematura en el cuádriceps y mayor inestabilidad sobre la superficie viscoelástica."
@@ -3695,13 +3866,14 @@ const biomechanicalRulesTable = {
                 criterio: "La pierna libre sostiene la rodilla delante y talón detrás durante 5 segundos continuos",
                 fase: "Sostenimiento",
                 evaluar: (t) => {
-                    const pass = t.minKneeAngle <= 110;
+                    const hasHold = (t.unipodalMaintainedFrames !== undefined && t.unipodalMaintainedFrames >= 2) || (t.unipodalHoldFrames >= 2);
+                    const pass = hasHold || t.minKneeAngle <= 120;
                     return {
                         puntaje: pass ? 1 : 0,
-                        medido: `Flexión pierna libre: ${t.minKneeAngle}°`,
-                        umbral: 'Flexión anterior sostenida ≤ 110°',
+                        medido: `Flexión pierna libre: ${t.minKneeAngle}° (Sostén: ${t.unipodalMaintainedFrames || t.unipodalHoldFrames || 1} frames)`,
+                        umbral: 'Flexión anterior sostenida y pie elevado',
                         observacion: pass
-                            ? `Pierna libre sostenida en posición anterior canónica durante los 5 segundos.`
+                            ? `Pierna libre sostenida en posición anterior canónica durante la prueba.`
                             : `Pierna libre desciende, toca la colchoneta o pierde la postura de flexión anterior.`,
                         error: pass ? null : {
                             error: "Pérdida de suspensión en pierna libre",
