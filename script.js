@@ -1119,118 +1119,108 @@ function drawPoseSkeleton(ctx, landmarks, angles) {
 }
 
 // ============================================================================
-// MUESTREO ADAPTATIVO POR ENERGÍA DE MOVIMIENTO (DIFF DE LUMINANCIA)
+// EVALUADOR DEL ÁNGULO INICIAL CINEMÁTICO (GATILLO ANATÓMICO DEL EJERCICIO)
 // ============================================================================
 
-function selectAdaptiveTimestamps(profile, duration, count = 8) {
-    if (!profile || profile.length < count) {
-        return Array.from({ length: count }, (_, i) => duration * ((i + 1) / (count + 1)));
+function checkExerciseTriggerPose(angles, prevAngles = null) {
+    if (!angles) return { triggered: false };
+
+    // 1. Flexión preparatoria de rodilla (Salto Horizontal o arranque de Carrera)
+    // En bipedestación estática neutra el ángulo es ~165°-180°. Al flexionar para impulsar baja de 145°.
+    if (angles.kneeMin <= 145) {
+        return { 
+            triggered: true, 
+            reason: `Flexión preparatoria de rodilla (${angles.kneeMin}°)`, 
+            skillHint: 'Salto Horizontal' 
+        };
     }
 
-    // 1. Estadísticas de movimiento de luminancia
-    const diffs = profile.map(p => p.diff);
-    const avgDiff = diffs.reduce((s, d) => s + d, 0) / (diffs.length || 1);
+    // 2. Apertura sagital de zancada o avance podal (Carrera o Marcha)
+    if (angles.hipAngle >= 20 || angles.ankleXDiff >= 0.10) {
+        return { 
+            triggered: true, 
+            reason: `Apertura de zancada / paso (${angles.hipAngle}°)`, 
+            skillHint: 'Carrera' 
+        };
+    }
 
-    // 2. Delimitar la "Ventana Activa" donde el estudiante realmente ejecuta el movimiento
-    // (Ignora segundos muertos de espera antes y después de la acción)
-    const activeThreshold = Math.max(0.6, avgDiff * 0.65);
-    let startIdx = 0;
-    let endIdx = profile.length - 1;
+    // 3. Elevación o armado de brazo (Lanzamiento Sobre Hombro)
+    if (angles.wristAboveShoulder || (angles.elbowDiff >= 24 && angles.elbowMin <= 112)) {
+        return { 
+            triggered: true, 
+            reason: `Armado o elevación de brazo (${angles.elbowMin}°)`, 
+            skillHint: 'Lanzamiento Sobre Hombro' 
+        };
+    }
 
-    for (let i = 0; i < profile.length; i++) {
-        if (profile[i].diff >= activeThreshold) {
-            startIdx = Math.max(0, i - 1);
-            break;
+    // 4. Elevación podal unilateral (Patada, Salto Unipodal o Equilibrio Estático)
+    if (angles.ankleYDiff >= 0.040 && angles.kneeDiff >= 20) {
+        return { 
+            triggered: true, 
+            reason: `Despegue o péndulo unilateral (${angles.kneeDiff}° asimetría)`, 
+            skillHint: 'Patear' 
+        };
+    }
+
+    // 5. Muñecas aproximadas al frente y codos flexionados (Recepción y Atrape)
+    if (angles.wristDist <= 0.28 && angles.elbowAvg >= 70 && angles.elbowAvg <= 125) {
+        return { 
+            triggered: true, 
+            reason: `Brazos al frente en copa para recepción`, 
+            skillHint: 'Recepción y Atrape' 
+        };
+    }
+
+    // 6. Inclinación anterior de tronco pronunciada (aceleración o despegue)
+    if (angles.trunkLean >= 12) {
+        return { 
+            triggered: true, 
+            reason: `Inclinación dinámica de tronco (${angles.trunkLean}°)`, 
+            skillHint: 'Carrera' 
+        };
+    }
+
+    // 7. Aceleración angular repentina respecto al reposo inmediato anterior
+    if (prevAngles) {
+        const deltaKnee = Math.abs(angles.kneeMin - prevAngles.kneeMin);
+        const deltaHip = Math.abs(angles.hipAngle - prevAngles.hipAngle);
+        const deltaTrunk = Math.abs(angles.trunkLean - prevAngles.trunkLean);
+        if (deltaKnee >= 12 || deltaHip >= 10 || deltaTrunk >= 7) {
+            return { 
+                triggered: true, 
+                reason: `Aceleración angular de inicio (Δ rodilla ${deltaKnee}°)`, 
+                skillHint: 'Cinemática Dinámica' 
+            };
         }
     }
-    for (let i = profile.length - 1; i >= 0; i--) {
-        if (profile[i].diff >= activeThreshold) {
-            endIdx = Math.min(profile.length - 1, i + 1);
-            break;
-        }
-    }
 
-    const activeStart = profile[startIdx].t;
-    const activeEnd = profile[endIdx].t;
-    const activeSpan = activeEnd - activeStart;
-
-    // Si la acción activa es clara (al menos 0.4s), concentramos el muestreo en ella
-    const effectiveStart = activeSpan >= 0.4 ? activeStart : Math.max(0.05, duration * 0.08);
-    const effectiveEnd = activeSpan >= 0.4 ? activeEnd : Math.min(duration - 0.05, duration * 0.92);
-    const effectiveDuration = effectiveEnd - effectiveStart;
-
-    // 3. Buscar picos locales de velocidad/aceleración dentro de la ventana de acción
-    const peaks = [];
-    for (let i = startIdx + 1; i < endIdx - 1; i++) {
-        const prev = profile[i - 1].diff;
-        const curr = profile[i].diff;
-        const next = profile[i + 1].diff;
-        if (curr > prev && curr >= next && curr > activeThreshold) {
-            peaks.push(profile[i]);
-        }
-    }
-    peaks.sort((a, b) => b.diff - a.diff);
-
-    const minInterval = Math.max(0.10, effectiveDuration / (count * 1.5));
-    const selected = [];
-
-    // Incluir inicio y final de la acción activa
-    selected.push(effectiveStart);
-    selected.push(effectiveEnd);
-
-    // Agregar picos de mayor dinamismo cinemático respetando separación temporal
-    for (const p of peaks) {
-        if (selected.length >= count) break;
-        const isSeparated = selected.every(t => Math.abs(t - p.t) >= minInterval);
-        if (isSeparated && p.t > effectiveStart + 0.04 && p.t < effectiveEnd - 0.04) {
-            selected.push(p.t);
-        }
-    }
-
-    // 4. Rellenar de forma proporcional los intervalos más amplios hasta alcanzar count
-    while (selected.length < count) {
-        selected.sort((a, b) => a - b);
-        let maxGap = 0;
-        let insertAt = (effectiveStart + effectiveEnd) / 2;
-        for (let i = 0; i < selected.length - 1; i++) {
-            const gap = selected[i + 1] - selected[i];
-            if (gap > maxGap) {
-                maxGap = gap;
-                insertAt = selected[i] + (gap / 2);
-            }
-        }
-        selected.push(insertAt);
-    }
-
-    selected.sort((a, b) => a - b);
-    return selected.slice(0, count);
+    return { triggered: false };
 }
 
-async function extractAdaptiveVideoKeyframes(file, targetCount = 6) {
-    return new Promise((resolve, reject) => {
+// EXTRACCIÓN CINEMÁTICA ANCLADA AL ÁNGULO INICIAL DEL EJERCICIO
+async function extractAdaptiveVideoKeyframes(file, targetCount = 8) {
+    return new Promise(async (resolve, reject) => {
         const video = document.createElement('video');
         video.src = URL.createObjectURL(file);
         video.muted = true;
         video.playsInline = true;
 
+        // Cargar MediaPipe Pose Tasks antes de escanear
+        let landmarker = null;
+        try {
+            landmarker = await getPoseLandmarker();
+        } catch (e) {
+            console.warn('MediaPipe pre-carga:', e);
+        }
+
         video.addEventListener('loadedmetadata', async () => {
             try {
                 const dur = Math.max(0.6, Math.min(video.duration, 20));
-
-                // 1. Escaneo rápido de movimiento a 160x90 px
-                const lowCanvas = document.createElement('canvas');
-                lowCanvas.width = 160;
-                lowCanvas.height = 90;
-                const lowCtx = lowCanvas.getContext('2d', { willReadFrequently: true });
 
                 const hdCanvas = document.createElement('canvas');
                 hdCanvas.width = 640;
                 hdCanvas.height = 360;
                 const hdCtx = hdCanvas.getContext('2d');
-
-                const fps = 15;
-                const totalSteps = Math.min(80, Math.floor(dur * fps));
-                const dt = dur / (totalSteps + 1);
 
                 const seekTo = (t) => {
                     return new Promise(res => {
@@ -1243,38 +1233,88 @@ async function extractAdaptiveVideoKeyframes(file, targetCount = 6) {
                     });
                 };
 
-                const motionProfile = [];
-                let prevLuma = null;
+                // 1. Escaneo cinemático del video para detectar el fotograma con el ÁNGULO INICIAL
+                const scanSteps = Math.min(24, Math.max(12, Math.floor(dur * 5)));
+                const dt = dur / (scanSteps + 1);
 
-                for (let i = 0; i <= totalSteps; i++) {
+                const scanTimeline = [];
+                let firstTriggerIndex = -1;
+                let initialTriggerInfo = null;
+                let prevAngles = null;
+
+                for (let i = 0; i <= scanSteps; i++) {
                     const t = i * dt;
                     await seekTo(t);
-                    lowCtx.drawImage(video, 0, 0, lowCanvas.width, lowCanvas.height);
-                    const imgData = lowCtx.getImageData(0, 0, lowCanvas.width, lowCanvas.height).data;
+                    hdCtx.drawImage(video, 0, 0, hdCanvas.width, hdCanvas.height);
 
-                    const currentLuma = new Float32Array(lowCanvas.width * lowCanvas.height);
-                    let sumDiff = 0;
-                    for (let p = 0, j = 0; p < imgData.length; p += 4, j++) {
-                        const y = 0.299 * imgData[p] + 0.587 * imgData[p + 1] + 0.114 * imgData[p + 2];
-                        currentLuma[j] = y;
-                        if (prevLuma) {
-                            sumDiff += Math.abs(y - prevLuma[j]);
-                        }
+                    let landmarks = null;
+                    let angles = null;
+                    if (landmarker) {
+                        try {
+                            const res = landmarker.detect(hdCanvas);
+                            if (res.landmarks && res.landmarks.length > 0) {
+                                landmarks = res.landmarks[0];
+                                angles = computeJointAngles(landmarks);
+                            }
+                        } catch (err) {}
                     }
-                    const meanDiff = prevLuma ? (sumDiff / currentLuma.length) : 0;
-                    motionProfile.push({ t, diff: meanDiff });
-                    prevLuma = currentLuma;
+
+                    let trigger = { triggered: false };
+                    if (angles) {
+                        trigger = checkExerciseTriggerPose(angles, prevAngles);
+                        if (trigger.triggered && firstTriggerIndex === -1) {
+                            firstTriggerIndex = i;
+                            initialTriggerInfo = { ...trigger, t, angles };
+                        }
+                        prevAngles = angles;
+                    }
+
+                    scanTimeline.push({ t, angles, landmarks, trigger });
                 }
 
-                // 2. Selección adaptativa de los 8 instantes críticos en la ventana activa
-                const selectedTimestamps = selectAdaptiveTimestamps(motionProfile, dur, targetCount);
+                // 2. Delimitar la ventana cinemática partiendo del ángulo inicial
+                let actionStart = 0;
+                let actionEnd = dur;
 
-                // 3. Inicializar MediaPipe Pose Tasks
-                const landmarker = await getPoseLandmarker();
+                if (firstTriggerIndex !== -1 && initialTriggerInfo) {
+                    console.log(`🎯 [Ángulo Inicial Detectado] en t=${initialTriggerInfo.t.toFixed(2)}s: ${initialTriggerInfo.reason}`);
+                    // Anclamos exactamente en el ángulo inicial (con margen de 0.1s previo)
+                    actionStart = Math.max(0.04, initialTriggerInfo.t - 0.10);
 
+                    // Buscar el final de la acción
+                    let lastActiveIdx = firstTriggerIndex;
+                    for (let i = firstTriggerIndex; i < scanTimeline.length; i++) {
+                        const itm = scanTimeline[i];
+                        if (itm.trigger && itm.trigger.triggered) {
+                            lastActiveIdx = i;
+                        } else if (itm.angles && itm.angles.kneeMin < 155) {
+                            lastActiveIdx = i;
+                        }
+                    }
+                    actionEnd = Math.min(dur - 0.04, scanTimeline[Math.min(scanTimeline.length - 1, lastActiveIdx + 1)].t);
+                    if (actionEnd - actionStart < 0.5) {
+                        actionEnd = Math.min(dur - 0.04, actionStart + 1.8);
+                    }
+                } else {
+                    // Si no hubo landmarks claros, usamos los bordes naturales de movimiento
+                    actionStart = Math.max(0.05, dur * 0.08);
+                    actionEnd = Math.min(dur - 0.05, dur * 0.92);
+                }
+
+                // 3. Generar los timestamps exactos partiendo del ÁNGULO INICIAL
+                const actionSpan = actionEnd - actionStart;
+                const selectedTimestamps = [];
+
+                for (let k = 0; k < targetCount; k++) {
+                    const ratio = k / (targetCount - 1);
+                    const t = actionStart + (actionSpan * ratio);
+                    selectedTimestamps.push(t);
+                }
+
+                // 4. Extracción de los 8 fotogramas en alta resolución con MediaPipe Pose y esqueletos
                 const frames = [];
                 const phaseNames = [
-                    'Fase 1: Preparación / Inicio',
+                    initialTriggerInfo ? `Fase 1: Ángulo Inicial (${initialTriggerInfo.reason})` : 'Fase 1: Preparación / Ángulo Inicial',
                     'Fase 2: Impulso / Carga Cinemática',
                     'Fase 3: Despegue / Transición',
                     'Fase 4: Máxima Aceleración',
@@ -1300,7 +1340,7 @@ async function extractAdaptiveVideoKeyframes(file, targetCount = 6) {
                                 angles = computeJointAngles(landmarks);
                             }
                         } catch (err) {
-                            console.warn('Error en detección Pose:', err);
+                            console.warn('Error en detección Pose final:', err);
                         }
                     }
 
@@ -1326,7 +1366,9 @@ async function extractAdaptiveVideoKeyframes(file, targetCount = 6) {
                         previewUrl: previewDataUrl,
                         mime: 'image/jpeg',
                         landmarks: landmarks,
-                        angles: angles
+                        angles: angles,
+                        isInitialTrigger: (k === 0 && initialTriggerInfo !== null),
+                        triggerInfo: (k === 0 && initialTriggerInfo !== null) ? initialTriggerInfo : null
                     });
                 }
 
@@ -1493,9 +1535,17 @@ function renderKeyframeStrip(frames) {
             ? `<div class="keyframe-angles"><span>🦵 ${f.angles.kneeMin}°</span><span>💪 ${f.angles.elbowAvg}°</span><span>📐 ${f.angles.trunkLean}°</span></div>`
             : `<div class="keyframe-angles"><span>Cinemática detectada</span></div>`;
 
+        const isTrigger = f.isInitialTrigger;
+        const tagText = isTrigger 
+            ? `🎯 Ángulo Inicial · ${f.time}`
+            : `#${idx + 1} · ${f.time}`;
+        const tagStyle = isTrigger 
+            ? `style="background: var(--accent, #0D9488); color: white; font-weight: 700; border: 1px solid var(--accent);"`
+            : '';
+
         card.innerHTML = `
             <img src="${f.previewUrl}" alt="Fotograma ${idx + 1}">
-            <div class="keyframe-tag">#${idx + 1} · ${f.time}</div>
+            <div class="keyframe-tag" ${tagStyle}>${tagText}</div>
             ${angleChip}
         `;
         keyframeStrip.appendChild(card);
