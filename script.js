@@ -1813,24 +1813,34 @@ async function extractImageKeyframe(file) {
     });
 }
 
+// REINICIO SEGURO DE ESTADO DE ANÁLISIS
+function resetAnalysisState() {
+    capturedKeyframes = [];
+    lastAnalyzedTelemetry = null;
+    globalDiagnosticoData = null;
+    globalDidacticaData = null;
+    const keyframeStrip = document.getElementById('keyframeStrip');
+    if (keyframeStrip) keyframeStrip.innerHTML = '';
+}
+
 // MANIPULADOR DE CARGA DE ARCHIVO
 async function handleFile(event) {
-    const file = event.target.files[0];
+    const file = event.target.files && event.target.files[0];
     if (!file) return;
 
     resetAnalysisState();
 
-    const uzTitle = document.getElementById('uploadZoneTitle');
-    const uzSub = document.getElementById('uploadZoneSubtitle');
-    const uzIcon = document.getElementById('uploadZoneIcon');
+    const uzTitle = document.getElementById('uzTitle') || document.getElementById('uploadZoneTitle');
+    const uzSub = document.getElementById('uzSub') || document.getElementById('uploadZoneSubtitle');
+    const uzIcon = document.getElementById('uzIcon') || document.getElementById('uploadZoneIcon');
     const uploadPreview = document.getElementById('uploadPreview');
-    const videoPlayer = document.getElementById('videoPlayer');
-    const imgPreview = document.getElementById('imagePreview');
+    const videoPlayer = document.getElementById('studentVideoPlayer') || document.getElementById('videoPlayer');
+    const imgPreview = document.getElementById('studentImgPreview') || document.getElementById('imagePreview');
     const scanOverlay = document.getElementById('scanOverlay');
 
-    if (uzIcon) uzIcon.innerHTML = '<span class="loading-spinner"></span>';
+    if (uzIcon) uzIcon.innerHTML = '<span class="loading-spinner">⏳</span>';
     if (uzTitle) uzTitle.textContent = 'Procesando evidencia biomecánica...';
-    if (uzSub) uzSub.textContent = 'Analizando ángulos iniciales y muestreo adaptativo...';
+    if (uzSub) uzSub.textContent = 'Extrayendo fotogramas y analizando ángulos con MediaPipe...';
 
     try {
         const fileUrl = URL.createObjectURL(file);
