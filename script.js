@@ -7,6 +7,12 @@
 // ESTADO GLOBAL DE LA APLICACIÓN
 let apiKey = (localStorage.getItem('aula360_api_key') || '').trim();
 let cachedGeminiEndpoint = null;
+let selectedGeminiModel = localStorage.getItem('aula360_selected_gemini_model') || 'auto';
+let availableGeminiModels = [];
+try {
+    const cachedModels = localStorage.getItem('aula360_gemini_models_cache');
+    if (cachedModels) availableGeminiModels = JSON.parse(cachedModels);
+} catch(e) {}
 let currentEngineMode = localStorage.getItem('aula360_engine_mode') || 'local';
 let selectedSkill = 'auto';
 let selectedSkillName = 'Detección Automática (IA)';
@@ -448,6 +454,7 @@ function updateGeminiKeyUI() {
     const connectedRow = document.getElementById('keyConnectedRow');
     const maskedText = document.getElementById('keyMaskedText');
     const apiKeyInput = document.getElementById('apiKeyInput');
+    const modelGroup = document.getElementById('geminiModelGroup');
 
     if (apiKey) {
         if (inputRow) inputRow.style.display = 'none';
@@ -456,10 +463,164 @@ function updateGeminiKeyUI() {
             const preview = apiKey.length > 8 ? apiKey.slice(0, 6) + '••••••••' + apiKey.slice(-3) : 'AIzaSy••••••••';
             maskedText.textContent = preview;
         }
+        if (modelGroup) {
+            modelGroup.style.display = 'block';
+            renderGeminiModelsSelect();
+            if (availableGeminiModels.length === 0) {
+                refreshGeminiModels(false);
+            }
+        }
     } else {
         if (inputRow) inputRow.style.display = 'flex';
         if (connectedRow) connectedRow.style.display = 'none';
         if (apiKeyInput) apiKeyInput.value = '';
+        if (modelGroup) modelGroup.style.display = 'none';
+    }
+}
+
+async function refreshGeminiModels(manual = false) {
+    if (!apiKey) return;
+
+    const selectEl = document.getElementById('geminiModelSelect');
+    const hintEl = document.getElementById('geminiModelStatusHint');
+    const refreshBtn = document.getElementById('btnRefreshModels');
+
+    if (refreshBtn) refreshBtn.style.opacity = '0.5';
+    if (hintEl) hintEl.textContent = 'Consultando modelos disponibles en Google...';
+
+    try {
+        let models = [];
+        // 1. Consultar modelos en Google v1beta
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+        if (res.ok) {
+            const data = await res.json();
+            if (data.models && Array.isArray(data.models)) {
+                models = data.models
+                    .filter(m => m.supportedGenerationMethods && m.supportedGenerationMethods.includes('generateContent'))
+                    .map(m => {
+                        const id = m.name.replace(/^models\//, '');
+                        return {
+                            id: id,
+                            name: m.displayName || id,
+                            description: m.description || '',
+                            version: 'v1beta'
+                        };
+                    });
+            }
+        }
+
+        // 2. Si v1beta no devolvió modelos, intentar con v1
+        if (models.length === 0) {
+            const resV1 = await fetch(`https://generativelanguage.googleapis.com/v1/models?key=${apiKey}`);
+            if (resV1.ok) {
+                const dataV1 = await resV1.json();
+                if (dataV1.models && Array.isArray(dataV1.models)) {
+                    models = dataV1.models
+                        .filter(m => m.supportedGenerationMethods && m.supportedGenerationMethods.includes('generateContent'))
+                        .map(m => {
+                            const id = m.name.replace(/^models\//, '');
+                            return {
+                                id: id,
+                                name: m.displayName || id,
+                                description: m.description || '',
+                                version: 'v1'
+                            };
+                        });
+                }
+            }
+        }
+
+        if (models.length > 0) {
+            // Ordenar: primero 2.0, luego 1.5 Flash, luego 1.5 Pro
+            models.sort((a, b) => {
+                const getScore = (id) => {
+                    if (id.includes('2.0-flash')) return 100;
+                    if (id.includes('1.5-flash-latest')) return 85;
+                    if (id.includes('1.5-flash')) return 80;
+                    if (id.includes('1.5-pro')) return 60;
+                    if (id.includes('flash')) return 40;
+                    return 10;
+                };
+                return getScore(b.id) - getScore(a.id);
+            });
+
+            availableGeminiModels = models;
+            localStorage.setItem('aula360_gemini_models_cache', JSON.stringify(models));
+            renderGeminiModelsSelect();
+
+            if (hintEl) {
+                hintEl.textContent = `✅ ${models.length} modelos listados desde tu cuenta de Google.`;
+                hintEl.style.color = 'var(--accent, #0D9488)';
+            }
+
+            if (manual) {
+                showAlert(`Google reportó <strong>${models.length} modelos habilitados</strong> en tu cuenta.<br><br>Ya puedes seleccionarlo en el desplegable o dejarlo en <strong>Automático</strong>.`, {
+                    title: 'Modelos actualizados',
+                    type: 'success',
+                    icon: '🤖'
+                });
+            }
+        } else {
+            if (hintEl) {
+                hintEl.textContent = 'No se recibieron modelos directos. Se usará modo automático.';
+                hintEl.style.color = '#64748B';
+            }
+        }
+    } catch (err) {
+        console.warn('Error al obtener lista de modelos:', err);
+        if (hintEl) {
+            hintEl.textContent = 'No se pudo consultar la lista de modelos (usando modo automático).';
+        }
+    } finally {
+        if (refreshBtn) refreshBtn.style.opacity = '1';
+    }
+}
+
+function renderGeminiModelsSelect() {
+    const selectEl = document.getElementById('geminiModelSelect');
+    if (!selectEl) return;
+
+    const savedModel = localStorage.getItem('aula360_selected_gemini_model') || 'auto';
+    selectEl.innerHTML = '';
+
+    // Opción Automática
+    const autoOpt = document.createElement('option');
+    autoOpt.value = 'auto';
+    autoOpt.textContent = '⚡ Automático (Recomendado: El más óptimo)';
+    selectEl.appendChild(autoOpt);
+
+    // Opciones de modelos devueltos por Google
+    availableGeminiModels.forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = m.id;
+        const tag = m.id.includes('2.0') ? '🔥 Nuevo' : (m.id.includes('flash') ? '⚡ Rápido' : '🧠 Pro');
+        opt.textContent = `${m.name || m.id} (${tag})`;
+        selectEl.appendChild(opt);
+    });
+
+    // Restaurar valor guardado si existe en la lista
+    const exists = availableGeminiModels.some(m => m.id === savedModel);
+    if (savedModel === 'auto' || exists) {
+        selectEl.value = savedModel;
+    } else {
+        selectEl.value = 'auto';
+    }
+}
+
+function onGeminiModelChange(selectEl) {
+    selectedGeminiModel = selectEl.value;
+    localStorage.setItem('aula360_selected_gemini_model', selectedGeminiModel);
+    cachedGeminiEndpoint = null;
+
+    const hintEl = document.getElementById('geminiModelStatusHint');
+    if (hintEl) {
+        if (selectedGeminiModel === 'auto') {
+            hintEl.textContent = 'Modo Automático: Selecciona el modelo más rápido y compatible según tu cuenta.';
+            hintEl.style.color = '#64748B';
+        } else {
+            hintEl.textContent = `Modelo fijado: ${selectedGeminiModel}`;
+            hintEl.style.color = 'var(--accent, #0D9488)';
+        }
     }
 }
 
@@ -495,36 +656,20 @@ async function saveGeminiKey() {
     }
 
     try {
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
-        const data = await res.json();
+        await refreshGeminiModels(false);
 
-        if (res.ok && data.models) {
-            showAlert('¡Clave de Google AI Studio conectada y verificada exitosamente! Tu proyecto tiene acceso a los modelos de Gemini Vision.', {
+        if (availableGeminiModels.length > 0) {
+            showAlert(`¡Clave verificada exitosamente! Se detectaron <strong>${availableGeminiModels.length} modelos de Gemini</strong> disponibles en tu cuenta.<br><br>Puedes seleccionar el modelo en el menú desplegable.`, {
                 title: 'Conexión exitosa',
                 type: 'success',
                 icon: '✅'
             });
-        } else if (data.error) {
-            const msg = data.error.message || '';
-            if (msg.includes('API_KEY_INVALID') || msg.includes('API key not valid')) {
-                showAlert('La clave ingresada no es válida en Google. Asegúrate de haberla copiado completa sin espacios.', {
-                    title: 'Clave no válida',
-                    type: 'error',
-                    icon: '❌'
-                });
-            } else if (msg.includes('Generative Language API has not been used') || msg.includes('SERVICE_DISABLED')) {
-                showAlert('Tu clave es válida, pero en tu proyecto de Google Cloud la <strong>Generative Language API</strong> está desactivada.<br><br>👉 Para solucionarlo: Habilita <strong>Generative Language API</strong> en Google Cloud Console o genera tu clave en <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color: #0d9488; text-decoration: underline; font-weight: 600;">Google AI Studio</a>.', {
-                    title: 'API no habilitada',
-                    type: 'warning',
-                    icon: '⚙️'
-                });
-            } else {
-                showAlert(`Clave conectada. Aviso de Google: ${msg}`, {
-                    title: 'Aviso de Google',
-                    type: 'warning',
-                    icon: '⚠️'
-                });
-            }
+        } else {
+            showAlert('Clave de Google AI Studio conectada exitosamente.', {
+                title: 'Conexión exitosa',
+                type: 'success',
+                icon: '✅'
+            });
         }
     } catch (err) {
         showAlert('Clave de Google AI Studio guardada localmente.', {
@@ -555,7 +700,9 @@ function editGeminiKey() {
 function removeGeminiKey() {
     apiKey = '';
     cachedGeminiEndpoint = null;
+    availableGeminiModels = [];
     localStorage.removeItem('aula360_api_key');
+    localStorage.removeItem('aula360_gemini_models_cache');
     updateGeminiKeyUI();
 }
 
@@ -2689,6 +2836,22 @@ function runLocalBiomechanicalEngine(skillCode, gradeCode, obsText, frames) {
 async function getGeminiCandidateEndpoints(key) {
     if (cachedGeminiEndpoint) {
         return [cachedGeminiEndpoint];
+    }
+
+    // Si el usuario seleccionó un modelo específico de la lista de Google
+    if (selectedGeminiModel && selectedGeminiModel !== 'auto') {
+        return [
+            { version: 'v1beta', model: selectedGeminiModel },
+            { version: 'v1',     model: selectedGeminiModel }
+        ];
+    }
+
+    // Si ya tenemos la lista de modelos de Google cargada
+    if (availableGeminiModels && availableGeminiModels.length > 0) {
+        return availableGeminiModels.map(m => ({
+            version: m.version || 'v1beta',
+            model: m.id
+        }));
     }
 
     const staticFallbacks = [
