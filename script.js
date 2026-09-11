@@ -1122,48 +1122,76 @@ function drawPoseSkeleton(ctx, landmarks, angles) {
 // MUESTREO ADAPTATIVO POR ENERGÍA DE MOVIMIENTO (DIFF DE LUMINANCIA)
 // ============================================================================
 
-function selectAdaptiveTimestamps(profile, duration, count = 6) {
+function selectAdaptiveTimestamps(profile, duration, count = 8) {
     if (!profile || profile.length < count) {
         return Array.from({ length: count }, (_, i) => duration * ((i + 1) / (count + 1)));
     }
 
-    // 1. Detectar picos locales de velocidad de cambio
-    const peaks = [];
-    for (let i = 1; i < profile.length - 1; i++) {
-        const prev = profile[i - 1].diff;
-        const curr = profile[i].diff;
-        const next = profile[i + 1].diff;
-        if (curr > prev && curr >= next && curr > 1.8) {
-            peaks.push(profile[i]);
+    // 1. Estadísticas de movimiento de luminancia
+    const diffs = profile.map(p => p.diff);
+    const avgDiff = diffs.reduce((s, d) => s + d, 0) / (diffs.length || 1);
+
+    // 2. Delimitar la "Ventana Activa" donde el estudiante realmente ejecuta el movimiento
+    // (Ignora segundos muertos de espera antes y después de la acción)
+    const activeThreshold = Math.max(0.6, avgDiff * 0.65);
+    let startIdx = 0;
+    let endIdx = profile.length - 1;
+
+    for (let i = 0; i < profile.length; i++) {
+        if (profile[i].diff >= activeThreshold) {
+            startIdx = Math.max(0, i - 1);
+            break;
+        }
+    }
+    for (let i = profile.length - 1; i >= 0; i--) {
+        if (profile[i].diff >= activeThreshold) {
+            endIdx = Math.min(profile.length - 1, i + 1);
+            break;
         }
     }
 
-    // Ordenar picos por prominencia/energía
+    const activeStart = profile[startIdx].t;
+    const activeEnd = profile[endIdx].t;
+    const activeSpan = activeEnd - activeStart;
+
+    // Si la acción activa es clara (al menos 0.4s), concentramos el muestreo en ella
+    const effectiveStart = activeSpan >= 0.4 ? activeStart : Math.max(0.05, duration * 0.08);
+    const effectiveEnd = activeSpan >= 0.4 ? activeEnd : Math.min(duration - 0.05, duration * 0.92);
+    const effectiveDuration = effectiveEnd - effectiveStart;
+
+    // 3. Buscar picos locales de velocidad/aceleración dentro de la ventana de acción
+    const peaks = [];
+    for (let i = startIdx + 1; i < endIdx - 1; i++) {
+        const prev = profile[i - 1].diff;
+        const curr = profile[i].diff;
+        const next = profile[i + 1].diff;
+        if (curr > prev && curr >= next && curr > activeThreshold) {
+            peaks.push(profile[i]);
+        }
+    }
     peaks.sort((a, b) => b.diff - a.diff);
 
-    const minInterval = Math.max(0.15, duration / (count * 1.6));
+    const minInterval = Math.max(0.10, effectiveDuration / (count * 1.5));
     const selected = [];
 
-    // Incluir inicio de acción (preparación ~12% del clip)
-    selected.push(Math.max(0.08, duration * 0.12));
+    // Incluir inicio y final de la acción activa
+    selected.push(effectiveStart);
+    selected.push(effectiveEnd);
 
     // Agregar picos de mayor dinamismo cinemático respetando separación temporal
     for (const p of peaks) {
-        if (selected.length >= count - 1) break;
-        const isSeparated = selected.every(t => Math.abs(t - p.t) >= minInterval && p.t > 0.08 && p.t < duration - 0.08);
-        if (isSeparated) {
+        if (selected.length >= count) break;
+        const isSeparated = selected.every(t => Math.abs(t - p.t) >= minInterval);
+        if (isSeparated && p.t > effectiveStart + 0.04 && p.t < effectiveEnd - 0.04) {
             selected.push(p.t);
         }
     }
 
-    // Incluir fase de estabilización final (~88% del clip)
-    selected.push(Math.min(duration - 0.08, duration * 0.88));
-
-    // Rellenar vacíos temporales si faltan puntos
+    // 4. Rellenar de forma proporcional los intervalos más amplios hasta alcanzar count
     while (selected.length < count) {
         selected.sort((a, b) => a - b);
         let maxGap = 0;
-        let insertAt = duration * 0.5;
+        let insertAt = (effectiveStart + effectiveEnd) / 2;
         for (let i = 0; i < selected.length - 1; i++) {
             const gap = selected[i + 1] - selected[i];
             if (gap > maxGap) {
@@ -1238,7 +1266,7 @@ async function extractAdaptiveVideoKeyframes(file, targetCount = 6) {
                     prevLuma = currentLuma;
                 }
 
-                // 2. Selección adaptativa de los 6 instantes críticos
+                // 2. Selección adaptativa de los 8 instantes críticos en la ventana activa
                 const selectedTimestamps = selectAdaptiveTimestamps(motionProfile, dur, targetCount);
 
                 // 3. Inicializar MediaPipe Pose Tasks
@@ -1246,12 +1274,14 @@ async function extractAdaptiveVideoKeyframes(file, targetCount = 6) {
 
                 const frames = [];
                 const phaseNames = [
-                    'Fase 1: Preparación / Impulso Inicial',
-                    'Fase 2: Máxima Aceleración / Despegue',
-                    'Fase 3: Ápice Cinemático / Vuelo o Suelta',
-                    'Fase 4: Extensión Máxima / Transición',
-                    'Fase 5: Impacto / Aterrizaje Amortiguado',
-                    'Fase 6: Recobro y Estabilidad Final'
+                    'Fase 1: Preparación / Inicio',
+                    'Fase 2: Impulso / Carga Cinemática',
+                    'Fase 3: Despegue / Transición',
+                    'Fase 4: Máxima Aceleración',
+                    'Fase 5: Ápice / Vuelo o Extensión',
+                    'Fase 6: Descenso / Proyección',
+                    'Fase 7: Contacto / Aterrizaje',
+                    'Fase 8: Amortiguación y Recobro'
                 ];
 
                 for (let k = 0; k < selectedTimestamps.length; k++) {
@@ -1404,7 +1434,7 @@ async function handleFile(event) {
             if (fps) fps.textContent = 'Video (30 FPS)';
             if (frameDens) frameDens.textContent = 'Extrayendo fotogramas...';
 
-            capturedKeyframes = await extractAdaptiveVideoKeyframes(file, 6);
+            capturedKeyframes = await extractAdaptiveVideoKeyframes(file, 8);
         } else if (file.type.startsWith('image/')) {
             if (videoPlayer) videoPlayer.style.display = 'none';
             if (imgPreview) {
@@ -1733,19 +1763,32 @@ function classifySkillFromKinematics(telemetry, userText) {
     }
 
     // C. LANZAMIENTO SOBRE HOMBRO [HMB-M]: Elevación de muñeca sobre el plano del hombro
-    if (telemetry.maxWristAboveShoulder) scores['Lanzamiento Sobre Hombro'] += 160;
-    if (telemetry.maxElbowDiff >= 24) scores['Lanzamiento Sobre Hombro'] += 45;
-    if (telemetry.maxElbowAngle >= 140) scores['Lanzamiento Sobre Hombro'] += 30;
-    if (telemetry.maxHipAngle >= 24) scores['Lanzamiento Sobre Hombro'] += 15;
+    // Distinguir estrictamente de braceo de carrera o impulso de salto:
+    // En lanzamiento hay marcada asimetría de codos (un brazo arriba/atrás, el otro abajo)
+    // y NO hay locomoción rápida (zancadas sagitales amplias de carrera ni despegue de salto)
+    const isLocomotionPattern = (telemetry.maxHipAngle >= 26 || telemetry.maxAnkleXDiff >= 0.11 || telemetry.flightDetected);
+
+    if (telemetry.maxWristAboveShoulder && !isLocomotionPattern && telemetry.maxElbowDiff >= 26) {
+        scores['Lanzamiento Sobre Hombro'] += 150;
+        if (telemetry.maxElbowAngle >= 135) scores['Lanzamiento Sobre Hombro'] += 35;
+        if (telemetry.maxHipAngle >= 18) scores['Lanzamiento Sobre Hombro'] += 20;
+    }
 
     // D. RECEPCIÓN Y ATRAPE [HMB-M]: Muñecas juntas en copa frente al pecho
     if (telemetry.minWristDist <= 0.26) scores['Recepción y Atrape'] += 160;
     if (telemetry.avgElbowAngle >= 70 && telemetry.avgElbowAngle <= 130) scores['Recepción y Atrape'] += 40;
     if (!telemetry.maxWristAboveShoulder && telemetry.avgKneeDiff < 25) scores['Recepción y Atrape'] += 30;
 
-    // E. SALTO HORIZONTAL [HMB-L]: Despegue y vuelo bipodal simétrico con flexión previa
-    if (telemetry.flightDetected && telemetry.minKneeAngle <= 125 && telemetry.maxKneeAngle >= 150 && telemetry.unipodalHoldRatio < 0.45) scores['Salto Horizontal'] += 140;
-    if (telemetry.maxKneeDiff <= 22 && telemetry.maxAnkleYDiff <= 0.06 && telemetry.flightDetected) scores['Salto Horizontal'] += 45;
+    // E. SALTO HORIZONTAL [HMB-L]: Despegue o flexión preparatoria bipodal seguida de extensión
+    if (telemetry.minKneeAngle <= 125 && telemetry.maxKneeAngle >= 145 && telemetry.unipodalHoldRatio < 0.40) {
+        scores['Salto Horizontal'] += 120;
+    }
+    if (telemetry.flightDetected && telemetry.maxKneeDiff <= 25) {
+        scores['Salto Horizontal'] += 60;
+    }
+    if (telemetry.maxAnkleYDiff <= 0.06 && telemetry.maxHipAngle >= 20) {
+        scores['Salto Horizontal'] += 35;
+    }
 
     // F. SALTO UNIPODAL [HMB-L]: Fase aérea de vuelo pero manteniendo asimetría vertical continua
     if (telemetry.flightDetected && telemetry.avgAnkleYDiff >= 0.07) scores['Salto Unipodal'] += 150;
@@ -1759,9 +1802,19 @@ function classifySkillFromKinematics(telemetry, userText) {
     if (!telemetry.flightDetected && telemetry.minKneeAngle >= 112 && telemetry.avgTrunkAngle <= 9 && telemetry.unipodalHoldRatio < 0.3 && !telemetry.transientKickPeak) scores['Marcha'] += 110;
     if (!telemetry.flightDetected && telemetry.avgKneeDiff < 20 && telemetry.avgAnkleYDiff < 0.04 && telemetry.unipodalHoldRatio < 0.3) scores['Marcha'] += 35;
 
-    // I. CARRERA [HMB-L]: Fase aérea confirmada + flexión profunda de recobro (≤98°) + braceo sagital (sin hold unipodal)
-    if (telemetry.flightDetected && telemetry.minKneeAngle <= 98 && telemetry.unipodalHoldRatio < 0.3) scores['Carrera'] += 140;
-    if (telemetry.flightDetected && telemetry.avgElbowAngle >= 75 && telemetry.avgElbowAngle <= 115 && telemetry.unipodalHoldRatio < 0.3) scores['Carrera'] += 35;
+    // I. CARRERA [HMB-L]: Zancada amplia alternada + flexión de rodilla de recobro + braceo sagital
+    if (telemetry.maxHipAngle >= 24 || telemetry.maxAnkleXDiff >= 0.10) {
+        scores['Carrera'] += 130;
+    }
+    if (telemetry.minKneeAngle <= 124 && telemetry.unipodalHoldRatio < 0.35) {
+        scores['Carrera'] += 50;
+    }
+    if (telemetry.flightDetected) {
+        scores['Carrera'] += 50;
+    }
+    if (telemetry.avgElbowAngle >= 65 && telemetry.avgElbowAngle <= 125 && telemetry.unipodalHoldRatio < 0.35) {
+        scores['Carrera'] += 30;
+    }
 
     // Identificar la habilidad ganadora con mayor puntuación acumulada
     let bestSkill = 'Carrera';
@@ -2920,19 +2973,20 @@ async function callGeminiVision(skill, grade, obsText, frames) {
     const suggestedSkill = classifySkillFromKinematics(telemetry, obsText);
 
     const skillInstruction = isAuto 
-        ? `ESTÁS EN MODO DETECCIÓN AUTOMÁTICA:
-Analiza los fotogramas y la cinemática para CLASIFICAR cuál de las 9 habilidades de la Batería HMB se está ejecutando:
-- "Carrera"
-- "Salto Horizontal"
-- "Marcha"
-- "Salto Unipodal"
-- "Lanzamiento Sobre Hombro"
-- "Recepción y Atrape"
-- "Patear"
-- "Equilibrio Dinámico"
-- "Equilibrio Estático Unipodal"
-(Sugerencia estimada por cinemática local de MediaPipe: "${suggestedSkill}").
-Coloca obligatoriamente el nombre exacto de la habilidad identificada en el campo "habilidad_detectada".`
+        ? `MODO DETECCIÓN AUTOMÁTICA BASADA EN VISIÓN:
+Debes analizar de forma AUTÓNOMA la secuencia cronológica de los ${frames.length} fotogramas proporcionados para CLASIFICAR cuál de las 9 habilidades de la Batería HMB (González Palacio & Montoya Grisales) se ejecuta en el video:
+- "Carrera": El estudiante corre desplazándose por el espacio, con zancadas alternas cíclicas y braceo sagital.
+- "Salto Horizontal": Flexiona rodillas y salta hacia adelante despegando del suelo con ambos pies a la vez.
+- "Marcha": Camina progresivamente paso a paso manteniendo contacto continuo con el piso.
+- "Salto Unipodal": Salta y cae sucesivamente sobre un solo pie ("pata sola").
+- "Lanzamiento Sobre Hombro": Sostiene y arroja un objeto (pelota, balón, saquito) con un brazo por encima del hombro. (REGLA CRÍTICA: Si el niño corre o salta y levanta los brazos por impulso o braceo, NO es lanzamiento).
+- "Recepción y Atrape": Recibe y asegura con ambas manos un móvil/pelota que viene por el aire frente al pecho.
+- "Patear": Da un paso hacia un balón en el suelo y lo impacta con el pie.
+- "Equilibrio Dinámico": Camina en equilibrio manteniendo los pies sobre una línea estrecha.
+- "Equilibrio Estático Unipodal": Se sostiene quieto sobre un solo pie durante varios segundos.
+
+REGLA DE DECISIÓN VISUAL:
+Tu análisis visual de las imágenes fotográficas tiene PRIORIDAD TOTAL sobre cualquier aproximación matemática. Observa la acción global del cuerpo y el entorno. Escribe en "habilidad_detectada" el nombre exacto de la habilidad que ves ejecutada.`
         : `Habilidad Específica Seleccionada por el Docente: "${skill}". Evalúa estrictamente los criterios de esta habilidad.`;
 
     const sysPrompt = `Eres un Biomecánico Deportivo y Docente Experto en Desarrollo Motor Infantil especializado en la evaluación de Habilidades Motrices Básicas (HMB) mediante la Batería Validada de Habilidades Motrices Básicas para Niños entre 5 y 11 Años (González Palacio, Montoya Grisales, Cardona, Marín & Muñoz, 2021 · Dialnet 7925607) y los estadios evolutivos de David L. Gallahue.
@@ -2946,7 +3000,7 @@ ${skillInstruction}
 - Inclinación promedio de tronco: ${telemetry.avgTrunkAngle}°
 - Apertura máxima de zancada / cadera: ${telemetry.maxHipAngle}°
 - Apoyo unipodal con oscilación de patada (Pateo): ${telemetry.singleSupportKick ? 'DETECTADO (Un pie en suelo y pierna contraria en péndulo de golpeo)' : 'NO'}
-- Elevación de muñeca sobre hombro: ${telemetry.maxWristAboveShoulder ? 'SÍ (Gesto elevado / lanzamiento)' : 'NO'}
+- Elevación de muñeca sobre hombro: ${telemetry.maxWristAboveShoulder ? 'SÍ (Gesto elevado / braceo alto)' : 'NO'}
 - Distancia mínima entre muñecas: ${telemetry.minWristDist.toFixed(2)} (Manos juntas en copa: ${telemetry.minWristDist < 0.26 ? 'SÍ' : 'NO'})
 - Asimetría vertical máxima de tobillos: ${telemetry.maxAnkleYDiff.toFixed(2)}
 - Asimetría máxima entre rodillas: ${telemetry.maxKneeDiff}°
@@ -2958,7 +3012,7 @@ Usa estrictamente estos datos cuantitativos reales medidos por MediaPipe. Evalú
 
 DEBES RESPONDER EXCLUSIVAMENTE CON UN OBJETO JSON VÁLIDO CON LA SIGUIENTE ESTRUCTURA:
 {
-  "habilidad_detectada": "${isAuto ? suggestedSkill : skill}",
+  "habilidad_detectada": ${isAuto ? '"[Escribe aquí el nombre exacto de la habilidad que observas en los fotogramas: Carrera | Salto Horizontal | Marcha | Salto Unipodal | Lanzamiento Sobre Hombro | Recepción y Atrape | Patear | Equilibrio Dinámico | Equilibrio Estático Unipodal]"' : `"${skill}"`},
   "es_deteccion_automatica": ${isAuto},
   "componente_hmb": "[HMB-L] Locomoción | [HMB-M] Manipulación | [HMB-E] Estabilidad-Equilibrio",
   "bateria_referencia": "Batería de Habilidades Motrices Básicas (González Palacio et al., 2021 · Dialnet 7925607)",
