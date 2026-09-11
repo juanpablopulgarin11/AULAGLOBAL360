@@ -1621,17 +1621,20 @@ function checkExerciseTriggerPose(angles, prevAngles = null) {
     if (!angles) return { triggered: false };
 
     // 0. Postura de Equilibrio Unipodal (Test de equilibrio estático según referencia python)
-    if (angles.unipodalFootRaised && (angles.unipodalSupportKnee || angles.kneeMax || 0) >= 155 && (angles.shoulderTilt || 0) <= 15) {
+    // Se detecta elevación podal unilateral (unipodalFootRaised o asimetría vertical de tobillos) con apoyo firme
+    const hasUnipodalLift = angles.unipodalFootRaised || (angles.ankleYDiff >= 0.035);
+    const hasSupportExtension = (angles.unipodalSupportKnee || angles.kneeMax || 0) >= 148;
+    if (hasUnipodalLift && hasSupportExtension) {
         return { 
             triggered: true, 
-            reason: `Despegue e inicio de equilibrio unipodal (${angles.unipodalSupportKnee || angles.kneeMax}°)`, 
+            reason: `Elevación podal y postura unipodal (${angles.unipodalSupportKnee || angles.kneeMax}°)`, 
             skillHint: 'Equilibrio Estático Unipodal' 
         };
     }
 
-    // 1. Flexión preparatoria de rodilla bípode (Salto Horizontal o impulso)
-    // En bipedestación estática neutra el ángulo es ~165°-180°. Al flexionar simultáneamente baja de 145°.
-    if (angles.kneeMin <= 145 && angles.kneeDiff <= 25) {
+    // 1. Flexión preparatoria bípode profunda de Salto Horizontal
+    // Exige estrictamente que AMBOS pies estén en el suelo (sin elevación podal) y flexión coordinada profunda
+    if (angles.kneeMin <= 138 && angles.kneeDiff <= 18 && angles.ankleYDiff < 0.030 && !angles.unipodalFootRaised) {
         return { 
             triggered: true, 
             reason: `Flexión preparatoria bípode (${angles.kneeMin}°)`, 
@@ -1817,16 +1820,37 @@ async function extractAdaptiveVideoKeyframes(file, targetCount = 8) {
 
                 // 4. Extracción de los 8 fotogramas en alta resolución con MediaPipe Pose y esqueletos
                 const frames = [];
-                const phaseNames = [
-                    initialTriggerInfo ? `Fase 1: Ángulo Inicial (${initialTriggerInfo.reason})` : 'Fase 1: Preparación / Ángulo Inicial',
-                    'Fase 2: Impulso / Carga Cinemática',
-                    'Fase 3: Despegue / Transición',
-                    'Fase 4: Máxima Aceleración',
-                    'Fase 5: Ápice / Vuelo o Extensión',
-                    'Fase 6: Descenso / Proyección',
-                    'Fase 7: Contacto / Aterrizaje',
-                    'Fase 8: Amortiguación y Recobro'
-                ];
+                const isEquilibrium = initialTriggerInfo && initialTriggerInfo.skillHint === 'Equilibrio Estático Unipodal';
+                const isJump = initialTriggerInfo && initialTriggerInfo.skillHint === 'Salto Horizontal';
+                
+                const phaseNames = isEquilibrium ? [
+                    initialTriggerInfo ? `Fase 1: Ángulo Inicial (${initialTriggerInfo.reason})` : 'Fase 1: Inicio de Elevación Podal',
+                    'Fase 2: Ajuste y Elevación de Pierna Libre',
+                    'Fase 3: Búsqueda de Estabilidad Postural',
+                    'Fase 4: Alineación de Hombros y Tronco',
+                    'Fase 5: Sostén Estático Cumbre (Flamenco)',
+                    'Fase 6: Control Postural Continuo',
+                    'Fase 7: Mantenimiento del Equilibrio',
+                    'Fase 8: Cierre y Retorno Bipodal'
+                ] : (isJump ? [
+                    initialTriggerInfo ? `Fase 1: Ángulo Inicial (${initialTriggerInfo.reason})` : 'Fase 1: Flexión Preparatoria Bípode',
+                    'Fase 2: Impulso y Extensión Triple',
+                    'Fase 3: Despegue del Suelo',
+                    'Fase 4: Proyección Aérea',
+                    'Fase 5: Ápice de Vuelo Bipodal',
+                    'Fase 6: Descenso y Preparación al Contacto',
+                    'Fase 7: Contacto de Ambos Pies',
+                    'Fase 8: Amortiguación y Frenado'
+                ] : [
+                    initialTriggerInfo ? `Fase 1: Ángulo Inicial (${initialTriggerInfo.reason})` : 'Fase 1: Preparación / Inicio',
+                    'Fase 2: Transición y Carga Motriz',
+                    'Fase 3: Desarrollo del Movimiento',
+                    'Fase 4: Aceleración y Ajuste Postural',
+                    'Fase 5: Punto Culminante del Gesto',
+                    'Fase 6: Continuación del Movimiento',
+                    'Fase 7: Fase de Contacto o Sostén',
+                    'Fase 8: Conclusión y Estabilización'
+                ]);
 
                 for (let k = 0; k < selectedTimestamps.length; k++) {
                     const t = selectedTimestamps[k];
@@ -2683,16 +2707,16 @@ function aggregateVideoTelemetry(frames) {
     const maxWristAboveShoulder = validAngles.some(a => a.wristAboveShoulder === true);
 
     // 1. Detección de Postura de Equilibrio Estático Unipodal (Flamenco sostenido en el tiempo):
-    // Una pierna de apoyo extendida (≥145°) mientras la pierna libre se sostiene flexionada (≤120°) con asimetría en tobillos
+    // Una pierna de apoyo erguida (≥145°) mientras la pierna libre se eleva o flexiona
     let unipodalHoldFrames = 0;
     validAngles.forEach(a => {
-        const isOneLegBentOneStraight = (a.kneeMax >= 145 && a.kneeMin <= 120 && a.kneeDiff >= 35);
-        const hasAnkleElevation = (a.ankleYDiff >= 0.04);
-        if (isOneLegBentOneStraight && hasAnkleElevation) {
+        const isLifted = (a.unipodalFootRaised === true) || (a.ankleYDiff >= 0.035) || (a.kneeMax >= 145 && a.kneeMin <= 135 && a.kneeDiff >= 20);
+        const hasSupport = (a.kneeMax >= 145) || (a.unipodalSupportKnee && a.unipodalSupportKnee >= 145);
+        if (isLifted && hasSupport) {
             unipodalHoldFrames++;
         }
     });
-    const unipodalHoldRatio = unipodalHoldFrames / validAngles.length;
+    const unipodalHoldRatio = validAngles.length ? (unipodalHoldFrames / validAngles.length) : 0;
 
     // 2. Detección de Golpeo / Patada Dinámica (Pateo):
     // Ocurre como un pico TRANSITORIO (1 o 2 fotogramas) con zancada sagital (un pie delante y otro atrás), NO sostenido en todo el video
@@ -2700,7 +2724,7 @@ function aggregateVideoTelemetry(frames) {
     const hasStraddleKickFrame = straddleFrames.length >= 1 && unipodalHoldRatio < 0.40;
     const transientKickPeak = (straddleFrames.length >= 1 && straddleFrames.length <= 2 && unipodalHoldRatio < 0.40);
 
-    // 3. Detección estricta de Fase Aérea (Vuelo): AMBOS pies despegan del suelo
+    // 3. Detección estricta de Fase Aérea (Vuelo): AMBOS pies despegan del suelo simultáneamente
     const flightFrames = [];
     const groundLevelY = Math.max(...validAngles.map(a => Math.max(a.lAnkleY, a.rAnkleY)));
     let bipodalFlightFrames = 0;
@@ -2714,7 +2738,13 @@ function aggregateVideoTelemetry(frames) {
             }
         }
     });
-    const flightDetected = flightFrames.length > 0;
+
+    // Si hay sostén unipodal evidente sobre una pierna, NO existe fase de vuelo bipodal
+    if (unipodalHoldRatio >= 0.25 || unipodalHoldFrames >= 2 || unipodalMaintainedFrames >= 1) {
+        bipodalFlightFrames = 0;
+    }
+
+    const flightDetected = flightFrames.length > 0 && bipodalFlightFrames > 0;
     const bipodalFlightDetected = bipodalFlightFrames > 0;
 
     // Variación dinámica angular rápida entre fotogramas consecutivos (delta de flexión de rodilla)
@@ -2725,8 +2755,8 @@ function aggregateVideoTelemetry(frames) {
         rapidKneeDelta = Math.max(rapidKneeDelta, dL, dR);
     }
 
-    // Desplazamiento del centro de masa (cadera) entre el primer y último frame
-    let hipDisplacement = 0.15;
+    // Desplazamiento del centro de masa (cadera) entre el primer y último frame (0.02 = estático)
+    let hipDisplacement = 0.02;
     if (validAngles.length >= 2 && validAngles[0].midHipX !== undefined) {
         const first = validAngles[0];
         const last = validAngles[validAngles.length - 1];
@@ -2810,13 +2840,14 @@ function classifySkillFromKinematics(telemetry, userText) {
     };
 
     // A. EQUILIBRIO ESTÁTICO UNIPODAL [HMB-E]:
-    // Postura mantenida en un solo pie durante la secuencia (pierna libre sostenida en flexión ≥ 3 frames)
-    if (telemetry.unipodalHoldFrames >= 3 || telemetry.unipodalHoldRatio >= 0.45) scores['Equilibrio Estático Unipodal'] += 180;
-    if (telemetry.avgKneeDiff >= 40) scores['Equilibrio Estático Unipodal'] += 70;
-    if (telemetry.avgAnkleYDiff >= 0.05) scores['Equilibrio Estático Unipodal'] += 50;
-    if (!telemetry.flightDetected) scores['Equilibrio Estático Unipodal'] += 40;
-    if ((telemetry.unipodalMaintainedFrames && telemetry.unipodalMaintainedFrames >= 2) || ((telemetry.unipodalRaisedFrames || 0) >= 3 && (telemetry.avgShoulderTilt || 0) <= 8.5)) {
-        scores['Equilibrio Estático Unipodal'] += 140;
+    // Postura mantenida en un solo pie durante la secuencia con apoyo firme y sin traslación
+    if (telemetry.unipodalHoldFrames >= 2 || telemetry.unipodalHoldRatio >= 0.25) scores['Equilibrio Estático Unipodal'] += 200;
+    if (telemetry.avgKneeDiff >= 15) scores['Equilibrio Estático Unipodal'] += 60;
+    if (telemetry.avgAnkleYDiff >= 0.035 || telemetry.maxAnkleYDiff >= 0.04) scores['Equilibrio Estático Unipodal'] += 70;
+    if (!telemetry.bipodalFlightDetected) scores['Equilibrio Estático Unipodal'] += 60;
+    if (telemetry.hipDisplacement <= 0.08) scores['Equilibrio Estático Unipodal'] += 100; // Permanece en el mismo sitio
+    if ((telemetry.unipodalMaintainedFrames && telemetry.unipodalMaintainedFrames >= 1) || ((telemetry.unipodalRaisedFrames || 0) >= 2 && (telemetry.avgShoulderTilt || 0) <= 10.0)) {
+        scores['Equilibrio Estático Unipodal'] += 160;
     }
 
     // B. PATEAR [HMB-M]:
@@ -2856,25 +2887,25 @@ function classifySkillFromKinematics(telemetry, userText) {
     if (!telemetry.maxWristAboveShoulder && telemetry.avgKneeDiff < 25) scores['Recepción y Atrape'] += 30;
 
     // E. SALTO HORIZONTAL [HMB-L]: Despegue o flexión preparatoria bipodal seguida de extensión y vuelo bipodal
-    if (telemetry.minKneeAngle <= 145 && telemetry.unipodalHoldRatio < 0.35) {
-        scores['Salto Horizontal'] += 130;
-    }
-    if (telemetry.maxKneeAngle >= 150) {
-        scores['Salto Horizontal'] += 50;
-    }
+    // CONDICIÓN FÍSICA INQUEBRANTABLE: Un salto horizontal exige desplazamiento espacial y vuelo bipodal
     if (telemetry.bipodalFlightDetected) {
-        scores['Salto Horizontal'] += 200;
-    } else if (telemetry.flightDetected && telemetry.avgKneeDiff <= 28) {
-        scores['Salto Horizontal'] += 140;
+        scores['Salto Horizontal'] += 220;
     }
-    if (telemetry.avgKneeDiff <= 25) {
-        scores['Salto Horizontal'] += 80;
+    if (telemetry.hipDisplacement >= 0.12) {
+        scores['Salto Horizontal'] += 120;
     }
-    if (telemetry.maxAnkleYDiff <= 0.065) {
-        scores['Salto Horizontal'] += 50;
+    if (telemetry.minKneeAngle <= 135 && telemetry.avgKneeDiff <= 18 && telemetry.unipodalHoldRatio < 0.25) {
+        scores['Salto Horizontal'] += 90;
     }
-    if (telemetry.hipDisplacement >= 0.10) {
-        scores['Salto Horizontal'] += 40;
+
+    // PENALIZACIONES EXCLUYENTES PARA SALTO HORIZONTAL:
+    // 1. Si no hay traslación del centro de masa (permanece quieto en el sitio), NO es un salto horizontal
+    if (telemetry.hipDisplacement < 0.08 && !telemetry.bipodalFlightDetected) {
+        scores['Salto Horizontal'] -= 350;
+    }
+    // 2. Si hay sostén prolongado en un solo pie o elevación podal unilateral, NO es un salto horizontal bipodal
+    if (telemetry.unipodalHoldRatio >= 0.25 || telemetry.unipodalHoldFrames >= 2 || (telemetry.unipodalRaisedFrames || 0) >= 2) {
+        scores['Salto Horizontal'] -= 350;
     }
 
     // F. SALTO UNIPODAL [HMB-L]: Fase aérea de vuelo pero manteniendo asimetría vertical continua
@@ -4113,15 +4144,15 @@ async function callGeminiVision(skill, grade, obsText, frames) {
     const skillInstruction = isAuto 
         ? `MODO DETECCIÓN AUTOMÁTICA BASADA EN VISIÓN:
 Debes analizar de forma AUTÓNOMA la secuencia cronológica de los ${frames.length} fotogramas proporcionados para CLASIFICAR cuál de las 9 habilidades de la Batería HMB (González Palacio & Montoya Grisales) se ejecuta en el video:
+- "Equilibrio Estático Unipodal": Se sostiene quieto sobre un solo pie (apoyo unipodal) durante la secuencia, sin desplazarse por el espacio. (REGLA CRÍTICA: Si el niño permanece en el sitio y levanta un pie del piso sosteniéndose en la otra pierna, ES Equilibrio Estático Unipodal; NUNCA lo clasifiques como Salto Horizontal ni Patear).
+- "Salto Horizontal": Flexiona rodillas con ambos pies en el piso y salta hacia adelante trasladándose por el espacio con despegue bipodal y fase de vuelo. (REGLA CRÍTICA: Exige desplazamiento horizontal hacia adelante por el piso; si el niño no se traslada hacia adelante en el espacio, NO es Salto Horizontal).
 - "Carrera": El estudiante corre desplazándose por el espacio, con zancadas alternas cíclicas y braceo sagital.
-- "Salto Horizontal": Flexiona rodillas y salta hacia adelante despegando del suelo con ambos pies a la vez.
 - "Marcha": Camina progresivamente paso a paso manteniendo contacto continuo con el piso.
 - "Salto Unipodal": Salta y cae sucesivamente sobre un solo pie ("pata sola").
-- "Lanzamiento Sobre Hombro": Sostiene y arroja un objeto (pelota, balón, saquito) con un brazo por encima del hombro. (REGLA CRÍTICA: Si el niño corre o salta y levanta los brazos por impulso o braceo, NO es lanzamiento).
+- "Lanzamiento Sobre Hombro": Sostiene y arroja un objeto con un brazo por encima del hombro. (Si corre o salta y levanta los brazos por impulso o braceo, NO es lanzamiento).
 - "Recepción y Atrape": Recibe y asegura con ambas manos un móvil/pelota que viene por el aire frente al pecho.
 - "Patear": Da un paso hacia un balón en el suelo y lo impacta con el pie.
 - "Equilibrio Dinámico": Camina en equilibrio manteniendo los pies sobre una línea estrecha.
-- "Equilibrio Estático Unipodal": Se sostiene quieto sobre un solo pie durante varios segundos.
 
 REGLA DE DECISIÓN VISUAL:
 Tu análisis visual de las imágenes fotográficas tiene PRIORIDAD TOTAL sobre cualquier aproximación matemática. Observa la acción global del cuerpo y el entorno. Escribe en "habilidad_detectada" el nombre exacto de la habilidad que ves ejecutada.`
@@ -4136,6 +4167,9 @@ DATOS CINEMÁTICOS REALES MEDIDOS EN EL NAVEGADOR:
 ${skillInstruction}
 - Edad Calibrada: ${grade}
 - Ciclo de Fases detectadas por FSM: [${fsmChain}]
+- Desplazamiento horizontal de cadera (traslación espacial): ${telemetry.hipDisplacement < 0.08 ? 'NULO/MÍNIMO (' + telemetry.hipDisplacement.toFixed(3) + ' - Permanece en el mismo sitio, descartar salto)' : 'DINÁMICO (' + telemetry.hipDisplacement.toFixed(3) + ' - Se traslada en el espacio)'}
+- Postura de equilibrio unipodal sostenida: ${telemetry.unipodalHoldFrames >= 2 || (telemetry.unipodalRaisedFrames || 0) >= 2 ? 'SÍ (' + (telemetry.unipodalMaintainedFrames || telemetry.unipodalHoldFrames) + ' fotogramas en un solo pie)' : 'NO'}
+- Inclinación lateral de hombros: ${telemetry.avgShoulderTilt !== undefined ? telemetry.avgShoulderTilt + '°' : 'N/A'}
 - Flexión mínima de rodilla medida: ${telemetry.minKneeAngle}°
 - Ángulo medio de codos (braceo): ${telemetry.avgElbowAngle}°
 - Inclinación promedio de tronco: ${telemetry.avgTrunkAngle}°
@@ -4145,7 +4179,7 @@ ${skillInstruction}
 - Distancia mínima entre muñecas: ${telemetry.minWristDist.toFixed(2)} (Manos juntas en copa: ${telemetry.minWristDist < 0.26 ? 'SÍ' : 'NO'})
 - Asimetría vertical máxima de tobillos: ${telemetry.maxAnkleYDiff.toFixed(2)}
 - Asimetría máxima entre rodillas: ${telemetry.maxKneeDiff}°
-- Fase de vuelo / despegue aéreo bilateral: ${telemetry.flightDetected ? 'DETECTADA (Ambos pies en aire)' : 'NO DETECTADA'}
+- Fase de vuelo / despegue aéreo bilateral: ${telemetry.bipodalFlightDetected ? 'DETECTADA (Ambos pies en aire)' : 'NO DETECTADA (Apoyo en suelo)'}
 - Simetría bilateral: ${telemetry.symmetryScore}%
 
 INSTRUCCIÓN VITAL:
