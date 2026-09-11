@@ -662,6 +662,12 @@ body {
     background: #0F172A;
 }
 
+.keyframe-card.milestone-final {
+    border: 2px solid #6366F1 !important;
+    box-shadow: 0 0 14px rgba(99, 102, 241, 0.45), 0 4px 12px rgba(0, 0, 0, 0.5);
+    background: #0F172A;
+}
+
 .keyframe-card.milestone-trigger {
     border: 1.5px solid #0D9488;
     box-shadow: 0 0 10px rgba(13, 148, 136, 0.35);

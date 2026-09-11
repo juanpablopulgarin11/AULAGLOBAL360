@@ -1495,18 +1495,18 @@ function drawPoseSkeleton(ctx, landmarks, angles) {
 function checkExerciseTriggerPose(angles, prevAngles = null) {
     if (!angles) return { triggered: false };
 
-    // 1. Flexión preparatoria de rodilla (Salto Horizontal o arranque de Carrera)
-    // En bipedestación estática neutra el ángulo es ~165°-180°. Al flexionar para impulsar baja de 145°.
-    if (angles.kneeMin <= 145) {
+    // 1. Flexión preparatoria de rodilla bípode (Salto Horizontal o impulso)
+    // En bipedestación estática neutra el ángulo es ~165°-180°. Al flexionar simultáneamente baja de 145°.
+    if (angles.kneeMin <= 145 && angles.kneeDiff <= 25) {
         return { 
             triggered: true, 
-            reason: `Flexión preparatoria de rodilla (${angles.kneeMin}°)`, 
+            reason: `Flexión preparatoria bípode (${angles.kneeMin}°)`, 
             skillHint: 'Salto Horizontal' 
         };
     }
 
     // 2. Apertura sagital de zancada o avance podal (Carrera o Marcha)
-    if (angles.hipAngle >= 20 || angles.ankleXDiff >= 0.10) {
+    if (angles.hipAngle >= 22 || angles.ankleXDiff >= 0.14) {
         return { 
             triggered: true, 
             reason: `Apertura de zancada / paso (${angles.hipAngle}°)`, 
@@ -1515,7 +1515,7 @@ function checkExerciseTriggerPose(angles, prevAngles = null) {
     }
 
     // 3. Elevación o armado de brazo (Lanzamiento Sobre Hombro)
-    if (angles.wristAboveShoulder || (angles.elbowDiff >= 24 && angles.elbowMin <= 112)) {
+    if (angles.wristAboveShoulder || (angles.elbowDiff >= 26 && angles.elbowMin <= 110)) {
         return { 
             triggered: true, 
             reason: `Armado o elevación de brazo (${angles.elbowMin}°)`, 
@@ -1523,11 +1523,11 @@ function checkExerciseTriggerPose(angles, prevAngles = null) {
         };
     }
 
-    // 4. Elevación podal unilateral (Patada, Salto Unipodal o Equilibrio Estático)
-    if (angles.ankleYDiff >= 0.040 && angles.kneeDiff >= 20) {
+    // 4. Elevación podal unilateral con péndulo/zancada (Patear o Salto Unipodal)
+    if (angles.ankleYDiff >= 0.055 && angles.kneeDiff >= 28 && (angles.isLegStraddle || angles.ankleXDiff >= 0.12)) {
         return { 
             triggered: true, 
-            reason: `Despegue o péndulo unilateral (${angles.kneeDiff}° asimetría)`, 
+            reason: `Péndulo o despegue podal unilateral (${angles.kneeDiff}° asimetría)`, 
             skillHint: 'Patear' 
         };
     }
@@ -1742,7 +1742,17 @@ async function extractAdaptiveVideoKeyframes(file, targetCount = 8) {
                     });
                 }
 
-                assignKeyframeMilestones(frames, initialTriggerInfo ? initialTriggerInfo.skillHint : null);
+                const curSkillEl = document.getElementById('skillSelect');
+                const curActiveSkill = (curSkillEl && curSkillEl.value !== 'auto') 
+                    ? curSkillEl.options[curSkillEl.selectedIndex].text 
+                    : null;
+                if (curActiveSkill) {
+                    assignKeyframeMilestones(frames, curActiveSkill);
+                } else {
+                    const tel = aggregateVideoTelemetry(frames);
+                    const inferred = classifySkillFromKinematics(tel, '');
+                    assignKeyframeMilestones(frames, inferred);
+                }
                 resolve(frames);
             } catch (err) {
                 reject(err);
@@ -1911,7 +1921,7 @@ async function handleFile(event) {
 function assignKeyframeMilestones(frames, skillName = null) {
     if (!frames || frames.length === 0) return frames;
 
-    // Si no se especifica habilidad, inferirla preliminarmente a partir de la cinemática
+    // Si no se especifica habilidad, inferirla a partir de la cinemática agregada
     let resolvedSkill = skillName;
     if (!resolvedSkill || resolvedSkill === 'auto' || resolvedSkill === 'Detección Automática' || resolvedSkill.includes('Automática')) {
         const telemetry = aggregateVideoTelemetry(frames);
@@ -1924,6 +1934,7 @@ function assignKeyframeMilestones(frames, skillName = null) {
     frames.forEach((f, idx) => {
         f.isMilestonePeak = false;
         f.isSubMilestone = false;
+        f.isFinalMilestone = false;
         f.milestoneBadge = null;
         f.milestoneTitle = `Cuadro #${idx + 1}`;
         f.milestoneDesc = f.phase || `Cinemática en ${f.time}`;
@@ -1934,7 +1945,6 @@ function assignKeyframeMilestones(frames, skillName = null) {
 
     if (s.includes('pate')) {
         // HMB: PATEAR
-        // Criterio de impacto / patada: máximo péndulo anterior del tobillo de golpeo respecto a cadera y pie de apoyo
         let maxKickScore = -Infinity;
         let peakIdx = -1;
 
@@ -1951,7 +1961,7 @@ function assignKeyframeMilestones(frames, skillName = null) {
             }
         });
 
-        if (peakIdx === -1) peakIdx = Math.min(frames.length - 1, Math.floor(frames.length * 0.55));
+        if (peakIdx === -1) peakIdx = Math.min(frames.length - 2, Math.max(1, Math.floor(frames.length * 0.55)));
 
         frames.forEach((f, idx) => {
             if (idx === 0) {
@@ -1959,28 +1969,31 @@ function assignKeyframeMilestones(frames, skillName = null) {
                 f.milestoneDesc = 'Aproximación y orientación al balón';
                 f.milestoneColor = '#0D9488';
                 f.milestoneBadge = '🎯 ÁNGULO INICIAL';
-            } else if (idx < peakIdx) {
-                f.milestoneTitle = 'Apoyo y Carga';
-                f.milestoneDesc = 'Pie de apoyo firme y pierna atrás';
-                f.milestoneColor = '#3B82F6';
+            } else if (idx === frames.length - 1) {
+                f.isFinalMilestone = true;
+                f.milestoneBadge = '🏁 RECOBRO Y DESACELERACIÓN';
+                f.milestoneTitle = '🏁 Recobro y Desaceleración';
+                f.milestoneDesc = 'Apoyo bipodal y desaceleración post-impacto';
+                f.milestoneColor = '#6366F1';
             } else if (idx === peakIdx) {
                 f.isMilestonePeak = true;
                 f.milestoneBadge = '⚽ PATEADA EVIDENCIADA';
                 f.milestoneTitle = '⚽ Pateada Evidenciada';
                 f.milestoneDesc = 'Impacto al balón / Máx. péndulo';
                 f.milestoneColor = '#F59E0B';
+            } else if (idx < peakIdx) {
+                f.milestoneTitle = 'Apoyo y Carga';
+                f.milestoneDesc = 'Pie de apoyo firme y pierna atrás';
+                f.milestoneColor = '#3B82F6';
             } else {
-                f.milestoneTitle = 'Recobro y Salida';
-                f.milestoneDesc = 'Acompañamiento del pie y frenado';
+                f.milestoneTitle = 'Acompañamiento y Salida';
+                f.milestoneDesc = 'Seguimiento del miembro ejecutor';
                 f.milestoneColor = '#8B5CF6';
             }
         });
 
     } else if (s.includes('salto horizontal') || (s.includes('salto') && !s.includes('unipodal'))) {
         // HMB: SALTO HORIZONTAL
-        // Criterio:
-        // 1. Ápice de vuelo: tobillos más elevados en la pantalla (menor promedio Y)
-        // 2. Aterrizaje: contacto posterior con rodilla flexionada
         let minAnkleY = Infinity;
         let flightPeakIdx = -1;
 
@@ -1994,18 +2007,18 @@ function assignKeyframeMilestones(frames, skillName = null) {
             }
         });
 
-        if (flightPeakIdx === -1) flightPeakIdx = Math.floor(frames.length * 0.5);
+        if (flightPeakIdx === -1) flightPeakIdx = Math.floor(frames.length * 0.45);
 
         let landIdx = -1;
         let minLandKnee = Infinity;
-        for (let i = flightPeakIdx + 1; i < frames.length; i++) {
+        for (let i = flightPeakIdx + 1; i < frames.length - 1; i++) {
             const a = frames[i].angles;
             if (a && a.kneeMin < minLandKnee) {
                 minLandKnee = a.kneeMin;
                 landIdx = i;
             }
         }
-        if (landIdx === -1) landIdx = Math.min(frames.length - 1, flightPeakIdx + 2);
+        if (landIdx === -1) landIdx = Math.min(frames.length - 2, flightPeakIdx + 1);
 
         frames.forEach((f, idx) => {
             if (idx === 0) {
@@ -2013,36 +2026,41 @@ function assignKeyframeMilestones(frames, skillName = null) {
                 f.milestoneDesc = 'Flexión preparatoria bípode';
                 f.milestoneColor = '#0D9488';
                 f.milestoneBadge = '🎯 ÁNGULO INICIAL';
-            } else if (idx < flightPeakIdx) {
-                f.milestoneTitle = 'Despegue y Empuje';
-                f.milestoneDesc = 'Extensión triple y brazos al frente';
-                f.milestoneColor = '#3B82F6';
+            } else if (idx === frames.length - 1) {
+                f.isFinalMilestone = true;
+                f.milestoneBadge = '🏁 FRENADO Y CONTROL';
+                f.milestoneTitle = '🏁 Frenado y Control Estático';
+                f.milestoneDesc = 'Amortiguación bipodal y equilibrio final';
+                f.milestoneColor = '#6366F1';
             } else if (idx === flightPeakIdx) {
                 f.isMilestonePeak = true;
                 f.milestoneBadge = '🦘 VUELO EVIDENCIADO';
                 f.milestoneTitle = '🦘 Vuelo Bipodal Evidenciado';
-                f.milestoneDesc = 'Ápice aéreo / Ambos pies en aire';
+                f.milestoneDesc = 'Ápice aéreo / Ambos pies en el aire';
                 f.milestoneColor = '#38BDF8';
             } else if (idx === landIdx) {
                 f.isSubMilestone = true;
                 f.milestoneBadge = '🦿 ATERRIZAJE';
                 f.milestoneTitle = '🦿 Aterrizaje Evidenciado';
-                f.milestoneDesc = 'Contacto simultáneo y flexión';
+                f.milestoneDesc = 'Contacto simultáneo de ambos pies';
                 f.milestoneColor = '#10B981';
-            } else if (idx > landIdx) {
-                f.milestoneTitle = 'Frenado y Control';
-                f.milestoneDesc = 'Equilibrio bipodal estático';
-                f.milestoneColor = '#64748B';
-            } else {
-                f.milestoneTitle = 'Fase de Caída';
-                f.milestoneDesc = 'Descenso previo al suelo';
+            } else if (idx < flightPeakIdx) {
+                f.milestoneTitle = 'Propulsión e Impulso';
+                f.milestoneDesc = 'Extensión triple de tobillo, rodilla y cadera';
+                f.milestoneColor = '#3B82F6';
+            } else if (idx < landIdx) {
+                f.milestoneTitle = 'Descenso Aéreo';
+                f.milestoneDesc = 'Extensión preparatoria para el suelo';
                 f.milestoneColor = '#0284C7';
+            } else {
+                f.milestoneTitle = 'Amortiguación Post-Contacto';
+                f.milestoneDesc = 'Flexión reactiva de rodillas y caderas';
+                f.milestoneColor = '#475569';
             }
         });
 
     } else if (s.includes('corre') || s.includes('carrera')) {
         // HMB: CARRERA
-        // Criterio: Máxima zancada sagital (apertura inter-femoral y separación podal)
         let maxStride = -Infinity;
         let strideIdx = -1;
 
@@ -2062,6 +2080,12 @@ function assignKeyframeMilestones(frames, skillName = null) {
                 f.milestoneDesc = 'Inicio de tracción sagital';
                 f.milestoneColor = '#0D9488';
                 f.milestoneBadge = '🎯 ÁNGULO INICIAL';
+            } else if (idx === frames.length - 1) {
+                f.isFinalMilestone = true;
+                f.milestoneBadge = '🏁 FASE DE DESACELERACIÓN';
+                f.milestoneTitle = '🏁 Fase de Desaceleración';
+                f.milestoneDesc = 'Disminución de cadencia y control postural';
+                f.milestoneColor = '#6366F1';
             } else if (idx === strideIdx) {
                 f.isMilestonePeak = true;
                 f.milestoneBadge = '🏃 ZANCADA EVIDENCIADA';
@@ -2081,12 +2105,11 @@ function assignKeyframeMilestones(frames, skillName = null) {
 
     } else if (s.includes('lanz') || s.includes('arroja') || s.includes('hombro')) {
         // HMB: LANZAMIENTO SOBRE HOMBRO
-        // Criterio: Mano/muñeca por encima del hombro con máxima extensión del codo ejecutor
         let maxThrowScore = -Infinity;
         let throwIdx = -1;
 
         validFrames.forEach(({ idx, a }) => {
-            if (idx > 0) {
+            if (idx > 0 && idx < frames.length - 1) {
                 const throwScore = (a.wristAboveShoulder ? 60 : 0) + (a.elbowMax || 0) + (a.elbowDiff * 0.5);
                 if (throwScore > maxThrowScore) {
                     maxThrowScore = throwScore;
@@ -2095,7 +2118,7 @@ function assignKeyframeMilestones(frames, skillName = null) {
             }
         });
 
-        if (throwIdx === -1) throwIdx = Math.floor(frames.length * 0.6);
+        if (throwIdx === -1) throwIdx = Math.floor(frames.length * 0.55);
 
         frames.forEach((f, idx) => {
             if (idx === 0) {
@@ -2103,26 +2126,31 @@ function assignKeyframeMilestones(frames, skillName = null) {
                 f.milestoneDesc = 'Armado detrás de la cabeza';
                 f.milestoneColor = '#0D9488';
                 f.milestoneBadge = '🎯 ÁNGULO INICIAL';
-            } else if (idx < throwIdx) {
-                f.milestoneTitle = 'Carga y Aceleración';
-                f.milestoneDesc = 'Rotación de tronco y palanca';
-                f.milestoneColor = '#3B82F6';
+            } else if (idx === frames.length - 1) {
+                f.isFinalMilestone = true;
+                f.milestoneBadge = '🏁 SEGUIMIENTO FINAL';
+                f.milestoneTitle = '🏁 Seguimiento y Frenado';
+                f.milestoneDesc = 'Acompañamiento del brazo y balance de salida';
+                f.milestoneColor = '#6366F1';
             } else if (idx === throwIdx) {
                 f.isMilestonePeak = true;
                 f.milestoneBadge = '⚾ LANZAMIENTO EVIDENCIADO';
                 f.milestoneTitle = '⚾ Lanzamiento Evidenciado';
                 f.milestoneDesc = 'Soltada / Máx. extensión de brazo';
                 f.milestoneColor = '#F43F5E';
+            } else if (idx < throwIdx) {
+                f.milestoneTitle = 'Carga y Aceleración';
+                f.milestoneDesc = 'Rotación de tronco y palanca escapular';
+                f.milestoneColor = '#3B82F6';
             } else {
-                f.milestoneTitle = 'Recobro y Desaceleración';
-                f.milestoneDesc = 'Brazo cruza el torso y paso final';
+                f.milestoneTitle = 'Desaceleración de Brazo';
+                f.milestoneDesc = 'El brazo cruza diagonalmente el torso';
                 f.milestoneColor = '#8B5CF6';
             }
         });
 
     } else if (s.includes('atrap') || s.includes('recep')) {
         // HMB: RECEPCIÓN Y ATRAPE
-        // Criterio: Mínima distancia entre muñecas con manos al frente
         let minWristDist = Infinity;
         let catchIdx = -1;
 
@@ -2141,26 +2169,31 @@ function assignKeyframeMilestones(frames, skillName = null) {
                 f.milestoneDesc = 'Brazos al frente en espera';
                 f.milestoneColor = '#0D9488';
                 f.milestoneBadge = '🎯 ÁNGULO INICIAL';
+            } else if (idx === frames.length - 1) {
+                f.isFinalMilestone = true;
+                f.milestoneBadge = '🏁 CONTROL ESTABLE';
+                f.milestoneTitle = '🏁 Control y Retención Estable';
+                f.milestoneDesc = 'Móvil asegurado contra el pecho y equilibrio';
+                f.milestoneColor = '#6366F1';
             } else if (idx === catchIdx) {
                 f.isMilestonePeak = true;
                 f.milestoneBadge = '🧤 ATRAPE EVIDENCIADO';
                 f.milestoneTitle = '🧤 Atrape Evidenciado';
                 f.milestoneDesc = 'Contacto y manos en copa';
                 f.milestoneColor = '#8B5CF6';
-            } else if (idx > catchIdx) {
-                f.milestoneTitle = 'Control y Amortiguación';
-                f.milestoneDesc = 'Retención del móvil hacia el pecho';
-                f.milestoneColor = '#0284C7';
-            } else {
-                f.milestoneTitle = 'Acomodación Visual';
-                f.milestoneDesc = 'Seguimiento visual del móvil';
+            } else if (idx < catchIdx) {
+                f.milestoneTitle = 'Seguimiento Visual';
+                f.milestoneDesc = 'Alineación de manos con la trayectoria';
                 f.milestoneColor = '#3B82F6';
+            } else {
+                f.milestoneTitle = 'Absorción del Impacto';
+                f.milestoneDesc = 'Flexión de codos hacia el cuerpo';
+                f.milestoneColor = '#0284C7';
             }
         });
 
     } else if (s.includes('unipodal') && s.includes('salto')) {
         // HMB: SALTO UNIPODAL ("Pata Sola")
-        // Criterio: Elevación sobre un solo pie con gran asimetría vertical de tobillos
         let maxUniScore = -Infinity;
         let uniIdx = -1;
 
@@ -2182,20 +2215,26 @@ function assignKeyframeMilestones(frames, skillName = null) {
                 f.milestoneDesc = 'Flexión unipodal preparatoria';
                 f.milestoneColor = '#0D9488';
                 f.milestoneBadge = '🎯 ÁNGULO INICIAL';
+            } else if (idx === frames.length - 1) {
+                f.isFinalMilestone = true;
+                f.milestoneBadge = '🏁 ESTABILIZACIÓN FINAL';
+                f.milestoneTitle = '🏁 Estabilización Unipodal';
+                f.milestoneDesc = 'Apoyo final y control de balance';
+                f.milestoneColor = '#6366F1';
             } else if (idx === uniIdx) {
                 f.isMilestonePeak = true;
                 f.milestoneBadge = '🦿 DESPEGUE UNIPODAL';
                 f.milestoneTitle = '🦿 Despegue Unipodal Evidenciado';
                 f.milestoneDesc = 'Suspensión sobre un solo pie';
                 f.milestoneColor = '#EC4899';
-            } else if (idx > uniIdx) {
-                f.milestoneTitle = 'Amortiguación Unipodal';
-                f.milestoneDesc = 'Aterrizaje sobre el mismo pie';
-                f.milestoneColor = '#10B981';
-            } else {
+            } else if (idx < uniIdx) {
                 f.milestoneTitle = 'Impulso Unipodal';
                 f.milestoneDesc = 'Empuje con pierna de apoyo';
                 f.milestoneColor = '#3B82F6';
+            } else {
+                f.milestoneTitle = 'Amortiguación Unipodal';
+                f.milestoneDesc = 'Aterrizaje sobre el mismo pie';
+                f.milestoneColor = '#10B981';
             }
         });
 
@@ -2220,6 +2259,12 @@ function assignKeyframeMilestones(frames, skillName = null) {
                 f.milestoneDesc = 'Elevación de pierna libre';
                 f.milestoneColor = '#0D9488';
                 f.milestoneBadge = '🎯 ÁNGULO INICIAL';
+            } else if (idx === frames.length - 1) {
+                f.isFinalMilestone = true;
+                f.milestoneBadge = '🏁 MANTENIMIENTO FINAL';
+                f.milestoneTitle = '🏁 Cierre y Retorno Bipodal';
+                f.milestoneDesc = 'Estabilidad sostenida y descenso controlado';
+                f.milestoneColor = '#6366F1';
             } else if (idx === holdIdx) {
                 f.isMilestonePeak = true;
                 f.milestoneBadge = '🦩 SOSTÉN EVIDENCIADO';
@@ -2242,6 +2287,12 @@ function assignKeyframeMilestones(frames, skillName = null) {
                 f.milestoneDesc = 'Inicio de alineación sobre eje';
                 f.milestoneColor = '#0D9488';
                 f.milestoneBadge = '🎯 ÁNGULO INICIAL';
+            } else if (idx === frames.length - 1) {
+                f.isFinalMilestone = true;
+                f.milestoneBadge = '🏁 LLEGADA Y DETENCIÓN';
+                f.milestoneTitle = '🏁 Detención y Equilibrio';
+                f.milestoneDesc = 'Parada estable al final de la trayectoria';
+                f.milestoneColor = '#6366F1';
             } else if (idx === midIdx) {
                 f.isMilestonePeak = true;
                 f.milestoneBadge = '🧘 PASAJE EN LÍNEA';
@@ -2264,6 +2315,12 @@ function assignKeyframeMilestones(frames, skillName = null) {
                 f.milestoneDesc = 'Inicio del paso / despegue';
                 f.milestoneColor = '#0D9488';
                 f.milestoneBadge = '🎯 ÁNGULO INICIAL';
+            } else if (idx === frames.length - 1) {
+                f.isFinalMilestone = true;
+                f.milestoneBadge = '🏁 APOYO Y FRENADO';
+                f.milestoneTitle = '🏁 Apoyo Final y Frenado';
+                f.milestoneDesc = 'Cierre del ciclo de paso y postura erguida';
+                f.milestoneColor = '#6366F1';
             } else if (idx === midIdx) {
                 f.isMilestonePeak = true;
                 f.milestoneBadge = '🚶 PASAJE EVIDENCIADO';
@@ -2276,6 +2333,17 @@ function assignKeyframeMilestones(frames, skillName = null) {
                 f.milestoneColor = '#0284C7';
             }
         });
+    }
+
+    // Garantizar que el último fotograma siempre tenga su badge e hito final asignado si hay > 1 fotograma
+    if (frames.length > 1) {
+        const lastF = frames[frames.length - 1];
+        lastF.isFinalMilestone = true;
+        if (!lastF.milestoneBadge) {
+            lastF.milestoneBadge = '🏁 FASE FINAL';
+            lastF.milestoneTitle = '🏁 Fase Final y Cierre';
+            lastF.milestoneColor = '#6366F1';
+        }
     }
 
     return frames;
@@ -2299,7 +2367,7 @@ function renderKeyframeStrip(frames) {
         const card = document.createElement('div');
         const peakClass = f.isMilestonePeak 
             ? 'milestone-peak' 
-            : (f.isInitialTrigger ? 'milestone-trigger' : (f.isSubMilestone ? 'milestone-subpeak' : ''));
+            : (f.isFinalMilestone ? 'milestone-final' : (f.isInitialTrigger ? 'milestone-trigger' : (f.isSubMilestone ? 'milestone-subpeak' : '')));
         card.className = `keyframe-card ${peakClass}`.trim();
 
         const angleChip = f.angles 
@@ -2311,9 +2379,10 @@ function renderKeyframeStrip(frames) {
             : '';
 
         const isTrigger = f.isInitialTrigger;
+        const isFinal = f.isFinalMilestone;
         const tagText = isTrigger 
             ? `🎯 Ángulo Inicial · ${f.time}`
-            : `#${idx + 1} · ${f.time}`;
+            : (isFinal ? `🏁 Cuadro Final · ${f.time}` : `#${idx + 1} · ${f.time}`);
         const tagStyle = (isTrigger && !f.milestoneBadge) 
             ? `style="background: var(--accent, #0D9488); color: white; font-weight: 700; border: 1px solid var(--accent);"`
             : '';
@@ -2326,6 +2395,7 @@ function renderKeyframeStrip(frames) {
             ${bannerHTML}
             <img src="${f.previewUrl}" alt="Fotograma ${idx + 1}">
             <div class="keyframe-tag" ${tagStyle}>${tagText}</div>
+            ${descHTML}
             ${angleChip}
         `;
         keyframeStrip.appendChild(card);
@@ -2470,21 +2540,26 @@ function aggregateVideoTelemetry(frames) {
 
     // 2. Detección de Golpeo / Patada Dinámica (Pateo):
     // Ocurre como un pico TRANSITORIO (1 o 2 fotogramas) con zancada sagital (un pie delante y otro atrás), NO sostenido en todo el video
-    const straddleFrames = validAngles.filter(a => (a.isLegStraddle && (a.ankleXDiff >= 0.10 || a.hipAngle >= 16)) || (a.ankleXDiff >= 0.14));
-    const hasStraddleKickFrame = straddleFrames.length >= 1 && unipodalHoldRatio < 0.45;
-    const transientKickPeak = (straddleFrames.length >= 1 && straddleFrames.length <= 3 && unipodalHoldRatio < 0.45);
+    const straddleFrames = validAngles.filter(a => (a.isLegStraddle && a.ankleXDiff >= 0.14) && a.kneeDiff >= 25 && a.ankleYDiff >= 0.04);
+    const hasStraddleKickFrame = straddleFrames.length >= 1 && unipodalHoldRatio < 0.40;
+    const transientKickPeak = (straddleFrames.length >= 1 && straddleFrames.length <= 2 && unipodalHoldRatio < 0.40);
 
-    // 3. Detección estricta de Fase Aérea (Vuelo): AMBOS pies deben despegar Y con flexión profunda (carrera/salto real)
+    // 3. Detección estricta de Fase Aérea (Vuelo): AMBOS pies despegan del suelo
     const flightFrames = [];
-    if (unipodalHoldRatio < 0.45 && !hasStraddleKickFrame) {
-        const groundLevelY = Math.max(...validAngles.map(a => Math.max(a.lAnkleY, a.rAnkleY)));
-        validAngles.forEach((a, idx) => {
-            if (a.lAnkleY < groundLevelY - 0.055 && a.rAnkleY < groundLevelY - 0.055 && a.kneeMin <= 105) {
-                flightFrames.push(idx + 1);
+    const groundLevelY = Math.max(...validAngles.map(a => Math.max(a.lAnkleY, a.rAnkleY)));
+    let bipodalFlightFrames = 0;
+
+    validAngles.forEach((a, idx) => {
+        const bothElevated = (a.lAnkleY < groundLevelY - 0.045 && a.rAnkleY < groundLevelY - 0.045);
+        if (bothElevated) {
+            flightFrames.push(idx + 1);
+            if (a.ankleYDiff <= 0.065 && a.kneeDiff <= 32) {
+                bipodalFlightFrames++;
             }
-        });
-    }
+        }
+    });
     const flightDetected = flightFrames.length > 0;
+    const bipodalFlightDetected = bipodalFlightFrames > 0;
 
     // Variación dinámica angular rápida entre fotogramas consecutivos (delta de flexión de rodilla)
     let rapidKneeDelta = 0;
@@ -2532,6 +2607,7 @@ function aggregateVideoTelemetry(frames) {
         hipDisplacement,
         rapidKneeDelta,
         flightDetected,
+        bipodalFlightDetected,
         flightFrames: flightFrames.length ? flightFrames : [],
         symmetryScore,
         samplingMethod: 'Adaptativo por Diferencial de Luminancia'
@@ -2579,17 +2655,19 @@ function classifySkillFromKinematics(telemetry, userText) {
     if (!telemetry.flightDetected) scores['Equilibrio Estático Unipodal'] += 40;
 
     // B. PATEAR [HMB-M]:
-    // Golpeo dinámico TRANSITORIO a un balón (solo 1 o 2 frames de patada/péndulo, NO sostenido en todo el video)
-    if (telemetry.unipodalHoldRatio < 0.45) {
+    // Golpeo dinámico TRANSITORIO a un balón con apoyo unípode en suelo (NO en vuelo bipodal)
+    if (telemetry.unipodalHoldRatio < 0.45 && !telemetry.bipodalFlightDetected) {
         if (telemetry.transientKickPeak) scores['Patear'] += 150;
-        if (telemetry.hasStraddleKickFrame) scores['Patear'] += 100;
-        if (telemetry.maxAnkleXDiff >= 0.12) scores['Patear'] += 55;
-        if (telemetry.maxAnkleYDiff >= 0.035) scores['Patear'] += 40;
+        if (telemetry.hasStraddleKickFrame) scores['Patear'] += 90;
+        if (telemetry.maxAnkleXDiff >= 0.14) scores['Patear'] += 50;
+        if (telemetry.maxAnkleYDiff >= 0.05) scores['Patear'] += 40;
         if (telemetry.maxHipAngle >= 18 || telemetry.maxHipDiff >= 15) scores['Patear'] += 35;
-        if (telemetry.rapidKneeDelta >= 12) scores['Patear'] += 25;
+        if (telemetry.rapidKneeDelta >= 14) scores['Patear'] += 25;
         if (!telemetry.maxWristAboveShoulder) scores['Patear'] += 25;
         if (telemetry.minWristDist > 0.18) scores['Patear'] += 20;
-        if (!telemetry.flightDetected) scores['Patear'] += 30;
+    }
+    if (telemetry.bipodalFlightDetected) {
+        scores['Patear'] -= 300; // Un salto bipodal NUNCA es una patada
     }
 
     // C. LANZAMIENTO SOBRE HOMBRO [HMB-M]: Elevación de muñeca sobre el plano del hombro
@@ -2609,15 +2687,26 @@ function classifySkillFromKinematics(telemetry, userText) {
     if (telemetry.avgElbowAngle >= 70 && telemetry.avgElbowAngle <= 130) scores['Recepción y Atrape'] += 40;
     if (!telemetry.maxWristAboveShoulder && telemetry.avgKneeDiff < 25) scores['Recepción y Atrape'] += 30;
 
-    // E. SALTO HORIZONTAL [HMB-L]: Despegue o flexión preparatoria bipodal seguida de extensión
-    if (telemetry.minKneeAngle <= 125 && telemetry.maxKneeAngle >= 145 && telemetry.unipodalHoldRatio < 0.40) {
-        scores['Salto Horizontal'] += 120;
+    // E. SALTO HORIZONTAL [HMB-L]: Despegue o flexión preparatoria bipodal seguida de extensión y vuelo bipodal
+    if (telemetry.minKneeAngle <= 145 && telemetry.unipodalHoldRatio < 0.35) {
+        scores['Salto Horizontal'] += 130;
     }
-    if (telemetry.flightDetected && telemetry.maxKneeDiff <= 25) {
-        scores['Salto Horizontal'] += 60;
+    if (telemetry.maxKneeAngle >= 150) {
+        scores['Salto Horizontal'] += 50;
     }
-    if (telemetry.maxAnkleYDiff <= 0.06 && telemetry.maxHipAngle >= 20) {
-        scores['Salto Horizontal'] += 35;
+    if (telemetry.bipodalFlightDetected) {
+        scores['Salto Horizontal'] += 200;
+    } else if (telemetry.flightDetected && telemetry.avgKneeDiff <= 28) {
+        scores['Salto Horizontal'] += 140;
+    }
+    if (telemetry.avgKneeDiff <= 25) {
+        scores['Salto Horizontal'] += 80;
+    }
+    if (telemetry.maxAnkleYDiff <= 0.065) {
+        scores['Salto Horizontal'] += 50;
+    }
+    if (telemetry.hipDisplacement >= 0.10) {
+        scores['Salto Horizontal'] += 40;
     }
 
     // F. SALTO UNIPODAL [HMB-L]: Fase aérea de vuelo pero manteniendo asimetría vertical continua
@@ -3885,7 +3974,7 @@ DEBES RESPONDER EXCLUSIVAMENTE CON UN OBJETO JSON VÁLIDO CON LA SIGUIENTE ESTRU
     frames.forEach((f, idx) => {
         const milestoneTag = f.isMilestonePeak 
             ? `[★ HITO CUMBRE DEL EJERCICIO: ${f.milestoneTitle} (${f.milestoneDesc})]`
-            : (f.isInitialTrigger ? `[🎯 ÁNGULO INICIAL: ${f.milestoneTitle} (${f.milestoneDesc})]` : `[${f.milestoneTitle} (${f.milestoneDesc})]`);
+            : (f.isFinalMilestone ? `[🏁 FOTOGRAMA FINAL: ${f.milestoneTitle} (${f.milestoneDesc})]` : (f.isInitialTrigger ? `[🎯 ÁNGULO INICIAL: ${f.milestoneTitle} (${f.milestoneDesc})]` : `[${f.milestoneTitle} (${f.milestoneDesc})]`));
 
         parts.push({
             text: `Fotograma #${idx + 1} (${f.time}) - ${milestoneTag}:`
@@ -4056,7 +4145,7 @@ function updateTechDetails(data) {
                     ${capturedKeyframes.map((f, idx) => {
                         const peakClass = f.isMilestonePeak 
                             ? 'milestone-peak' 
-                            : (f.isInitialTrigger ? 'milestone-trigger' : (f.isSubMilestone ? 'milestone-subpeak' : ''));
+                            : (f.isFinalMilestone ? 'milestone-final' : (f.isInitialTrigger ? 'milestone-trigger' : (f.isSubMilestone ? 'milestone-subpeak' : '')));
                         const bannerHTML = f.milestoneBadge 
                             ? `<div class="keyframe-milestone-banner" style="background:${f.milestoneColor || '#F59E0B'}">${f.milestoneBadge}</div>` 
                             : '';
@@ -4066,11 +4155,14 @@ function updateTechDetails(data) {
                         const angleHTML = f.angles 
                             ? `<div class="keyframe-angles"><span>🦵 ${f.angles.kneeMin}°</span><span>💪 ${f.angles.elbowAvg}°</span><span>📐 ${f.angles.trunkLean}°</span></div>` 
                             : '';
+                        const tagText = f.isInitialTrigger 
+                            ? `🎯 Ángulo Inicial · ${f.time}` 
+                            : (f.isFinalMilestone ? `🏁 Cuadro Final · ${f.time}` : `#${idx + 1} · ${f.time}`);
                         return `
                             <div class="keyframe-card ${peakClass}">
                                 ${bannerHTML}
                                 <img src="${f.previewUrl}" alt="Cuadro ${idx+1}">
-                                <div class="keyframe-tag">#${idx+1} · ${f.time}</div>
+                                <div class="keyframe-tag">${tagText}</div>
                                 ${descHTML}
                                 ${angleHTML}
                             </div>
