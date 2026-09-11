@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AULA GLOBAL 360 · Premium Preview</title>
+    <link rel="icon" type="image/svg+xml" href="logo-icon.svg">
+    <link rel="stylesheet" href="preview_styles.css">
+</head>
+
+<body>
+
+    <div class="app engine-local" id="appRoot">
+
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+        <!-- BARRA LATERAL REDISEÑADA -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <a href="landing.html" class="logo" title="Ir al Inicio / Landing">
+                    <div class="logo-icon-glass">
+                        <svg width="24" height="24" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="24" cy="24" r="22" stroke="currentColor" stroke-width="2" stroke-dasharray="2 4" />
+                            <path d="M 24 4 A 20 20 0 1 1 7.2 34.8" stroke="url(#sidebarAgGrad)" stroke-width="3" stroke-linecap="round" />
+                            <polygon points="7.2,34.8 5,28 12,30" fill="var(--accent)" />
+                            <circle cx="24" cy="14" r="3.2" fill="#fff" stroke="var(--accent-hover)" stroke-width="1.2" />
+                            <path d="M 24 17.5 L 23 27 L 31 34" stroke="#fff" stroke-width="2" stroke-linecap="round" />
+                            <defs>
+                                <linearGradient id="sidebarAgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#38BDF8" />
+                                    <stop offset="100%" stop-color="#2563EB" />
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                    </div>
+                    <div class="logo-text-group">
+                        <span class="logo-text">aula global <span class="logo-highlight">360</span></span>
+                        <span class="logo-sub">evaluación biomecánica</span>
+                    </div>
+                </a>
+            </div>
+
+            <div class="sidebar-scroll-area">
+                <div class="mode-toggle-card">
+                    <div class="mode-btns premium-tabs">
+                        <button class="mode-btn active" data-mode="diagnostico" onclick="selectMode(this)">individual</button>
+                        <button class="mode-btn mode-btn-group" data-mode="grupal" onclick="selectMode(this)">colectivo</button>
+                    </div>
+                </div>
+
+                <!-- ACORDEÓN ÚNICO DE CONFIGURACIÓN -->
+                <details class="sidebar-accordion">
+                    <summary class="accordion-header">
+                        <div class="acc-title">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                            configurar clase
+                        </div>
+                        <svg class="acc-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </summary>
+                    <div class="accordion-body">
+                        <div class="form-group">
+                            <label class="input-sublabel">edad / grado</label>
+                            <select id="gradeSelect" class="pref-select premium-select">
+                                <option value="5_anos">transición (5 años)</option>
+                                <option value="6_anos">grado 1º (6 años)</option>
+                                <option value="7_anos" selected>grado 2º (7 años)</option>
+                                <option value="8_anos">grado 3º (8 años)</option>
+                                <option value="9_11_anos">grado 4º-5º (9-11 años)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="input-sublabel">formato didáctico</label>
+                            <select id="prefFormat" class="pref-select premium-select">
+                                <option value="Cuento Motor">cuento motor</option>
+                                <option value="Circuito de Estaciones" selected>circuito de estaciones</option>
+                                <option value="Retos Cooperativos">retos cooperativos</option>
+                                <option value="Juego Libre Dirigido">juego libre dirigido</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="input-sublabel">metodología pedagógica</label>
+                            <select id="prefPedagogy" class="pref-select premium-select">
+                                <option value="Descubrimiento Guiado">descubrimiento guiado</option>
+                                <option value="Resolución de Problemas">resolución de problemas</option>
+                                <option value="Asignación de Tareas" selected>asignación de tareas</option>
+                            </select>
+                        </div>
+                        <div class="grid-2-col">
+                            <div class="form-group">
+                                <label class="input-sublabel">período</label>
+                                <select id="prefPeriod" class="pref-select premium-select">
+                                    <option value="1" selected>período 1</option>
+                                    <option value="2">período 2</option>
+                                    <option value="3">período 3</option>
+                                    <option value="4">período 4</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="input-sublabel">duración</label>
+                                <select id="prefDuration" class="pref-select premium-select">
+                                    <option value="45">45 min</option>
+                                    <option value="50" selected>50 min</option>
+                                    <option value="60">60 min</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="input-sublabel">nº clases</label>
+                            <select id="prefTotalClasses" class="pref-select premium-select">
+                                <option value="1">1 clase</option>
+                                <option value="4">4 clases</option>
+                                <option value="8">8 clases</option>
+                                <option value="12" selected>12 clases</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="input-sublabel">materiales</label>
+                            <div class="mat-chips">
+                                <label class="mat-chip"><input type="checkbox" value="Conos" class="mat-check" checked> <span>conos</span></label>
+                                <label class="mat-chip"><input type="checkbox" value="Aros" class="mat-check" checked> <span>aros</span></label>
+                                <label class="mat-chip"><input type="checkbox" value="Cuerdas" class="mat-check"> <span>cuerdas</span></label>
+                                <label class="mat-chip"><input type="checkbox" value="Balones" class="mat-check" checked> <span>balones</span></label>
+                            </div>
+                        </div>
+                    </div>
+                </details>
+
+                <!-- Select oculto para no romper script.js -->
+                <div style="display: none;">
+                    <select id="skillSelect" class="pref-select premium-select" onchange="onSkillSelectChange(this)">
+                        <option value="auto" selected>✨ Detección Automática</option>
+                        <option value="carrera">Carrera</option>
+                        <option value="salto">Salto Horizontal</option>
+                        <option value="marcha">Marcha</option>
+                        <option value="salto_unipodal">Salto Unipodal</option>
+                        <option value="lanzar">Lanzamiento Sobre Hombro</option>
+                        <option value="atrapar">Recepción y Atrape</option>
+                        <option value="patear">Patear</option>
+                        <option value="equilibrio">Equilibrio Dinámico</option>
+                        <option value="equilibrio_estatico">Equilibrio Estático</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="sidebar-footer">
+                <span>batería hmb · gonzález & montoya</span>
+            </div>
+        </aside>
+
+        <!-- ÁREA PRINCIPAL -->
+        <main class="main-workspace">
+            <!-- TOPBAR -->
+            <header class="glass-topbar">
+                <div class="topbar-left">
+                    <button class="menu-btn" onclick="toggleSidebar()" aria-label="Abrir menú">
+                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                    </button>
+                    <div class="workspace-title">
+                        <h1 id="mainHeaderTitle">evaluación biomecánica</h1>
+                    </div>
+                </div>
+                
+                <div class="engine-switch-modern" id="engineBar">
+                    <div class="toggle-pill">
+                        <input type="radio" id="localEngine" name="engine" checked onclick="setEngineMode('local')">
+                        <label for="localEngine">⚡ análisis rápido (sin internet)</label>
+                        <input type="radio" id="cloudEngine" name="engine" onclick="setEngineMode('gemini')">
+                        <label for="cloudEngine">☁️ análisis detallado (con IA)</label>
+                        <div class="toggle-slider"></div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="workspace-content">
+                <!-- WIZARD PROGRESS BAR -->
+                <div class="wizard-progress">
+                    <div class="wizard-step active" id="wizTab1">1. habilidad</div>
+                    <div class="wizard-step" id="wizTab2">2. video</div>
+                    <div class="wizard-step" id="wizTab3">3. resultado</div>
+                </div>
+
+                <!-- MODO GEMINI API KEY (Oculto por defecto) -->
+                <div class="glass-panel api-panel only-gemini" id="viewGeminiContext" style="display: none;">
+                    <div class="key-config-row" id="keyConfigInputRow">
+                        <input type="password" id="apiKeyInput" placeholder="API Key de Google AI Studio..." autocomplete="off" class="premium-input">
+                        <button type="button" class="btn-primary" id="btnSaveKey" onclick="saveGeminiKey()">conectar</button>
+                    </div>
+                    <div class="key-connected-row" id="keyConnectedRow" style="display: none;">
+                        <span class="connected-badge"><span class="dot-green"></span> conectado</span>
+                        <span class="key-masked" id="keyMaskedText">AIzaSy••••••••</span>
+                        <button type="button" class="btn-ghost" onclick="editGeminiKey()">cambiar</button>
+                    </div>
+                </div>
+
+                <!-- PANEL DE GRUPO -->
+                <div class="glass-panel group-panel" id="groupPanel" style="display: none;">
+                    <div id="groupSetup" class="group-setup-box">
+                        <div class="group-info">
+                            <h3>evaluación grupal</h3>
+                            <p>tamaño del aula:</p>
+                        </div>
+                        <div class="group-controls">
+                            <input type="number" id="totalStudents" min="1" max="60" value="30" class="premium-input-number">
+                            <button class="btn-primary" onclick="startGroupMode()">iniciar</button>
+                        </div>
+                    </div>
+                    <div class="group-progress" id="groupProgress" style="display: none;">
+                        <div class="progress-info">
+                            <span id="groupCounterText">estudiante 1 de 30</span>
+                            <span id="groupPctText">0%</span>
+                        </div>
+                        <div class="progress-bar-bg"><div class="progress-bar-fill" id="groupProgressFill" style="width: 0%;"></div></div>
+                        <div class="group-actions">
+                            <button class="btn-primary" id="btnFinishGroup" onclick="generateGroupPlan()">generar plan</button>
+                            <button class="btn-ghost" onclick="resetGroupAssessment()">reiniciar</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- WIZARD STEP 1: HABILIDAD -->
+                <div id="step1" class="wizard-pane active-pane">
+                    <h2 class="step-title">elige la habilidad a evaluar</h2>
+                    <div class="skill-cards-grid">
+                        <div class="skill-card auto-detect" onclick="selectSkillWizard('auto')">
+                            <div class="skill-icon">✨</div>
+                            <div class="skill-name">detección automática (ia)</div>
+                        </div>
+                        <div class="skill-card" onclick="selectSkillWizard('carrera')">
+                            <div class="skill-icon">🏃‍♂️</div>
+                            <div class="skill-name">carrera</div>
+                        </div>
+                        <div class="skill-card" onclick="selectSkillWizard('salto')">
+                            <div class="skill-icon">🦘</div>
+                            <div class="skill-name">salto</div>
+                        </div>
+                        <div class="skill-card" onclick="selectSkillWizard('marcha')">
+                            <div class="skill-icon">🚶</div>
+                            <div class="skill-name">marcha</div>
+                        </div>
+                        <div class="skill-card" onclick="selectSkillWizard('salto_unipodal')">
+                            <div class="skill-icon">🦿</div>
+                            <div class="skill-name">salto unipodal</div>
+                        </div>
+                        <div class="skill-card" onclick="selectSkillWizard('lanzar')">
+                            <div class="skill-icon">⚾</div>
+                            <div class="skill-name">lanzar</div>
+                        </div>
+                        <div class="skill-card" onclick="selectSkillWizard('atrapar')">
+                            <div class="skill-icon">🧤</div>
+                            <div class="skill-name">atrapar</div>
+                        </div>
+                        <div class="skill-card" onclick="selectSkillWizard('patear')">
+                            <div class="skill-icon">⚽</div>
+                            <div class="skill-name">patear</div>
+                        </div>
+                        <div class="skill-card" onclick="selectSkillWizard('equilibrio')">
+                            <div class="skill-icon">🧘</div>
+                            <div class="skill-name">equilibrio dinámico</div>
+                        </div>
+                        <div class="skill-card" onclick="selectSkillWizard('equilibrio_estatico')">
+                            <div class="skill-icon">🦩</div>
+                            <div class="skill-name">equilibrio estático</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- WIZARD STEP 2: VIDEO -->
+                <div id="step2" class="wizard-pane" style="display: none;">
+                    <div class="step-header-row">
+                        <h2 class="step-title">sube el video del estudiante</h2>
+                        <span class="badge" id="skillAutoBadge" style="display: none;"></span> <!-- Hidden from UI but kept for ID logic -->
+                        <span id="currentSkillSubtitle" style="color: var(--text-secondary); font-size: 0.9rem;">(detección automática)</span>
+                    </div>
+                    
+                    <div class="upload-hero giant-hero">
+                        <div class="upload-zone modern-dropzone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+                            <div class="drop-icon" id="uzIcon">
+                                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                            </div>
+                            <h3 id="uzTitle">sube o arrastra el video aquí</h3>
+                            <p id="uzSub">formatos: MP4, MOV, JPG (recomendado 3-5 seg)</p>
+                            <button class="btn-upload">seleccionar archivo</button>
+                        </div>
+                        <input type="file" id="fileInput" accept="video/*,image/*" style="display:none" onchange="handleFileWrapper(event)">
+                    </div>
+
+                    <div style="text-align: center; margin-top: 20px;">
+                        <button class="btn-ghost" onclick="goToStep(1)">← volver a habilidades</button>
+                    </div>
+                </div>
+
+                <!-- WIZARD STEP 3: RESULTADO -->
+                <div id="step3" class="wizard-pane" style="display: none;">
+                    <div class="result-card glass-panel">
+                        <div class="result-header">
+                            <div class="result-icon-box">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                            </div>
+                            <div class="result-title-group">
+                                <h3>resultado de la evaluación</h3>
+                                <p>plan de clase e informe autogenerado</p>
+                            </div>
+                            <button class="btn-primary" onclick="if(typeof downloadWordReport === 'function') downloadWordReport(); else alert('Simulación: Descargar Word');">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px; vertical-align: text-bottom;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                descargar plan (word)
+                            </button>
+                        </div>
+                        
+                        <!-- HISTORIAL / CHAT -->
+                        <div class="chat-area" id="chatScroll">
+                            <div class="msg bot">
+                                <div class="msg-av">AG</div>
+                                <div class="bubble">
+                                    <h4>bienvenido al asistente de evaluación</h4>
+                                    <p>una vez analices un video, el informe aparecerá aquí.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- INPUT INFERIOR -->
+                        <div class="input-container" style="border-top: 1px solid var(--border-color); padding-top: 12px; margin-top: 12px;">
+                            <textarea id="userInput" placeholder="añadir notas u observaciones docentes..." onkeydown="handleKey(event)" rows="1" class="modern-textarea"></textarea>
+                            <button class="btn-send" id="sendBtn" onclick="sendMsg()">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div style="text-align: center; margin-top: 20px;">
+                        <button class="btn-ghost" onclick="goToStep(2)">← evaluar nuevo video</button>
+                    </div>
+                </div>
+
+                <!-- DETALLES TÉCNICOS (COLAPSADO) -->
+                <details class="tech-details-accordion">
+                    <summary>
+                        <div class="acc-title">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                            detalles técnicos (depuración)
+                        </div>
+                        <svg class="acc-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </summary>
+                    <div class="tech-details-body">
+                        <!-- KEYFRAMES -->
+                        <div class="keyframe-section glass-panel" id="keyframeSection" style="display: none;">
+                            <div class="kf-header">
+                                <span>extracción biomecánica (WASM):</span>
+                                <span class="badge" id="keyframeCountBadge">0 cuadros</span>
+                            </div>
+                            <div class="keyframe-strip" id="keyframeStrip"></div>
+                        </div>
+
+                        <div class="video-grid-tech">
+                            <!-- ESTUDIANTE -->
+                            <div class="video-card student-card">
+                                <div class="card-header">
+                                    <span class="dot-indicator" id="studentStatus"></span>
+                                    estudiante (telemetría)
+                                </div>
+                                <div class="player-wrapper" id="studentPlayerArea">
+                                    <div class="empty-state" id="studentPlaceholder">
+                                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line></svg>
+                                        <span>esperando medios</span>
+                                    </div>
+                                    <video id="studentVideoPlayer" style="display:none;" autoplay loop muted playsinline></video>
+                                    <img id="studentImgPreview" style="display:none;" alt="Evidencia estudiante" />
+                                    <div class="scan-overlay" id="scanOverlay" style="display: none;">
+                                        <div class="scan-line"></div>
+                                    </div>
+                                </div>
+                                <div class="card-footer" id="telemetryFooter">
+                                    <span id="fpsCounter" class="stat">FPS: --</span>
+                                    <span id="frameDensity" class="stat">muestreo: automático</span>
+                                </div>
+                            </div>
+
+                            <!-- PATRÓN CGI -->
+                            <div class="video-card pattern-card">
+                                <div class="card-header">
+                                    <span class="dot-indicator active"></span>
+                                    <span id="avatarTitle">patrón cgi</span>
+                                </div>
+                                <div class="player-wrapper" id="avatarArea">
+                                    <div class="empty-state" id="avatarPlaceholder">
+                                        <span class="pattern-icon" id="avatarIcon">🤖</span>
+                                        <span class="pattern-name" id="avatarSkillName">referencia HMB</span>
+                                        <span class="pattern-desc" id="avatarSkillDesc">esperando habilidad...</span>
+                                    </div>
+                                    <video id="avatarVideoPlayer" style="display:none; width: 100%; height: 100%; object-fit: cover; position: absolute;" autoplay loop muted playsinline></video>
+                                </div>
+                                <div class="card-footer">
+                                    <span class="stat">motor autónomo local</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </details>
+            </div>
+        </main>
+    </div>
+
+    <!-- MODAL -->
+    <div class="modal-overlay" id="recordingModal" onclick="closeModalOnOutside(event)">
+        <!-- Se puede estilizar desde CSS -->
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // LÓGICA DEL WIZARD (añadida directamente o puede ir a script.js)
+        function goToStep(stepNumber) {
+            // Update tabs
+            document.querySelectorAll('.wizard-step').forEach((el, index) => {
+                if (index + 1 === stepNumber) {
+                    el.classList.add('active');
+                } else {
+                    el.classList.remove('active');
+                }
+            });
+            // Update panes
+            document.querySelectorAll('.wizard-pane').forEach((el, index) => {
+                if (index + 1 === stepNumber) {
+                    el.style.display = 'block';
+                    setTimeout(() => el.classList.add('active-pane'), 10);
+                } else {
+                    el.classList.remove('active-pane');
+                    el.style.display = 'none';
+                }
+            });
+        }
+
+        function selectSkillWizard(skillCode) {
+            const selectEl = document.getElementById('skillSelect');
+            if (selectEl) {
+                selectEl.value = skillCode;
+                // Trigger change event to keep script.js happy
+                selectEl.dispatchEvent(new Event('change'));
+            }
+            // Go to next step
+            goToStep(2);
+        }
+
+        // Wrapper to handle file upload and automatically proceed
+        async function handleFileWrapper(event) {
+            // First call the original function
+            if(typeof handleFile === 'function') {
+                await handleFile(event);
+            }
+            
+            // Wait a bit to simulate loading or processing start, then switch view.
+            // In a real scenario, we'd transition to step 3 when analysis is actually done,
+            // but for UI layout purposes, let's go to step 3 immediately or hook into the chat generation.
+            
+            // We can override addMsg or just move directly:
+            goToStep(3);
+        }
+        
+        // Helper to override addMsg from script.js to detect when analysis finishes
+        window.addEventListener('load', () => {
+            if(typeof addMsg === 'function') {
+                const originalAddMsg = addMsg;
+                window.addMsg = function(sender, text, html) {
+                    originalAddMsg(sender, text, html);
+                    // If the bot sends a message that looks like a result, ensure we are in step 3
+                    if (sender === 'bot' && (text.includes('Informe') || text.includes('Análisis') || text.includes('evaluación'))) {
+                        goToStep(3);
+                    }
+                };
+            }
+        });
+    </script>
+</body>
+</html>
