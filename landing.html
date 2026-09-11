@@ -24,12 +24,19 @@
             <nav class="nav-links">
                 <a href="#tecnologia" class="nav-link">Tecnología</a>
                 <a href="#ciencia" class="nav-link">Batería Validada</a>
-                <a href="#doble-motor" class="nav-link">Doble Motor (WASM & IA)</a>
+                <a href="#doble-motor" class="nav-link">Doble Motor (WASM &amp; IA)</a>
                 <a href="#habilidades" class="nav-link">Habilidades HMB</a>
                 <a href="#impacto" class="nav-link">Impacto Escolar</a>
             </nav>
 
             <div class="nav-actions">
+                <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Abrir menú de navegación">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                </button>
                 <a href="index.html" class="btn-nav-dashboard" id="btnGoDashboard">
                     <span>Dashboard</span>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -40,6 +47,27 @@
             </div>
         </div>
     </header>
+
+    <!-- MOBILE NAVIGATION OVERLAY -->
+    <div class="mobile-nav-overlay" id="mobileNavOverlay">
+        <button class="mobile-nav-close" id="mobileNavClose" aria-label="Cerrar menú">&times;</button>
+        <nav class="mobile-nav-links">
+            <a href="#tecnologia" class="mobile-nav-link">Tecnología</a>
+            <a href="#ciencia" class="mobile-nav-link">Batería Validada</a>
+            <a href="#doble-motor" class="mobile-nav-link">Doble Motor (WASM & IA)</a>
+            <a href="#habilidades" class="mobile-nav-link">Habilidades HMB</a>
+            <a href="#impacto" class="mobile-nav-link">Impacto Escolar</a>
+        </nav>
+        <div class="mobile-nav-cta">
+            <a href="index.html" class="btn-nav-dashboard">
+                <span>Ir al Dashboard</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+            </a>
+        </div>
+    </div>
 
     <!-- HERO SECTION -->
     <section class="hero-section">
@@ -495,6 +523,57 @@
             </div>
         </div>
     </footer>
+
+    <script>
+    // Mobile navigation menu toggle
+    (function() {
+        const menuBtn = document.getElementById('mobileMenuBtn');
+        const overlay = document.getElementById('mobileNavOverlay');
+        const closeBtn = document.getElementById('mobileNavClose');
+        const navLinks = overlay ? overlay.querySelectorAll('.mobile-nav-link') : [];
+
+        function openMenu() {
+            if (overlay) {
+                overlay.style.display = 'flex';
+                requestAnimationFrame(() => {
+                    overlay.classList.add('active');
+                });
+                document.body.style.overflow = 'hidden';
+            }
+        }
+
+        function closeMenu() {
+            if (overlay) {
+                overlay.classList.remove('active');
+                setTimeout(() => {
+                    overlay.style.display = 'none';
+                }, 250);
+                document.body.style.overflow = '';
+            }
+        }
+
+        if (menuBtn) menuBtn.addEventListener('click', openMenu);
+        if (closeBtn) closeBtn.addEventListener('click', closeMenu);
+
+        navLinks.forEach(link => {
+            link.addEventListener('click', closeMenu);
+        });
+
+        // Close on overlay background click
+        if (overlay) {
+            overlay.addEventListener('click', function(e) {
+                if (e.target === overlay) closeMenu();
+            });
+        }
+
+        // Close on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && overlay && overlay.classList.contains('active')) {
+                closeMenu();
+            }
+        });
+    })();
+    </script>
 </body>
 
 </html>

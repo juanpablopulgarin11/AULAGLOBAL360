@@ -110,8 +110,9 @@ body {
 .app {
     display: flex;
     flex-direction: column;
-    min-height: 100vh;
-    min-height: 100dvh;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
     transition: background-color 0.25s var(--ease);
 }
 
@@ -344,6 +345,7 @@ body {
     display: flex;
     flex-direction: column;
     overflow-y: auto;
+    min-height: 0;
     padding: 0;
 }
 
@@ -1834,7 +1836,33 @@ body {
 }
 
 /* ============================================================================
-   RESPONSIVE (≤ 900px - tablet)
+   RESPONSIVE — DESKTOP PEQUEÑO (≤ 1280px)
+   ============================================================================ */
+@media (max-width: 1280px) {
+    .wizard-step {
+        max-width: 720px;
+    }
+}
+
+/* ============================================================================
+   RESPONSIVE — TABLET LANDSCAPE (≤ 1024px)
+   ============================================================================ */
+@media (max-width: 1024px) {
+    .wizard-step {
+        max-width: 100%;
+    }
+
+    .tech-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .telemetry-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* ============================================================================
+   RESPONSIVE — TABLET PORTRAIT (≤ 900px)
    ============================================================================ */
 @media (max-width: 900px) {
     .app-header {
@@ -1919,22 +1947,556 @@ body {
     .tech-grid {
         grid-template-columns: 1fr 1fr;
     }
-}
 
-@media (max-width: 500px) {
-    .skill-grid {
-        grid-template-columns: 1fr 1fr;
+    /* Diagnosis card adjustments */
+    .diag-header-bar {
+        flex-direction: column;
+        align-items: flex-start;
     }
 
+    .stage-badge {
+        align-self: flex-start;
+    }
+
+    /* Tables: horizontal scroll */
+    .diag-table {
+        display: block;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Group bar */
+    .group-setup-box {
+        flex-direction: column;
+        gap: 10px;
+        align-items: flex-start;
+    }
+
+    .group-setup-controls {
+        width: 100%;
+    }
+
+    .group-setup-controls input {
+        flex: 1;
+    }
+
+    .btn-start-group {
+        flex: 1;
+    }
+}
+
+/* ============================================================================
+   RESPONSIVE — TABLET PEQUEÑA / PHABLET (≤ 768px)
+   ============================================================================ */
+@media (max-width: 768px) {
+    .maturity-gauge-row {
+        flex-direction: column;
+        text-align: center;
+        gap: 10px;
+    }
+
+    .gauge-details {
+        width: 100%;
+    }
+
+    .drawer-row {
+        grid-template-columns: 1fr;
+    }
+
+    .step-row {
+        flex-direction: column;
+    }
+
+    .step-num {
+        align-self: flex-start;
+    }
+
+    .modal-content {
+        width: 96%;
+        max-width: 96%;
+    }
+
+    .modal-header {
+        padding: 12px 16px;
+    }
+
+    .modal-body {
+        padding: 16px;
+    }
+
+    .modal-title {
+        font-size: 13px;
+    }
+
+    /* Preview media */
+    .preview-media {
+        max-height: 220px;
+    }
+
+    .preview-media video,
+    .preview-media img {
+        max-height: 220px;
+    }
+
+    /* Key connected row */
+    .key-connected-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+    }
+
+    /* Processing bar */
+    .processing-bar {
+        font-size: 12px;
+        padding: 12px;
+    }
+
+    /* Selected skill bar */
+    .selected-skill-bar {
+        flex-wrap: wrap;
+    }
+
+    .change-skill-btn {
+        width: 100%;
+        text-align: center;
+        padding: 6px;
+    }
+}
+
+/* ============================================================================
+   RESPONSIVE — MÓVIL GRANDE (≤ 640px)
+   ============================================================================ */
+@media (max-width: 640px) {
+    .wizard-step {
+        padding: 16px 14px;
+    }
+
+    .step-intro {
+        margin-bottom: 20px;
+    }
+
+    .step-heading {
+        font-size: 16px;
+    }
+
+    .step-desc {
+        font-size: 13px;
+    }
+
+    .skill-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+    }
+
+    .skill-card {
+        padding: 12px 6px;
+        min-height: 85px;
+    }
+
+    .skill-icon {
+        font-size: 22px;
+    }
+
+    .skill-name {
+        font-size: 11.5px;
+    }
+
+    .skill-card--auto {
+        padding: 12px 14px;
+    }
+
+    .upload-zone {
+        padding: 24px 14px;
+    }
+
+    .uz-title {
+        font-size: 13px;
+    }
+
+    .uz-sub {
+        font-size: 11px;
+    }
+
+    .telemetry-grid {
+        grid-template-columns: 1fr;
+    }
+
+    /* Buttons full width */
+    .btn-analyze {
+        font-size: 14px;
+        padding: 12px 20px;
+    }
+
+    .btn-new-eval {
+        width: 100%;
+    }
+
+    .btn-export-doc,
+    .btn-export-plan {
+        font-size: 12px;
+        padding: 10px 14px;
+    }
+
+    /* Diag card */
+    .diag-card {
+        padding: 16px 14px;
+    }
+
+    .diag-title {
+        font-size: 13px;
+    }
+
+    .didact-card {
+        padding: 16px 14px;
+    }
+
+    /* Group bar */
+    .group-bar {
+        padding: 10px 14px;
+    }
+
+    .group-actions {
+        flex-direction: column;
+    }
+
+    .btn-finish-group,
+    .btn-reset-group {
+        width: 100%;
+        text-align: center;
+    }
+
+    /* Profe cue box */
+    .profe-cue-box {
+        font-size: 12px;
+        padding: 10px 12px;
+    }
+
+    /* Keyframe cards */
+    .keyframe-card {
+        flex: 0 0 85px;
+    }
+
+    .keyframe-card img {
+        height: 50px;
+    }
+
+    /* Stepper */
+    .stepper {
+        padding: 8px 10px;
+    }
+
+    .step-tab {
+        padding: 5px 6px;
+    }
+
+    .step-num-badge {
+        width: 22px;
+        height: 22px;
+        font-size: 10px;
+    }
+
+    .step-connector {
+        width: 14px;
+    }
+
+    /* Tech details */
+    .tech-summary {
+        padding: 8px 14px;
+        font-size: 11px;
+    }
+
+    .tech-body {
+        padding: 0 14px 12px;
+    }
+
+    /* Drawer */
+    .drawer-body {
+        padding: 14px 16px;
+    }
+
+    .drawer-header {
+        padding: 14px 16px;
+    }
+
+    .drawer-footer {
+        padding: 12px 16px;
+        font-size: 10px;
+    }
+
+    /* Custom alert */
+    .custom-alert-card {
+        max-width: 100%;
+    }
+
+    .custom-alert-body {
+        padding: 18px 16px;
+    }
+
+    .custom-alert-footer {
+        padding: 12px 16px 14px;
+        flex-direction: column;
+    }
+
+    .btn-alert-confirm,
+    .btn-alert-cancel {
+        width: 100%;
+        text-align: center;
+    }
+
+    /* Error box */
+    .error-box {
+        font-size: 11px;
+    }
+}
+
+/* ============================================================================
+   RESPONSIVE — MÓVIL ESTÁNDAR (≤ 480px)
+   ============================================================================ */
+@media (max-width: 480px) {
     .header-name {
         display: none;
     }
 
     .toggle-opt {
         font-size: 10.5px;
+        padding: 6px 6px;
+    }
+
+    .toggle-dot {
+        width: 6px;
+        height: 6px;
+    }
+
+    .mode-pill {
+        font-size: 10px;
+        padding: 3px 8px;
+    }
+
+    .config-btn {
+        padding: 6px 10px;
+        font-size: 11.5px;
     }
 
     .tech-grid {
         grid-template-columns: 1fr;
+    }
+
+    .skill-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .wizard-step {
+        padding: 14px 12px;
+    }
+
+    .step-heading {
+        font-size: 15px;
+    }
+
+    .step-desc {
+        font-size: 12px;
+    }
+
+    /* Modal compact */
+    .modal-body {
+        padding: 14px 12px;
+    }
+
+    .modal-header {
+        padding: 10px 14px;
+    }
+
+    /* Alert compact */
+    .custom-alert-body {
+        flex-direction: column;
+        text-align: center;
+        gap: 10px;
+    }
+
+    .custom-alert-icon-wrap {
+        align-self: center;
+    }
+
+    .custom-alert-text p {
+        font-size: 12.5px;
+    }
+
+    .custom-alert-header {
+        padding: 12px 14px;
+    }
+
+    /* Maturity gauge */
+    .gauge-circle {
+        width: 44px;
+        height: 44px;
+        font-size: 14px;
+    }
+
+    /* Angle grid cards */
+    .angle-card {
+        padding: 10px 8px;
+    }
+
+    .angle-card h5 {
+        font-size: 11px;
+    }
+
+    .angle-card p {
+        font-size: 10px;
+    }
+
+    /* Obs section */
+    .obs-section textarea {
+        font-size: 12px;
+        padding: 8px 12px;
+    }
+
+    /* Mat grid */
+    .mat-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .mat-grid label {
+        font-size: 11.5px;
+        padding: 6px 8px;
+    }
+}
+
+/* ============================================================================
+   RESPONSIVE — MÓVIL PEQUEÑO (≤ 375px)
+   ============================================================================ */
+@media (max-width: 375px) {
+    .app-header {
+        padding: 6px 10px;
+        gap: 6px;
+    }
+
+    .wizard-step {
+        padding: 12px 10px;
+    }
+
+    .step-heading {
+        font-size: 14px;
+    }
+
+    .step-desc {
+        font-size: 11.5px;
+    }
+
+    .stepper {
+        padding: 6px 8px;
+    }
+
+    .step-tab {
+        padding: 4px 5px;
+    }
+
+    .step-num-badge {
+        width: 20px;
+        height: 20px;
+        font-size: 9px;
+    }
+
+    .step-connector {
+        width: 10px;
+    }
+
+    .gauge-circle {
+        width: 40px;
+        height: 40px;
+        font-size: 13px;
+    }
+
+    .config-btn {
+        padding: 5px 8px;
+        font-size: 11px;
+    }
+
+    .config-btn svg {
+        width: 14px;
+        height: 14px;
+    }
+
+    .skill-card {
+        padding: 10px 4px;
+        min-height: 75px;
+    }
+
+    .skill-icon {
+        font-size: 20px;
+    }
+
+    .skill-name {
+        font-size: 11px;
+    }
+
+    .btn-analyze {
+        font-size: 13px;
+        padding: 11px 16px;
+    }
+
+    .diag-card,
+    .didact-card {
+        padding: 14px 10px;
+    }
+
+    .diag-title {
+        font-size: 12.5px;
+    }
+
+    .diag-meta {
+        font-size: 10.5px;
+    }
+
+    .upload-zone {
+        padding: 20px 10px;
+    }
+
+    .selected-skill-bar {
+        padding: 8px 12px;
+        gap: 8px;
+    }
+
+    .selected-skill-text {
+        font-size: 12px;
+    }
+
+    .selected-skill-icon {
+        font-size: 18px;
+    }
+
+    /* Group bar */
+    .group-bar {
+        padding: 8px 10px;
+    }
+
+    .group-setup-text strong {
+        font-size: 12px;
+    }
+
+    .group-setup-text span {
+        font-size: 11px;
+    }
+
+    .group-progress-info {
+        font-size: 11px;
+    }
+
+    /* Drawer */
+    .drawer-title {
+        font-size: 13px;
+    }
+
+    .drawer-label {
+        font-size: 11px;
+    }
+
+    .drawer-select {
+        font-size: 12px;
+    }
+
+    .mode-btn {
+        font-size: 12px;
+        padding: 7px 10px;
     }
 }
