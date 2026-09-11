@@ -758,6 +758,11 @@ function onSkillSelectChange(selectEl) {
     }
 
     updateCGIModel(val);
+
+    if (typeof capturedKeyframes !== 'undefined' && capturedKeyframes && capturedKeyframes.length > 0) {
+        assignKeyframeMilestones(capturedKeyframes, val !== 'auto' ? selectedSkillName : null);
+        renderKeyframeStrip(capturedKeyframes);
+    }
 }
 
 function selectSkill(btnEl, skillCode, skillName) {
@@ -1372,6 +1377,7 @@ async function extractAdaptiveVideoKeyframes(file, targetCount = 8) {
                     });
                 }
 
+                assignKeyframeMilestones(frames, initialTriggerInfo ? initialTriggerInfo.skillHint : null);
                 resolve(frames);
             } catch (err) {
                 reject(err);
@@ -1421,15 +1427,19 @@ async function extractImageKeyframe(file) {
                 }
 
                 const rawB64 = canvas.toDataURL('image/jpeg', 0.85).replace(/^data:image\/jpeg;base64,/, '');
-                resolve([{
+                const singleFrame = [{
                     time: '0.0s',
                     phase: 'Postura Estática',
                     data: rawB64,
                     previewUrl: previewCanvas.toDataURL('image/jpeg', 0.85),
                     mime: 'image/jpeg',
                     landmarks: landmarks,
-                    angles: angles
-                }]);
+                    angles: angles,
+                    isInitialTrigger: false,
+                    triggerInfo: null
+                }];
+                assignKeyframeMilestones(singleFrame, null);
+                resolve(singleFrame);
             };
             img.src = e.target.result;
         };
@@ -1443,25 +1453,29 @@ async function handleFile(event) {
     const file = event.target.files[0];
     if (!file) return;
 
-    const uzIcon = document.getElementById('uzIcon');
-    const uzTitle = document.getElementById('uzTitle');
-    const uzSub = document.getElementById('uzSub');
-    const uploadPreview = document.getElementById('uploadPreview');
-    const videoPlayer = document.getElementById('studentVideoPlayer');
-    const imgPreview = document.getElementById('studentImgPreview');
-    const scanOverlay = document.getElementById('scanOverlay');
-    const keyframeStrip = document.getElementById('keyframeStrip');
+    resetAnalysisState();
 
-    if (uzIcon) uzIcon.textContent = '⏳';
-    if (uzTitle) uzTitle.textContent = 'Procesando video del estudiante...';
-    if (uzSub) uzSub.textContent = 'Midiendo articulaciones en el navegador con MediaPipe...';
-    if (keyframeStrip) keyframeStrip.innerHTML = '';
-    capturedKeyframes = [];
+    const uzTitle = document.getElementById('uploadZoneTitle');
+    const uzSub = document.getElementById('uploadZoneSubtitle');
+    const uzIcon = document.getElementById('uploadZoneIcon');
+    const uploadPreview = document.getElementById('uploadPreview');
+    const videoPlayer = document.getElementById('videoPlayer');
+    const imgPreview = document.getElementById('imagePreview');
+    const scanOverlay = document.getElementById('scanOverlay');
+
+    if (uzIcon) uzIcon.innerHTML = '<span class="loading-spinner"></span>';
+    if (uzTitle) uzTitle.textContent = 'Procesando evidencia biomecánica...';
+    if (uzSub) uzSub.textContent = 'Analizando ángulos iniciales y muestreo adaptativo...';
 
     try {
         const fileUrl = URL.createObjectURL(file);
         if (uploadPreview) uploadPreview.style.display = 'block';
         if (scanOverlay) scanOverlay.style.display = 'block';
+
+        const currentSkillEl = document.getElementById('skillSelect');
+        const activeSkill = (currentSkillEl && currentSkillEl.value !== 'auto') 
+            ? currentSkillEl.options[currentSkillEl.selectedIndex].text 
+            : null;
 
         if (file.type.startsWith('video/')) {
             if (imgPreview) imgPreview.style.display = 'none';
@@ -1477,6 +1491,7 @@ async function handleFile(event) {
             if (frameDens) frameDens.textContent = 'Extrayendo fotogramas...';
 
             capturedKeyframes = await extractAdaptiveVideoKeyframes(file, 8);
+            assignKeyframeMilestones(capturedKeyframes, activeSkill);
         } else if (file.type.startsWith('image/')) {
             if (videoPlayer) videoPlayer.style.display = 'none';
             if (imgPreview) {
@@ -1490,11 +1505,12 @@ async function handleFile(event) {
             if (frameDens) frameDens.textContent = '1 fotograma capturado';
 
             capturedKeyframes = await extractImageKeyframe(file);
+            assignKeyframeMilestones(capturedKeyframes, activeSkill);
         }
 
         if (scanOverlay) scanOverlay.style.display = 'none';
 
-        // Renderizar miniaturas con esqueletos y ángulos
+        // Renderizar miniaturas enriquecidas con esqueletos, ángulos e hitos clave
         renderKeyframeStrip(capturedKeyframes);
 
         if (uzIcon) uzIcon.innerHTML = '✓';
@@ -1513,37 +1529,426 @@ async function handleFile(event) {
     }
 }
 
+// ============================================================================
+// ASIGNACIÓN CINEMÁTICA DE HITOS Y PUNTOS CLAVES DE CADA EJERCICIO (HMB)
+// ============================================================================
+
+function assignKeyframeMilestones(frames, skillName = null) {
+    if (!frames || frames.length === 0) return frames;
+
+    // Si no se especifica habilidad, inferirla preliminarmente a partir de la cinemática
+    let resolvedSkill = skillName;
+    if (!resolvedSkill || resolvedSkill === 'auto' || resolvedSkill === 'Detección Automática' || resolvedSkill.includes('Automática')) {
+        const telemetry = aggregateVideoTelemetry(frames);
+        resolvedSkill = classifySkillFromKinematics(telemetry, '');
+    }
+
+    const s = (resolvedSkill || '').toLowerCase();
+
+    // Resetear marcas previas
+    frames.forEach((f, idx) => {
+        f.isMilestonePeak = false;
+        f.isSubMilestone = false;
+        f.milestoneBadge = null;
+        f.milestoneTitle = `Cuadro #${idx + 1}`;
+        f.milestoneDesc = f.phase || `Cinemática en ${f.time}`;
+        f.milestoneColor = '#64748B';
+    });
+
+    const validFrames = frames.map((f, idx) => ({ f, idx, a: f.angles })).filter(item => item.a !== null);
+
+    if (s.includes('pate')) {
+        // HMB: PATEAR
+        // Criterio de impacto / patada: máximo péndulo anterior del tobillo de golpeo respecto a cadera y pie de apoyo
+        let maxKickScore = -Infinity;
+        let peakIdx = -1;
+
+        validFrames.forEach(({ idx, a }) => {
+            const xDist = a.ankleXDiff || 0;
+            const straddleBonus = a.isLegStraddle ? 0.08 : 0;
+            const kneeAsym = (a.kneeDiff || 0) / 180;
+            const yAsym = a.ankleYDiff || 0;
+            const kickScore = (xDist * 1.6) + straddleBonus + (kneeAsym * 0.3) + (yAsym * 0.4);
+
+            if (kickScore > maxKickScore) {
+                maxKickScore = kickScore;
+                peakIdx = idx;
+            }
+        });
+
+        if (peakIdx === -1) peakIdx = Math.min(frames.length - 1, Math.floor(frames.length * 0.55));
+
+        frames.forEach((f, idx) => {
+            if (idx === 0) {
+                f.milestoneTitle = '🎯 Ángulo Inicial';
+                f.milestoneDesc = 'Aproximación y orientación al balón';
+                f.milestoneColor = '#0D9488';
+                f.milestoneBadge = '🎯 ÁNGULO INICIAL';
+            } else if (idx < peakIdx) {
+                f.milestoneTitle = 'Apoyo y Carga';
+                f.milestoneDesc = 'Pie de apoyo firme y pierna atrás';
+                f.milestoneColor = '#3B82F6';
+            } else if (idx === peakIdx) {
+                f.isMilestonePeak = true;
+                f.milestoneBadge = '⚽ PATEADA EVIDENCIADA';
+                f.milestoneTitle = '⚽ Pateada Evidenciada';
+                f.milestoneDesc = 'Impacto al balón / Máx. péndulo';
+                f.milestoneColor = '#F59E0B';
+            } else {
+                f.milestoneTitle = 'Recobro y Salida';
+                f.milestoneDesc = 'Acompañamiento del pie y frenado';
+                f.milestoneColor = '#8B5CF6';
+            }
+        });
+
+    } else if (s.includes('salto horizontal') || (s.includes('salto') && !s.includes('unipodal'))) {
+        // HMB: SALTO HORIZONTAL
+        // Criterio:
+        // 1. Ápice de vuelo: tobillos más elevados en la pantalla (menor promedio Y)
+        // 2. Aterrizaje: contacto posterior con rodilla flexionada
+        let minAnkleY = Infinity;
+        let flightPeakIdx = -1;
+
+        validFrames.forEach(({ idx, a }) => {
+            if (idx > 0 && idx < frames.length - 1) {
+                const avgAnkleY = (a.lAnkleY + a.rAnkleY) / 2;
+                if (avgAnkleY < minAnkleY) {
+                    minAnkleY = avgAnkleY;
+                    flightPeakIdx = idx;
+                }
+            }
+        });
+
+        if (flightPeakIdx === -1) flightPeakIdx = Math.floor(frames.length * 0.5);
+
+        let landIdx = -1;
+        let minLandKnee = Infinity;
+        for (let i = flightPeakIdx + 1; i < frames.length; i++) {
+            const a = frames[i].angles;
+            if (a && a.kneeMin < minLandKnee) {
+                minLandKnee = a.kneeMin;
+                landIdx = i;
+            }
+        }
+        if (landIdx === -1) landIdx = Math.min(frames.length - 1, flightPeakIdx + 2);
+
+        frames.forEach((f, idx) => {
+            if (idx === 0) {
+                f.milestoneTitle = '🎯 Ángulo Inicial';
+                f.milestoneDesc = 'Flexión preparatoria bípode';
+                f.milestoneColor = '#0D9488';
+                f.milestoneBadge = '🎯 ÁNGULO INICIAL';
+            } else if (idx < flightPeakIdx) {
+                f.milestoneTitle = 'Despegue y Empuje';
+                f.milestoneDesc = 'Extensión triple y brazos al frente';
+                f.milestoneColor = '#3B82F6';
+            } else if (idx === flightPeakIdx) {
+                f.isMilestonePeak = true;
+                f.milestoneBadge = '🦘 VUELO EVIDENCIADO';
+                f.milestoneTitle = '🦘 Vuelo Bipodal Evidenciado';
+                f.milestoneDesc = 'Ápice aéreo / Ambos pies en aire';
+                f.milestoneColor = '#38BDF8';
+            } else if (idx === landIdx) {
+                f.isSubMilestone = true;
+                f.milestoneBadge = '🦿 ATERRIZAJE';
+                f.milestoneTitle = '🦿 Aterrizaje Evidenciado';
+                f.milestoneDesc = 'Contacto simultáneo y flexión';
+                f.milestoneColor = '#10B981';
+            } else if (idx > landIdx) {
+                f.milestoneTitle = 'Frenado y Control';
+                f.milestoneDesc = 'Equilibrio bipodal estático';
+                f.milestoneColor = '#64748B';
+            } else {
+                f.milestoneTitle = 'Fase de Caída';
+                f.milestoneDesc = 'Descenso previo al suelo';
+                f.milestoneColor = '#0284C7';
+            }
+        });
+
+    } else if (s.includes('corre') || s.includes('carrera')) {
+        // HMB: CARRERA
+        // Criterio: Máxima zancada sagital (apertura inter-femoral y separación podal)
+        let maxStride = -Infinity;
+        let strideIdx = -1;
+
+        validFrames.forEach(({ idx, a }) => {
+            const strideScore = (a.hipAngle || 0) + ((a.ankleXDiff || 0) * 130);
+            if (strideScore > maxStride) {
+                maxStride = strideScore;
+                strideIdx = idx;
+            }
+        });
+
+        if (strideIdx === -1) strideIdx = Math.floor(frames.length * 0.5);
+
+        frames.forEach((f, idx) => {
+            if (idx === 0) {
+                f.milestoneTitle = '🎯 Ángulo Inicial';
+                f.milestoneDesc = 'Inicio de tracción sagital';
+                f.milestoneColor = '#0D9488';
+                f.milestoneBadge = '🎯 ÁNGULO INICIAL';
+            } else if (idx === strideIdx) {
+                f.isMilestonePeak = true;
+                f.milestoneBadge = '🏃 ZANCADA EVIDENCIADA';
+                f.milestoneTitle = '🏃 Zancada y Vuelo Evidenciado';
+                f.milestoneDesc = 'Máx. amplitud sagital y suspensión';
+                f.milestoneColor = '#10B981';
+            } else if (idx % 2 === 0) {
+                f.milestoneTitle = 'Apoyo y Propulsión';
+                f.milestoneDesc = 'Contacto metatarsiano y empuje';
+                f.milestoneColor = '#0284C7';
+            } else {
+                f.milestoneTitle = 'Recobro Aéreo';
+                f.milestoneDesc = 'Elevación de rodilla libre';
+                f.milestoneColor = '#3B82F6';
+            }
+        });
+
+    } else if (s.includes('lanz') || s.includes('arroja') || s.includes('hombro')) {
+        // HMB: LANZAMIENTO SOBRE HOMBRO
+        // Criterio: Mano/muñeca por encima del hombro con máxima extensión del codo ejecutor
+        let maxThrowScore = -Infinity;
+        let throwIdx = -1;
+
+        validFrames.forEach(({ idx, a }) => {
+            if (idx > 0) {
+                const throwScore = (a.wristAboveShoulder ? 60 : 0) + (a.elbowMax || 0) + (a.elbowDiff * 0.5);
+                if (throwScore > maxThrowScore) {
+                    maxThrowScore = throwScore;
+                    throwIdx = idx;
+                }
+            }
+        });
+
+        if (throwIdx === -1) throwIdx = Math.floor(frames.length * 0.6);
+
+        frames.forEach((f, idx) => {
+            if (idx === 0) {
+                f.milestoneTitle = '🎯 Ángulo Inicial';
+                f.milestoneDesc = 'Armado detrás de la cabeza';
+                f.milestoneColor = '#0D9488';
+                f.milestoneBadge = '🎯 ÁNGULO INICIAL';
+            } else if (idx < throwIdx) {
+                f.milestoneTitle = 'Carga y Aceleración';
+                f.milestoneDesc = 'Rotación de tronco y palanca';
+                f.milestoneColor = '#3B82F6';
+            } else if (idx === throwIdx) {
+                f.isMilestonePeak = true;
+                f.milestoneBadge = '⚾ LANZAMIENTO EVIDENCIADO';
+                f.milestoneTitle = '⚾ Lanzamiento Evidenciado';
+                f.milestoneDesc = 'Soltada / Máx. extensión de brazo';
+                f.milestoneColor = '#F43F5E';
+            } else {
+                f.milestoneTitle = 'Recobro y Desaceleración';
+                f.milestoneDesc = 'Brazo cruza el torso y paso final';
+                f.milestoneColor = '#8B5CF6';
+            }
+        });
+
+    } else if (s.includes('atrap') || s.includes('recep')) {
+        // HMB: RECEPCIÓN Y ATRAPE
+        // Criterio: Mínima distancia entre muñecas con manos al frente
+        let minWristDist = Infinity;
+        let catchIdx = -1;
+
+        validFrames.forEach(({ idx, a }) => {
+            if (a.wristDist < minWristDist) {
+                minWristDist = a.wristDist;
+                catchIdx = idx;
+            }
+        });
+
+        if (catchIdx === -1) catchIdx = Math.floor(frames.length * 0.55);
+
+        frames.forEach((f, idx) => {
+            if (idx === 0) {
+                f.milestoneTitle = '🎯 Ángulo Inicial';
+                f.milestoneDesc = 'Brazos al frente en espera';
+                f.milestoneColor = '#0D9488';
+                f.milestoneBadge = '🎯 ÁNGULO INICIAL';
+            } else if (idx === catchIdx) {
+                f.isMilestonePeak = true;
+                f.milestoneBadge = '🧤 ATRAPE EVIDENCIADO';
+                f.milestoneTitle = '🧤 Atrape Evidenciado';
+                f.milestoneDesc = 'Contacto y manos en copa';
+                f.milestoneColor = '#8B5CF6';
+            } else if (idx > catchIdx) {
+                f.milestoneTitle = 'Control y Amortiguación';
+                f.milestoneDesc = 'Retención del móvil hacia el pecho';
+                f.milestoneColor = '#0284C7';
+            } else {
+                f.milestoneTitle = 'Acomodación Visual';
+                f.milestoneDesc = 'Seguimiento visual del móvil';
+                f.milestoneColor = '#3B82F6';
+            }
+        });
+
+    } else if (s.includes('unipodal') && s.includes('salto')) {
+        // HMB: SALTO UNIPODAL ("Pata Sola")
+        // Criterio: Elevación sobre un solo pie con gran asimetría vertical de tobillos
+        let maxUniScore = -Infinity;
+        let uniIdx = -1;
+
+        validFrames.forEach(({ idx, a }) => {
+            if (idx > 0 && idx < frames.length - 1) {
+                const score = (a.ankleYDiff * 120) + (a.kneeDiff * 0.6);
+                if (score > maxUniScore) {
+                    maxUniScore = score;
+                    uniIdx = idx;
+                }
+            }
+        });
+
+        if (uniIdx === -1) uniIdx = Math.floor(frames.length * 0.5);
+
+        frames.forEach((f, idx) => {
+            if (idx === 0) {
+                f.milestoneTitle = '🎯 Ángulo Inicial';
+                f.milestoneDesc = 'Flexión unipodal preparatoria';
+                f.milestoneColor = '#0D9488';
+                f.milestoneBadge = '🎯 ÁNGULO INICIAL';
+            } else if (idx === uniIdx) {
+                f.isMilestonePeak = true;
+                f.milestoneBadge = '🦿 DESPEGUE UNIPODAL';
+                f.milestoneTitle = '🦿 Despegue Unipodal Evidenciado';
+                f.milestoneDesc = 'Suspensión sobre un solo pie';
+                f.milestoneColor = '#EC4899';
+            } else if (idx > uniIdx) {
+                f.milestoneTitle = 'Amortiguación Unipodal';
+                f.milestoneDesc = 'Aterrizaje sobre el mismo pie';
+                f.milestoneColor = '#10B981';
+            } else {
+                f.milestoneTitle = 'Impulso Unipodal';
+                f.milestoneDesc = 'Empuje con pierna de apoyo';
+                f.milestoneColor = '#3B82F6';
+            }
+        });
+
+    } else if (s.includes('estatico') || s.includes('estático') || s.includes('flamenco')) {
+        // HMB: EQUILIBRIO ESTÁTICO UNIPODAL
+        let maxHoldScore = -Infinity;
+        let holdIdx = -1;
+
+        validFrames.forEach(({ idx, a }) => {
+            const score = (a.kneeDiff * 0.8) + (a.ankleYDiff * 140);
+            if (score > maxHoldScore) {
+                maxHoldScore = score;
+                holdIdx = idx;
+            }
+        });
+
+        if (holdIdx === -1) holdIdx = Math.floor(frames.length * 0.5);
+
+        frames.forEach((f, idx) => {
+            if (idx === 0) {
+                f.milestoneTitle = '🎯 Ángulo Inicial';
+                f.milestoneDesc = 'Elevación de pierna libre';
+                f.milestoneColor = '#0D9488';
+                f.milestoneBadge = '🎯 ÁNGULO INICIAL';
+            } else if (idx === holdIdx) {
+                f.isMilestonePeak = true;
+                f.milestoneBadge = '🦩 SOSTÉN EVIDENCIADO';
+                f.milestoneTitle = '🦩 Sostén Unipodal Evidenciado';
+                f.milestoneDesc = 'Estabilidad estática en un pie';
+                f.milestoneColor = '#06B6D4';
+            } else {
+                f.milestoneTitle = 'Ajuste Postural';
+                f.milestoneDesc = 'Brazos equilibradores y control';
+                f.milestoneColor = '#0284C7';
+            }
+        });
+
+    } else if (s.includes('dinamico') || s.includes('dinámico') || s.includes('linea') || s.includes('viga')) {
+        // HMB: EQUILIBRIO DINÁMICO
+        let midIdx = Math.floor(frames.length * 0.5);
+        frames.forEach((f, idx) => {
+            if (idx === 0) {
+                f.milestoneTitle = '🎯 Ángulo Inicial';
+                f.milestoneDesc = 'Inicio de alineación sobre eje';
+                f.milestoneColor = '#0D9488';
+                f.milestoneBadge = '🎯 ÁNGULO INICIAL';
+            } else if (idx === midIdx) {
+                f.isMilestonePeak = true;
+                f.milestoneBadge = '🧘 PASAJE EN LÍNEA';
+                f.milestoneTitle = '🧘 Pasaje en Línea Evidenciado';
+                f.milestoneDesc = 'Apoyo tándem con brazos en cruz';
+                f.milestoneColor = '#14B8A6';
+            } else {
+                f.milestoneTitle = 'Desplazamiento Guiado';
+                f.milestoneDesc = 'Avance controlado sin salirse';
+                f.milestoneColor = '#0284C7';
+            }
+        });
+
+    } else {
+        // HMB: MARCHA O PREDETERMINADO
+        let midIdx = Math.floor(frames.length * 0.5);
+        frames.forEach((f, idx) => {
+            if (idx === 0) {
+                f.milestoneTitle = '🎯 Ángulo Inicial';
+                f.milestoneDesc = 'Inicio del paso / despegue';
+                f.milestoneColor = '#0D9488';
+                f.milestoneBadge = '🎯 ÁNGULO INICIAL';
+            } else if (idx === midIdx) {
+                f.isMilestonePeak = true;
+                f.milestoneBadge = '🚶 PASAJE EVIDENCIADO';
+                f.milestoneTitle = '🚶 Contacto y Pasaje Evidenciado';
+                f.milestoneDesc = 'Apoyo de talón y braceo alterno';
+                f.milestoneColor = '#6366F1';
+            } else {
+                f.milestoneTitle = 'Fase de Apoyo / Oscilación';
+                f.milestoneDesc = 'Transición fluida del paso';
+                f.milestoneColor = '#0284C7';
+            }
+        });
+    }
+
+    return frames;
+}
+
 function renderKeyframeStrip(frames) {
     const keyframeSection = document.getElementById('keyframeSection');
     const keyframeStrip = document.getElementById('keyframeStrip');
     const keyframeCountBadge = document.getElementById('keyframeCountBadge');
 
-    if (!frames.length) {
-        keyframeSection.style.display = 'none';
+    if (!frames || !frames.length) {
+        if (keyframeSection) keyframeSection.style.display = 'none';
         return;
     }
 
-    keyframeSection.style.display = 'block';
-    keyframeCountBadge.textContent = `${frames.length} cuadros adaptativos`;
-    keyframeStrip.innerHTML = '';
+    if (keyframeSection) keyframeSection.style.display = 'block';
+    if (keyframeCountBadge) keyframeCountBadge.textContent = `${frames.length} cuadros adaptativos`;
+    if (keyframeStrip) keyframeStrip.innerHTML = '';
 
     frames.forEach((f, idx) => {
         const card = document.createElement('div');
-        card.className = 'keyframe-card';
+        const peakClass = f.isMilestonePeak 
+            ? 'milestone-peak' 
+            : (f.isInitialTrigger ? 'milestone-trigger' : (f.isSubMilestone ? 'milestone-subpeak' : ''));
+        card.className = `keyframe-card ${peakClass}`.trim();
 
         const angleChip = f.angles 
             ? `<div class="keyframe-angles"><span>🦵 ${f.angles.kneeMin}°</span><span>💪 ${f.angles.elbowAvg}°</span><span>📐 ${f.angles.trunkLean}°</span></div>`
-            : `<div class="keyframe-angles"><span>Cinemática detectada</span></div>`;
+            : `<div class="keyframe-angles"><span>Cinemática activa</span></div>`;
+
+        const bannerHTML = f.milestoneBadge 
+            ? `<div class="keyframe-milestone-banner" style="background:${f.milestoneColor || '#F59E0B'}">${f.milestoneBadge}</div>` 
+            : '';
 
         const isTrigger = f.isInitialTrigger;
         const tagText = isTrigger 
             ? `🎯 Ángulo Inicial · ${f.time}`
             : `#${idx + 1} · ${f.time}`;
-        const tagStyle = isTrigger 
+        const tagStyle = (isTrigger && !f.milestoneBadge) 
             ? `style="background: var(--accent, #0D9488); color: white; font-weight: 700; border: 1px solid var(--accent);"`
             : '';
 
+        const descHTML = f.milestoneDesc 
+            ? `<div class="keyframe-milestone-desc" title="${f.milestoneTitle || ''}: ${f.milestoneDesc}">${f.milestoneDesc}</div>`
+            : `<div class="keyframe-milestone-desc">${f.phase || 'Fase activa'}</div>`;
+
         card.innerHTML = `
+            ${bannerHTML}
             <img src="${f.previewUrl}" alt="Fotograma ${idx + 1}">
             <div class="keyframe-tag" ${tagStyle}>${tagText}</div>
             ${angleChip}
@@ -3070,9 +3475,9 @@ DEBES RESPONDER EXCLUSIVAMENTE CON UN OBJETO JSON VÁLIDO CON LA SIGUIENTE ESTRU
   "edad_calibrada": "${grade}",
   "estadio_gallahue": "Inicial | Elemental | Maduro",
   "porcentaje_madurez": 75,
-  "resumen_biomecanico": "Diagnóstico general de la cadena cinética fundamentado en los ángulos medidos y la rúbrica de la Batería HMB.",
+  "resumen_biomecanico": "Diagnóstico general de la cadena cinética citando explícitamente el número de fotograma donde se evidencia la acción cumbre (ej: 'En el Fotograma #4 se evidencia con claridad la pateada / impacto al balón...').",
   "criterios": [
-    { "criterio": "Nombre del criterio de la Batería HMB", "fase": "Vuelo/Recobro/Apoyo", "puntaje": 1, "observacion": "Comentario técnico citando el ángulo real" }
+    { "criterio": "Nombre del criterio de la Batería HMB", "fase": "Vuelo/Recobro/Apoyo", "puntaje": 1, "observacion": "Comentario técnico citando el fotograma y ángulo real" }
   ],
   "analisis_articular": {
     "angulos_principales": "Flexión rodilla: ${telemetry.minKneeAngle}°, Codos: ${telemetry.avgElbowAngle}°, Tronco: ${telemetry.avgTrunkAngle}°",
@@ -3088,9 +3493,16 @@ DEBES RESPONDER EXCLUSIVAMENTE CON UN OBJETO JSON VÁLIDO CON LA SIGUIENTE ESTRU
   ]
 }`;
 
-    const parts = [{ text: `Analiza los siguientes ${frames.length} fotogramas adaptativos del estudiante considerando la telemetría angular proporcionada e identifica la HMB:` }];
+    const parts = [{ text: `Analiza los siguientes ${frames.length} fotogramas adaptativos del estudiante considerando la telemetría angular proporcionada e identifica la HMB. En cada fotograma se detalla el hito cinemático detectado:` }];
 
-    frames.forEach(f => {
+    frames.forEach((f, idx) => {
+        const milestoneTag = f.isMilestonePeak 
+            ? `[★ HITO CUMBRE DEL EJERCICIO: ${f.milestoneTitle} (${f.milestoneDesc})]`
+            : (f.isInitialTrigger ? `[🎯 ÁNGULO INICIAL: ${f.milestoneTitle} (${f.milestoneDesc})]` : `[${f.milestoneTitle} (${f.milestoneDesc})]`);
+
+        parts.push({
+            text: `Fotograma #${idx + 1} (${f.time}) - ${milestoneTag}:`
+        });
         parts.push({
             inlineData: {
                 mimeType: f.mime,
@@ -3252,15 +3664,31 @@ function updateTechDetails(data) {
     if (capturedKeyframes && capturedKeyframes.length) {
         framesHTML = `
             <div style="margin-top:14px;">
-                <span class="tech-label" style="display:block; margin-bottom:6px;">Fotogramas adaptativos analizados (${capturedKeyframes.length}):</span>
+                <span class="tech-label" style="display:block; margin-bottom:6px;">Fotogramas adaptativos e hitos biomecánicos evidenciados (${capturedKeyframes.length}):</span>
                 <div class="keyframe-strip">
-                    ${capturedKeyframes.map((f, idx) => `
-                        <div class="keyframe-card">
-                            <img src="${f.previewUrl}" alt="Cuadro ${idx+1}">
-                            <div class="keyframe-tag">#${idx+1} · ${f.time}</div>
-                            ${f.angles ? `<div class="keyframe-angles"><span>🦵 ${f.angles.kneeMin}°</span><span>💪 ${f.angles.elbowAvg}°</span><span>📐 ${f.angles.trunkLean}°</span></div>` : ''}
-                        </div>
-                    `).join('')}
+                    ${capturedKeyframes.map((f, idx) => {
+                        const peakClass = f.isMilestonePeak 
+                            ? 'milestone-peak' 
+                            : (f.isInitialTrigger ? 'milestone-trigger' : (f.isSubMilestone ? 'milestone-subpeak' : ''));
+                        const bannerHTML = f.milestoneBadge 
+                            ? `<div class="keyframe-milestone-banner" style="background:${f.milestoneColor || '#F59E0B'}">${f.milestoneBadge}</div>` 
+                            : '';
+                        const descHTML = f.milestoneDesc 
+                            ? `<div class="keyframe-milestone-desc" title="${f.milestoneTitle || ''}: ${f.milestoneDesc}">${f.milestoneDesc}</div>`
+                            : `<div class="keyframe-milestone-desc">${f.phase || 'Fase activa'}</div>`;
+                        const angleHTML = f.angles 
+                            ? `<div class="keyframe-angles"><span>🦵 ${f.angles.kneeMin}°</span><span>💪 ${f.angles.elbowAvg}°</span><span>📐 ${f.angles.trunkLean}°</span></div>` 
+                            : '';
+                        return `
+                            <div class="keyframe-card ${peakClass}">
+                                ${bannerHTML}
+                                <img src="${f.previewUrl}" alt="Cuadro ${idx+1}">
+                                <div class="keyframe-tag">#${idx+1} · ${f.time}</div>
+                                ${descHTML}
+                                ${angleHTML}
+                            </div>
+                        `;
+                    }).join('')}
                 </div>
             </div>
         `;
@@ -3305,6 +3733,11 @@ function handleDiagnosisOutput(data, teacherPrefs) {
     globalDiagnosticoData = data;
     const didactica = generateDidacticPlan(data, teacherPrefs, isGroupActive);
     globalDidacticaData = didactica;
+
+    if (data && data.habilidad_detectada && capturedKeyframes && capturedKeyframes.length > 0) {
+        assignKeyframeMilestones(capturedKeyframes, data.habilidad_detectada);
+        renderKeyframeStrip(capturedKeyframes);
+    }
 
     if (selectedSkill === 'auto' && data && data.habilidad_detectada) {
         const nameToCode = {
