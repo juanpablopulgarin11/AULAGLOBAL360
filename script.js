@@ -6,6 +6,7 @@
 
 // ESTADO GLOBAL DE LA APLICACIÓN
 let apiKey = (localStorage.getItem('aula360_api_key') || '').trim();
+let cachedGeminiEndpoint = null;
 let currentEngineMode = localStorage.getItem('aula360_engine_mode') || 'local';
 let selectedSkill = 'auto';
 let selectedSkillName = 'Detección Automática (IA)';
@@ -462,7 +463,7 @@ function updateGeminiKeyUI() {
     }
 }
 
-function saveGeminiKey() {
+async function saveGeminiKey() {
     const inputEl = document.getElementById('apiKeyInput');
     const input = inputEl ? inputEl.value.trim() : '';
     if (!input) {
@@ -480,14 +481,63 @@ function saveGeminiKey() {
             icon: 'ℹ️'
         });
     }
+
     apiKey = input;
+    cachedGeminiEndpoint = null;
     localStorage.setItem('aula360_api_key', apiKey);
     updateGeminiKeyUI();
-    showAlert('Clave de Google AI Studio conectada exitosamente.', {
-        title: 'Conexión exitosa',
-        type: 'success',
-        icon: '✅'
-    });
+
+    const btnSave = document.getElementById('btnSaveKey');
+    const originalText = btnSave ? btnSave.textContent : 'Conectar';
+    if (btnSave) {
+        btnSave.disabled = true;
+        btnSave.textContent = 'Verificando...';
+    }
+
+    try {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+        const data = await res.json();
+
+        if (res.ok && data.models) {
+            showAlert('¡Clave de Google AI Studio conectada y verificada exitosamente! Tu proyecto tiene acceso a los modelos de Gemini Vision.', {
+                title: 'Conexión exitosa',
+                type: 'success',
+                icon: '✅'
+            });
+        } else if (data.error) {
+            const msg = data.error.message || '';
+            if (msg.includes('API_KEY_INVALID') || msg.includes('API key not valid')) {
+                showAlert('La clave ingresada no es válida en Google. Asegúrate de haberla copiado completa sin espacios.', {
+                    title: 'Clave no válida',
+                    type: 'error',
+                    icon: '❌'
+                });
+            } else if (msg.includes('Generative Language API has not been used') || msg.includes('SERVICE_DISABLED')) {
+                showAlert('Tu clave es válida, pero en tu proyecto de Google Cloud la <strong>Generative Language API</strong> está desactivada.<br><br>👉 Para solucionarlo: Habilita <strong>Generative Language API</strong> en Google Cloud Console o genera tu clave en <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color: #0d9488; text-decoration: underline; font-weight: 600;">Google AI Studio</a>.', {
+                    title: 'API no habilitada',
+                    type: 'warning',
+                    icon: '⚙️'
+                });
+            } else {
+                showAlert(`Clave conectada. Aviso de Google: ${msg}`, {
+                    title: 'Aviso de Google',
+                    type: 'warning',
+                    icon: '⚠️'
+                });
+            }
+        }
+    } catch (err) {
+        showAlert('Clave de Google AI Studio guardada localmente.', {
+            title: 'Clave guardada',
+            type: 'info',
+            icon: '🔑'
+        });
+    } finally {
+        if (btnSave) {
+            btnSave.disabled = false;
+            btnSave.textContent = originalText;
+        }
+    }
 }
 
 function editGeminiKey() {
@@ -504,6 +554,7 @@ function editGeminiKey() {
 
 function removeGeminiKey() {
     apiKey = '';
+    cachedGeminiEndpoint = null;
     localStorage.removeItem('aula360_api_key');
     updateGeminiKeyUI();
 }
@@ -2634,9 +2685,70 @@ function runLocalBiomechanicalEngine(skillCode, gradeCode, obsText, frames) {
     };
 }
 
-// LLAMADA A GEMINI VISION CON TELEMETRÍA ENRIQUECIDA
+// OBTENCIÓN DINÁMICA Y RESILIENTE DE ENDPOINTS DE GEMINI
+async function getGeminiCandidateEndpoints(key) {
+    if (cachedGeminiEndpoint) {
+        return [cachedGeminiEndpoint];
+    }
+
+    const staticFallbacks = [
+        { version: 'v1beta', model: 'gemini-2.0-flash' },
+        { version: 'v1',     model: 'gemini-1.5-flash' },
+        { version: 'v1beta', model: 'gemini-1.5-flash' },
+        { version: 'v1beta', model: 'gemini-1.5-flash-latest' },
+        { version: 'v1beta', model: 'gemini-2.0-flash-exp' }
+    ];
+
+    try {
+        const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
+        if (listRes.ok) {
+            const listData = await listRes.json();
+            if (listData.models && Array.isArray(listData.models)) {
+                const available = listData.models
+                    .filter(m => m.supportedGenerationMethods && m.supportedGenerationMethods.includes('generateContent'))
+                    .map(m => ({
+                        version: 'v1beta',
+                        model: m.name.replace(/^models\//, '')
+                    }));
+
+                if (available.length > 0) {
+                    available.sort((a, b) => {
+                        const score = (name) => {
+                            if (name.includes('2.0-flash')) return 100;
+                            if (name.includes('1.5-flash-latest')) return 85;
+                            if (name.includes('1.5-flash')) return 80;
+                            if (name.includes('1.5-pro')) return 60;
+                            if (name.includes('flash')) return 40;
+                            return 10;
+                        };
+                        return score(b.model) - score(a.model);
+                    });
+                    return available;
+                }
+            }
+        } else {
+            const errData = await listRes.json().catch(() => ({}));
+            const errMsg = errData?.error?.message || '';
+            if (errMsg.includes('API_KEY_INVALID') || errMsg.includes('API key not valid')) {
+                throw new Error('La clave API de Google AI Studio no es válida. Por favor revísala en Configurar clase.');
+            }
+            if (errMsg.includes('Generative Language API has not been used') || errMsg.includes('SERVICE_DISABLED')) {
+                throw new Error('La "Generative Language API" no está habilitada en tu proyecto de Google Cloud. Actívala en tu consola de Google Cloud o crea tu clave en Google AI Studio (aistudio.google.com).');
+            }
+        }
+    } catch (e) {
+        if (e.message.includes('clave API') || e.message.includes('Generative Language API')) {
+            throw e;
+        }
+        console.warn('No se pudo listar modelos dinámicamente, usando lista de respaldo:', e);
+    }
+
+    return staticFallbacks;
+}
+
+// LLAMADA A GEMINI VISION CON TELEMETRÍA ENRIQUECIDA Y RESILIENCIA MULTIMODELO
 async function callGeminiVision(skill, grade, obsText, frames) {
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    if (!apiKey) throw new Error('No hay clave API configurada');
 
     const telemetry = aggregateVideoTelemetry(frames);
     lastAnalyzedTelemetry = telemetry;
@@ -2729,25 +2841,60 @@ DEBES RESPONDER EXCLUSIVAMENTE CON UN OBJETO JSON VÁLIDO CON LA SIGUIENTE ESTRU
         }
     };
 
-    const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody)
-    });
+    const candidates = await getGeminiCandidateEndpoints(apiKey);
+    let lastError = null;
 
-    const data = await res.json();
-    if (!res.ok || data.error) {
-        const errDetail = (data.error && data.error.message) ? data.error.message : `HTTP ${res.status}: ${res.statusText}`;
-        throw new Error(errDetail);
+    for (const cand of candidates) {
+        const endpoint = `https://generativelanguage.googleapis.com/${cand.version}/models/${cand.model}:generateContent?key=${apiKey}`;
+        try {
+            console.log(`[Gemini IA] Intentando modelo: ${cand.model} (${cand.version})...`);
+            const res = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(requestBody)
+            });
+
+            const data = await res.json();
+            if (!res.ok || data.error) {
+                const errDetail = (data.error && data.error.message) ? data.error.message : `HTTP ${res.status}: ${res.statusText}`;
+
+                // Si el modelo no existe en esta versión/región, probar el siguiente candidato
+                if (errDetail.includes('is not found') || errDetail.includes('not supported') || res.status === 404) {
+                    lastError = new Error(errDetail);
+                    continue;
+                }
+
+                if (errDetail.includes('API_KEY_INVALID') || errDetail.includes('API key not valid')) {
+                    throw new Error('La clave API no es válida. Asegúrate de copiarla correctamente desde Google AI Studio.');
+                }
+                if (errDetail.includes('Generative Language API has not been used') || errDetail.includes('SERVICE_DISABLED')) {
+                    throw new Error('La "Generative Language API" no está habilitada en tu proyecto de Google Cloud. Actívala en la consola de Google Cloud o crea tu clave en Google AI Studio (aistudio.google.com).');
+                }
+
+                throw new Error(errDetail);
+            }
+
+            const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (!rawText) throw new Error('Respuesta vacía de Gemini');
+
+            const parsed = JSON.parse(cleanJSON(rawText));
+            parsed.telemetria_medida = telemetry;
+            parsed.es_deteccion_automatica = isAuto;
+            parsed.modelo_utilizado = cand.model;
+
+            cachedGeminiEndpoint = cand;
+            console.log(`[Gemini IA] Conectado exitosamente con ${cand.model}`);
+            return parsed;
+        } catch (err) {
+            lastError = err;
+            if (err.message.includes('no es válida') || err.message.includes('no está habilitada')) {
+                throw err;
+            }
+            console.warn(`[Gemini IA] Fallo con ${cand.model}:`, err.message);
+        }
     }
 
-    const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!rawText) throw new Error('Respuesta vacía de Gemini');
-
-    const parsed = JSON.parse(cleanJSON(rawText));
-    parsed.telemetria_medida = telemetry;
-    parsed.es_deteccion_automatica = isAuto;
-    return parsed;
+    throw lastError || new Error('No se pudo establecer conexión con ningún modelo de Gemini disponible');
 }
 
 function cleanJSON(text) {
