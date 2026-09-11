@@ -3724,26 +3724,56 @@ function runLocalBiomechanicalEngine(skillCode, gradeCode, obsText, frames) {
         'carrera': 'Carrera',
         'salto': 'Salto Horizontal',
         'salto_horizontal': 'Salto Horizontal',
+        'salto horizontal': 'Salto Horizontal',
         'marcha': 'Marcha',
         'salto_unipodal': 'Salto Unipodal',
+        'salto unipodal': 'Salto Unipodal',
         'lanzar': 'Lanzamiento Sobre Hombro',
         'lanzar_derecha': 'Lanzamiento Sobre Hombro',
         'lanzar_izquierda': 'Lanzamiento Sobre Hombro',
+        'lanzamiento': 'Lanzamiento Sobre Hombro',
+        'lanzamiento sobre hombro': 'Lanzamiento Sobre Hombro',
         'atrapar': 'Recepción y Atrape',
+        'recepcion': 'Recepción y Atrape',
+        'recepción': 'Recepción y Atrape',
+        'recepcion y atrape': 'Recepción y Atrape',
+        'recepción y atrape': 'Recepción y Atrape',
         'patear': 'Patear',
         'equilibrio': 'Equilibrio Dinámico',
         'equilibrio_dinamico': 'Equilibrio Dinámico',
-        'equilibrio_estatico': 'Equilibrio Estático Unipodal'
+        'equilibrio dinamico': 'Equilibrio Dinámico',
+        'equilibrio dinámico': 'Equilibrio Dinámico',
+        'equilibrio_estatico': 'Equilibrio Estático Unipodal',
+        'equilibrio estatico': 'Equilibrio Estático Unipodal',
+        'equilibrio estático': 'Equilibrio Estático Unipodal',
+        'equilibrio estático unipodal': 'Equilibrio Estático Unipodal'
     };
 
     // 1. Extraer telemetría real de los fotogramas
     const telemetry = aggregateVideoTelemetry(frames);
     lastAnalyzedTelemetry = telemetry;
 
-    // 2. Resolver la habilidad: si es 'auto', clasificar inteligentemente a partir de la cinemática
-    let resolvedSkill = skillMap[skillCode];
+    // 2. Resolver la habilidad: si es manual, respetar la selección; si es 'auto', clasificar con cinemática
+    let resolvedSkill = null;
     let isAutoDetected = false;
-    if (!resolvedSkill || skillCode === 'auto') {
+
+    if (skillCode && skillCode !== 'auto') {
+        const cleaned = skillCode.toLowerCase().trim();
+        resolvedSkill = skillMap[cleaned];
+        if (!resolvedSkill) {
+            if (cleaned.includes('salto') && cleaned.includes('unipodal')) resolvedSkill = 'Salto Unipodal';
+            else if (cleaned.includes('salto')) resolvedSkill = 'Salto Horizontal';
+            else if (cleaned.includes('carrera') || cleaned.includes('corre')) resolvedSkill = 'Carrera';
+            else if (cleaned.includes('marcha') || cleaned.includes('camina')) resolvedSkill = 'Marcha';
+            else if (cleaned.includes('lanz') || cleaned.includes('arroja')) resolvedSkill = 'Lanzamiento Sobre Hombro';
+            else if (cleaned.includes('atrap') || cleaned.includes('recep')) resolvedSkill = 'Recepción y Atrape';
+            else if (cleaned.includes('pate')) resolvedSkill = 'Patear';
+            else if (cleaned.includes('estatico') || cleaned.includes('estático')) resolvedSkill = 'Equilibrio Estático Unipodal';
+            else if (cleaned.includes('dinamico') || cleaned.includes('dinámico') || cleaned.includes('equilibrio')) resolvedSkill = 'Equilibrio Dinámico';
+        }
+    }
+
+    if (!resolvedSkill) {
         resolvedSkill = classifySkillFromKinematics(telemetry, obsText);
         isAutoDetected = true;
     }
@@ -3756,6 +3786,11 @@ function runLocalBiomechanicalEngine(skillCode, gradeCode, obsText, frames) {
     // 4. Evaluar cada criterio contra las reglas cuantitativas de la Batería HMB
     const evaluatedCriteria = [];
     const criticalErrors = [];
+
+    const ruleSet = biomechanicalRulesTable[resolvedSkill] || biomechanicalRulesTable['Carrera'];
+    if (!ruleSet || !ruleSet.criterios) {
+        throw new Error(`No se encontraron reglas biomecánicas para la habilidad: ${resolvedSkill}`);
+    }
 
     ruleSet.criterios.forEach(rule => {
         const res = rule.evaluar(telemetry);
@@ -3790,7 +3825,7 @@ function runLocalBiomechanicalEngine(skillCode, gradeCode, obsText, frames) {
         prueba_nro: ruleSet.prueba_nro || 1,
         puntaje_obtenido: `${passedCount}/${totalCount}`,
         bateria_referencia: 'Batería de Habilidades Motrices Básicas (5-11 años) · González Palacio, Montoya Grisales et al. (2021, Dialnet 7925607)',
-        edad_calibrada: gradeCode.replace('_', ' '),
+        edad_calibrada: (gradeCode || '7_anos').replace('_', ' '),
         estadio_gallahue: estadio,
         porcentaje_madurez: maturityPct,
         resumen_biomecanico: `${detectionOrigin} Evaluación cinemática instrumental según la **Batería de HMB (González Palacio & Montoya Grisales, 2021 · Dialnet 7925607)** mediante **MediaPipe Pose Tasks (WASM)** y **Máquinas de Estado Cinemáticas (FSM)**. Ciclo de fases completadas: [${fsmChain}]. El estudiante obtiene un puntaje de **${passedCount}/${totalCount} puntos (${maturityPct}%)**, ubicándose en **Estadio ${estadio}**. Parámetros articulares medidos: flexión de rodilla ${telemetry.minKneeAngle}°, braceo medio ${telemetry.avgElbowAngle}°, inclinación de tronco ${telemetry.avgTrunkAngle}° y simetría bilateral ${telemetry.symmetryScore}%.`,
@@ -3803,7 +3838,10 @@ function runLocalBiomechanicalEngine(skillCode, gradeCode, obsText, frames) {
         errores_criticos: criticalErrors.length ? criticalErrors : [
             { error: "Sin fallos biomecánicos críticos", impacto_biomecanico: "El estudiante demuestra adecuada coordinación articular e integración motriz acorde a los criterios de la Batería HMB." }
         ],
-        frases_profe: ruleSet.frases,
+        frases_profe: ruleSet.frases || [
+            "¡Excelente esfuerzo!",
+            "¡Continúa practicando para perfeccionar el patrón de movimiento!"
+        ],
         telemetria_medida: telemetry
     };
 }
@@ -4118,9 +4156,24 @@ async function sendMsg() {
                 type: 'warning',
                 icon: '⚡'
             });
+            try {
+                const fallback = runLocalBiomechanicalEngine(activeSkillCode, grade, userText, capturedKeyframes);
+                handleDiagnosisOutput(fallback, teacherPrefs);
+            } catch (fallbackErr) {
+                console.error('Error en fallback local:', fallbackErr);
+                showAlert(`Error en el análisis: ${fallbackErr.message || 'Verifique el video.'}`, {
+                    title: 'Error de análisis',
+                    type: 'danger',
+                    icon: '❌'
+                });
+            }
+        } else {
+            showAlert(`Error al ejecutar el motor local: ${err.message || 'Verifique el video.'}`, {
+                title: 'Error de análisis local',
+                type: 'danger',
+                icon: '❌'
+            });
         }
-        const fallback = runLocalBiomechanicalEngine(activeSkillCode, grade, userText, capturedKeyframes);
-        handleDiagnosisOutput(fallback, teacherPrefs);
     } finally {
         isAnalyzing = false;
         if (sendBtn) sendBtn.disabled = false;
