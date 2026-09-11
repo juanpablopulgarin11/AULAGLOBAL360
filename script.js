@@ -973,6 +973,371 @@ function calculateAngle3D(A, B, C) {
     return Math.round((Math.acos(cosTheta) * 180) / Math.PI);
 }
 
+// ============================================================================
+// CÁLCULO ANGULAR PLANAR 2D EQUIVALENTE A NUMPY/PYTHON (ARCTAN2)
+// ============================================================================
+
+function calcularAngulo2D(a, b, c) {
+    if (!a || !b || !c) return 180;
+    const ax = a.x !== undefined ? a.x : a[0];
+    const ay = a.y !== undefined ? a.y : a[1];
+    const bx = b.x !== undefined ? b.x : b[0];
+    const by = b.y !== undefined ? b.y : b[1];
+    const cx = c.x !== undefined ? c.x : c[0];
+    const cy = c.y !== undefined ? c.y : c[1];
+
+    const radianes = Math.atan2(cy - by, cx - bx) - Math.atan2(ay - by, ax - bx);
+    let angulo = Math.abs((radianes * 180.0) / Math.PI);
+    if (angulo > 180.0) {
+        angulo = 360.0 - angulo;
+    }
+    return Math.round(angulo);
+}
+
+// ============================================================================
+// MÁQUINAS DE ESTADO CINEMÁTICAS (FSM) PARA LAS 9 HABILIDADES MOTRICES BÁSICAS
+// Basadas en la referencia de Python (Detección de ciclo de fases biomecánicas)
+// ============================================================================
+
+class SaltoHorizontalFSM {
+    constructor() {
+        this.nombre = 'Salto Horizontal';
+        this.estado = 'REPOSO';
+        this.yCaderaInicial = null;
+        this.transiciones = [];
+        this.minKneeAngle = 180;
+        this.maxFlightElevation = 0;
+        this.fasesCumplidas = new Set();
+    }
+
+    procesarFrame(idx, t, landmarks, angles) {
+        if (!landmarks || landmarks.length < 33 || !angles) return;
+        const cadera = landmarks[24];
+        const rodilla = landmarks[26];
+        const tobillo = landmarks[28];
+        const anguloRodilla = calcularAngulo2D(cadera, rodilla, tobillo);
+        const yActualCadera = (landmarks[23].y + landmarks[24].y) / 2;
+
+        if (anguloRodilla < this.minKneeAngle) this.minKneeAngle = anguloRodilla;
+
+        if (this.estado === 'REPOSO') {
+            if (this.yCaderaInicial === null) this.yCaderaInicial = yActualCadera;
+            this.fasesCumplidas.add('REPOSO');
+            if (anguloRodilla < 142 || angles.kneeMin < 142) {
+                this.estado = 'CONTRAMOVIMIENTO (BAJANDO)';
+                this.transiciones.push({ estado: this.estado, idx, t, anguloRodilla, yActualCadera, desc: 'Inicio de flexión preparatoria' });
+                this.fasesCumplidas.add('CONTRAMOVIMIENTO');
+            }
+        } else if (this.estado === 'CONTRAMOVIMIENTO (BAJANDO)') {
+            if (anguloRodilla > 110 && yActualCadera < (this.yCaderaInicial + 0.02)) {
+                this.estado = 'PROPULSIÓN (SUBIENDO)';
+                this.transiciones.push({ estado: this.estado, idx, t, anguloRodilla, yActualCadera, desc: 'Empuje y despegue simultáneo' });
+                this.fasesCumplidas.add('PROPULSION');
+            }
+        } else if (this.estado === 'PROPULSIÓN (SUBIENDO)') {
+            const elevacion = this.yCaderaInicial - yActualCadera;
+            if (elevacion > this.maxFlightElevation) this.maxFlightElevation = elevacion;
+            if (anguloRodilla > 158 && (yActualCadera < (this.yCaderaInicial - 0.035) || angles.flightDetected)) {
+                this.estado = 'EN EL AIRE (VUELO)';
+                this.transiciones.push({ estado: this.estado, idx, t, anguloRodilla, yActualCadera, desc: '🦘 Vuelo Bipodal Evidenciado', isPeak: true });
+                this.fasesCumplidas.add('VUELO');
+            }
+        } else if (this.estado === 'EN EL AIRE (VUELO)') {
+            if (yActualCadera >= (this.yCaderaInicial - 0.02) && anguloRodilla < 155) {
+                this.estado = 'ATERRIZAJE';
+                this.transiciones.push({ estado: this.estado, idx, t, anguloRodilla, yActualCadera, desc: '🦿 Aterrizaje y Amortiguación', isSubPeak: true });
+                this.fasesCumplidas.add('ATERRIZAJE');
+            }
+        }
+    }
+}
+
+class PatearFSM {
+    constructor() {
+        this.nombre = 'Patear';
+        this.estado = 'APROXIMACION';
+        this.transiciones = [];
+        this.maxStraddle = 0;
+        this.fasesCumplidas = new Set();
+    }
+
+    procesarFrame(idx, t, landmarks, angles) {
+        if (!landmarks || landmarks.length < 33 || !angles) return;
+        const xDiff = angles.ankleXDiff || 0;
+        const hipAngle = angles.hipAngle || 0;
+        const kneeDiff = angles.kneeDiff || 0;
+
+        if (this.estado === 'APROXIMACION') {
+            this.fasesCumplidas.add('APROXIMACION');
+            if (angles.isLegStraddle || kneeDiff >= 20 || xDiff >= 0.08) {
+                this.estado = 'APOYO_CARGA';
+                this.transiciones.push({ estado: this.estado, idx, t, desc: 'Apoyo monopodal y pierna atrás' });
+                this.fasesCumplidas.add('CARGA');
+            }
+        } else if (this.estado === 'APOYO_CARGA') {
+            if (xDiff >= 0.11 || hipAngle >= 17) {
+                this.estado = 'PENDULO_GOLPEO';
+                this.transiciones.push({ estado: this.estado, idx, t, desc: 'Péndulo anterior hacia el balón' });
+                this.fasesCumplidas.add('PENDULO');
+            }
+        } else if (this.estado === 'PENDULO_GOLPEO') {
+            if (xDiff >= 0.13 || (angles.isLegStraddle && angles.kneeMax >= 148)) {
+                this.estado = 'IMPACTO';
+                this.transiciones.push({ estado: this.estado, idx, t, desc: '⚽ Pateada Evidenciada (Impacto)', isPeak: true });
+                this.fasesCumplidas.add('IMPACTO');
+            }
+        } else if (this.estado === 'IMPACTO') {
+            this.estado = 'RECOBRO';
+            this.transiciones.push({ estado: this.estado, idx, t, desc: 'Acompañamiento y frenado' });
+            this.fasesCumplidas.add('RECOBRO');
+        }
+    }
+}
+
+class CarreraFSM {
+    constructor() {
+        this.nombre = 'Carrera';
+        this.estado = 'INICIO_PROPULSION';
+        this.transiciones = [];
+        this.maxStride = 0;
+        this.fasesCumplidas = new Set();
+    }
+
+    procesarFrame(idx, t, landmarks, angles) {
+        if (!landmarks || landmarks.length < 33 || !angles) return;
+        const hipAngle = angles.hipAngle || 0;
+        const trunkLean = angles.trunkLean || 0;
+        if (hipAngle > this.maxStride) this.maxStride = hipAngle;
+
+        if (this.estado === 'INICIO_PROPULSION') {
+            this.fasesCumplidas.add('INICIO');
+            if (trunkLean >= 10 || angles.ankleXDiff >= 0.10) {
+                this.estado = 'TRACCION_METATARSAL';
+                this.transiciones.push({ estado: this.estado, idx, t, desc: 'Empuje y braceo enérgico' });
+                this.fasesCumplidas.add('TRACCION');
+            }
+        } else if (this.estado === 'TRACCION_METATARSAL') {
+            if (hipAngle >= 25 || angles.flightDetected || angles.ankleXDiff >= 0.13) {
+                this.estado = 'MAXIMA_ZANCADA_VUELO';
+                this.transiciones.push({ estado: this.estado, idx, t, desc: '🏃 Zancada y Vuelo Evidenciado', isPeak: true });
+                this.fasesCumplidas.add('VUELO_ZANCADA');
+            }
+        } else if (this.estado === 'MAXIMA_ZANCADA_VUELO') {
+            this.estado = 'RECOBRO_RECIPROCO';
+            this.transiciones.push({ estado: this.estado, idx, t, desc: 'Contacto y pasaje de rodilla libre' });
+            this.fasesCumplidas.add('RECOBRO');
+        }
+    }
+}
+
+class LanzarFSM {
+    constructor() {
+        this.nombre = 'Lanzamiento Sobre Hombro';
+        this.estado = 'PREPARACION';
+        this.transiciones = [];
+        this.fasesCumplidas = new Set();
+    }
+
+    procesarFrame(idx, t, landmarks, angles) {
+        if (!landmarks || landmarks.length < 33 || !angles) return;
+        const wristHigh = angles.wristAboveShoulder;
+        const elbowDiff = angles.elbowDiff || 0;
+
+        if (this.estado === 'PREPARACION') {
+            this.fasesCumplidas.add('PREPARACION');
+            if (wristHigh || (elbowDiff >= 22 && angles.elbowMin <= 112)) {
+                this.estado = 'ARMADO_POSTERIOR';
+                this.transiciones.push({ estado: this.estado, idx, t, desc: 'Armado tras la cabeza' });
+                this.fasesCumplidas.add('ARMADO');
+            }
+        } else if (this.estado === 'ARMADO_POSTERIOR') {
+            if (angles.elbowMax >= 135 && wristHigh) {
+                this.estado = 'SOLTADA_LANZAMIENTO';
+                this.transiciones.push({ estado: this.estado, idx, t, desc: '⚾ Lanzamiento Evidenciado (Soltada)', isPeak: true });
+                this.fasesCumplidas.add('SOLTADA');
+            }
+        } else if (this.estado === 'SOLTADA_LANZAMIENTO') {
+            this.estado = 'DESACELERACION';
+            this.transiciones.push({ estado: this.estado, idx, t, desc: 'Brazo cruza el torso y desacelera' });
+            this.fasesCumplidas.add('DESACELERACION');
+        }
+    }
+}
+
+class AtraparFSM {
+    constructor() {
+        this.nombre = 'Recepción y Atrape';
+        this.estado = 'ESPERA';
+        this.transiciones = [];
+        this.minWrist = 1.0;
+        this.fasesCumplidas = new Set();
+    }
+
+    procesarFrame(idx, t, landmarks, angles) {
+        if (!landmarks || landmarks.length < 33 || !angles) return;
+        const wDist = angles.wristDist || 0.5;
+        if (wDist < this.minWrist) this.minWrist = wDist;
+
+        if (this.estado === 'ESPERA') {
+            this.fasesCumplidas.add('ESPERA');
+            if (angles.elbowAvg >= 70 && angles.elbowAvg <= 130) {
+                this.estado = 'APROXIMACION_MANOS';
+                this.transiciones.push({ estado: this.estado, idx, t, desc: 'Brazos al frente en copa' });
+                this.fasesCumplidas.add('APROXIMACION');
+            }
+        } else if (this.estado === 'APROXIMACION_MANOS') {
+            if (wDist <= 0.28) {
+                this.estado = 'CONTACTO_ATRAPE';
+                this.transiciones.push({ estado: this.estado, idx, t, desc: '🧤 Atrape Evidenciado (Manos en copa)', isPeak: true });
+                this.fasesCumplidas.add('CONTACTO');
+            }
+        } else if (this.estado === 'CONTACTO_ATRAPE') {
+            this.estado = 'AMORTIGUACION_PECHO';
+            this.transiciones.push({ estado: this.estado, idx, t, desc: 'Retención hacia el pecho' });
+            this.fasesCumplidas.add('AMORTIGUACION');
+        }
+    }
+}
+
+class SaltoUnipodalFSM {
+    constructor() {
+        this.nombre = 'Salto Unipodal';
+        this.estado = 'APOYO_UNIPODAL';
+        this.transiciones = [];
+        this.fasesCumplidas = new Set();
+    }
+
+    procesarFrame(idx, t, landmarks, angles) {
+        if (!landmarks || landmarks.length < 33 || !angles) return;
+        const yDiff = angles.ankleYDiff || 0;
+        const kneeDiff = angles.kneeDiff || 0;
+
+        if (this.estado === 'APOYO_UNIPODAL') {
+            this.fasesCumplidas.add('APOYO');
+            if (angles.kneeMin <= 140 && yDiff >= 0.035) {
+                this.estado = 'FLEXION_IMPULSO';
+                this.transiciones.push({ estado: this.estado, idx, t, desc: 'Flexión preparatoria unipodal' });
+                this.fasesCumplidas.add('IMPULSO');
+            }
+        } else if (this.estado === 'FLEXION_IMPULSO') {
+            if (yDiff >= 0.05 && kneeDiff >= 25) {
+                this.estado = 'VUELO_UNIPODAL';
+                this.transiciones.push({ estado: this.estado, idx, t, desc: '🦿 Despegue Unipodal Evidenciado', isPeak: true });
+                this.fasesCumplidas.add('VUELO');
+            }
+        } else if (this.estado === 'VUELO_UNIPODAL') {
+            if (angles.kneeMin <= 150) {
+                this.estado = 'ATERRIZAJE_UNIPODAL';
+                this.transiciones.push({ estado: this.estado, idx, t, desc: 'Amortiguación sobre el mismo pie' });
+                this.fasesCumplidas.add('ATERRIZAJE');
+            }
+        }
+    }
+}
+
+class EquilibrioEstaticoFSM {
+    constructor() {
+        this.nombre = 'Equilibrio Estático Unipodal';
+        this.estado = 'INICIO_BIPODAL';
+        this.transiciones = [];
+        this.holdCount = 0;
+        this.fasesCumplidas = new Set();
+    }
+
+    procesarFrame(idx, t, landmarks, angles) {
+        if (!landmarks || landmarks.length < 33 || !angles) return;
+        const isOneBent = (angles.kneeMax >= 145 && angles.kneeMin <= 125 && angles.kneeDiff >= 30);
+        const yElev = (angles.ankleYDiff >= 0.04);
+
+        if (this.estado === 'INICIO_BIPODAL') {
+            this.fasesCumplidas.add('INICIO');
+            if (isOneBent || yElev) {
+                this.estado = 'ELEVACION_PIERNA';
+                this.transiciones.push({ estado: this.estado, idx, t, desc: 'Despegue de la pierna libre' });
+                this.fasesCumplidas.add('ELEVACION');
+            }
+        } else if (this.estado === 'ELEVACION_PIERNA' || this.estado === 'SOSTEN_FLAMENCO') {
+            if (isOneBent && yElev) {
+                this.holdCount++;
+                if (this.holdCount >= 2 && this.estado !== 'SOSTEN_FLAMENCO') {
+                    this.estado = 'SOSTEN_FLAMENCO';
+                    this.transiciones.push({ estado: this.estado, idx, t, desc: '🦩 Sostén Unipodal Evidenciado', isPeak: true });
+                    this.fasesCumplidas.add('SOSTEN');
+                }
+            }
+        }
+    }
+}
+
+class EquilibrioDinamicoFSM {
+    constructor() {
+        this.nombre = 'Equilibrio Dinámico';
+        this.estado = 'INICIO_EJE';
+        this.transiciones = [];
+        this.fasesCumplidas = new Set();
+    }
+
+    procesarFrame(idx, t, landmarks, angles) {
+        if (!landmarks || landmarks.length < 33 || !angles) return;
+        if (this.estado === 'INICIO_EJE') {
+            this.fasesCumplidas.add('INICIO');
+            this.estado = 'PASO_TANDEM';
+            this.transiciones.push({ estado: this.estado, idx, t, desc: '🧘 Pasaje en Línea Evidenciado', isPeak: true });
+            this.fasesCumplidas.add('PASO_TANDEM');
+        } else if (this.estado === 'PASO_TANDEM') {
+            this.estado = 'CONTROL_EQUILIBRIO';
+            this.transiciones.push({ estado: this.estado, idx, t, desc: 'Brazos equilibradores y control' });
+            this.fasesCumplidas.add('CONTROL');
+        }
+    }
+}
+
+class MarchaFSM {
+    constructor() {
+        this.nombre = 'Marcha';
+        this.estado = 'INICIO_CONTACTO';
+        this.transiciones = [];
+        this.fasesCumplidas = new Set();
+    }
+
+    procesarFrame(idx, t, landmarks, angles) {
+        if (!landmarks || landmarks.length < 33 || !angles) return;
+        if (this.estado === 'INICIO_CONTACTO') {
+            this.fasesCumplidas.add('CONTACTO');
+            this.estado = 'PASAJE_TALON';
+            this.transiciones.push({ estado: this.estado, idx, t, desc: '🚶 Contacto y Pasaje Evidenciado', isPeak: true });
+            this.fasesCumplidas.add('PASAJE');
+        } else if (this.estado === 'PASAJE_TALON') {
+            this.estado = 'DESPEGUE_OSCILACION';
+            this.transiciones.push({ estado: this.estado, idx, t, desc: 'Transición continua del paso' });
+            this.fasesCumplidas.add('OSCILACION');
+        }
+    }
+}
+
+function createFSMForSkill(skillName) {
+    const s = (skillName || '').toLowerCase();
+    if (s.includes('salto horizontal') || (s.includes('salto') && !s.includes('unipodal'))) return new SaltoHorizontalFSM();
+    if (s.includes('pate')) return new PatearFSM();
+    if (s.includes('corre') || s.includes('carrera')) return new CarreraFSM();
+    if (s.includes('lanz') || s.includes('arroja') || s.includes('hombro')) return new LanzarFSM();
+    if (s.includes('atrap') || s.includes('recep')) return new AtraparFSM();
+    if (s.includes('unipodal') && s.includes('salto')) return new SaltoUnipodalFSM();
+    if (s.includes('estatico') || s.includes('estático') || s.includes('flamenco')) return new EquilibrioEstaticoFSM();
+    if (s.includes('dinamico') || s.includes('dinámico') || s.includes('linea') || s.includes('viga')) return new EquilibrioDinamicoFSM();
+    return new MarchaFSM();
+}
+
+function executeFSMAnalysis(frames, skillName) {
+    const fsm = createFSMForSkill(skillName);
+    frames.forEach((f, idx) => {
+        if (f.landmarks && f.angles) {
+            fsm.procesarFrame(idx, f.timestampNum || (idx * 0.2), f.landmarks, f.angles);
+        }
+    });
+    return fsm;
+}
+
 function computeJointAngles(landmarks) {
     if (!landmarks || landmarks.length < 33) return null;
 
@@ -3284,9 +3649,12 @@ function runLocalBiomechanicalEngine(skillCode, gradeCode, obsText, frames) {
         isAutoDetected = true;
     }
 
-    const ruleSet = biomechanicalRulesTable[resolvedSkill] || biomechanicalRulesTable['Carrera'];
+    // 3. Ejecutar la Máquina de Estados Cinemática (FSM) para la habilidad
+    const fsm = executeFSMAnalysis(frames, resolvedSkill);
+    telemetry.fsm = fsm;
+    telemetry.fsmPhases = Array.from(fsm.fasesCumplidas);
 
-    // 3. Evaluar cada criterio contra las reglas cuantitativas de la Batería HMB
+    // 4. Evaluar cada criterio contra las reglas cuantitativas de la Batería HMB
     const evaluatedCriteria = [];
     const criticalErrors = [];
 
@@ -3314,6 +3682,7 @@ function runLocalBiomechanicalEngine(skillCode, gradeCode, obsText, frames) {
     else if (maturityPct < 40) estadio = 'Inicial';
 
     const detectionOrigin = isAutoDetected ? `🔍 [Detección Automática por Cinemática WASM: ${resolvedSkill}]` : `[Evaluación Dirigida: ${resolvedSkill}]`;
+    const fsmChain = telemetry.fsmPhases.length ? telemetry.fsmPhases.join(' ➔ ') : 'Secuencia detectada';
 
     return {
         habilidad_detectada: resolvedSkill,
@@ -3325,11 +3694,11 @@ function runLocalBiomechanicalEngine(skillCode, gradeCode, obsText, frames) {
         edad_calibrada: gradeCode.replace('_', ' '),
         estadio_gallahue: estadio,
         porcentaje_madurez: maturityPct,
-        resumen_biomecanico: `${detectionOrigin} Evaluación cinemática instrumental según la **Batería de HMB (González Palacio & Montoya Grisales, 2021 · Dialnet 7925607)** mediante **MediaPipe Pose Tasks (WASM)**. El estudiante obtiene un puntaje de **${passedCount}/${totalCount} puntos (${maturityPct}%)**, ubicándose en **Estadio ${estadio}**. Parámetros articulares medidos: flexión de rodilla ${telemetry.minKneeAngle}°, braceo medio ${telemetry.avgElbowAngle}°, inclinación de tronco ${telemetry.avgTrunkAngle}° y simetría bilateral ${telemetry.symmetryScore}%.`,
+        resumen_biomecanico: `${detectionOrigin} Evaluación cinemática instrumental según la **Batería de HMB (González Palacio & Montoya Grisales, 2021 · Dialnet 7925607)** mediante **MediaPipe Pose Tasks (WASM)** y **Máquinas de Estado Cinemáticas (FSM)**. Ciclo de fases completadas: [${fsmChain}]. El estudiante obtiene un puntaje de **${passedCount}/${totalCount} puntos (${maturityPct}%)**, ubicándose en **Estadio ${estadio}**. Parámetros articulares medidos: flexión de rodilla ${telemetry.minKneeAngle}°, braceo medio ${telemetry.avgElbowAngle}°, inclinación de tronco ${telemetry.avgTrunkAngle}° y simetría bilateral ${telemetry.symmetryScore}%.`,
         criterios: evaluatedCriteria,
         analisis_articular: {
             angulos_principales: `Flexión mínima rodilla: ${telemetry.minKneeAngle}°, Ángulo medio codo: ${telemetry.avgElbowAngle}°, Inclinación tronco: ${telemetry.avgTrunkAngle}°`,
-            cadena_cinetica: `Simetría bilateral calculada en ${telemetry.symmetryScore}%. Fase de vuelo: ${telemetry.flightDetected ? 'Confirmada' : 'No evidente'}.`,
+            cadena_cinetica: `Simetría bilateral calculada en ${telemetry.symmetryScore}%. Progresión de fases FSM: [${fsmChain}]. Fase de vuelo: ${telemetry.flightDetected ? 'Confirmada' : 'No evidente'}.`,
             apoyo_y_base: `Apertura angular máxima de zancada/base: ${telemetry.maxHipAngle}° mediante muestreo adaptativo por luminancia.`
         },
         errores_criticos: criticalErrors.length ? criticalErrors : [
@@ -3426,6 +3795,11 @@ async function callGeminiVision(skill, grade, obsText, frames) {
 
     const isAuto = (!skill || skill === 'auto' || skill === 'Detección Automática' || skill.includes('Automática'));
     const suggestedSkill = classifySkillFromKinematics(telemetry, obsText);
+    const targetSkillForFSM = isAuto ? suggestedSkill : skill;
+
+    const fsm = executeFSMAnalysis(frames, targetSkillForFSM);
+    telemetry.fsm = fsm;
+    telemetry.fsmPhases = Array.from(fsm.fasesCumplidas);
 
     const skillInstruction = isAuto 
         ? `MODO DETECCIÓN AUTOMÁTICA BASADA EN VISIÓN:
@@ -3444,12 +3818,15 @@ REGLA DE DECISIÓN VISUAL:
 Tu análisis visual de las imágenes fotográficas tiene PRIORIDAD TOTAL sobre cualquier aproximación matemática. Observa la acción global del cuerpo y el entorno. Escribe en "habilidad_detectada" el nombre exacto de la habilidad que ves ejecutada.`
         : `Habilidad Específica Seleccionada por el Docente: "${skill}". Evalúa estrictamente los criterios de esta habilidad.`;
 
+    const fsmChain = telemetry.fsmPhases.length ? telemetry.fsmPhases.join(' ➔ ') : 'Secuencia temporal';
+
     const sysPrompt = `Eres un Biomecánico Deportivo y Docente Experto en Desarrollo Motor Infantil especializado en la evaluación de Habilidades Motrices Básicas (HMB) mediante la Batería Validada de Habilidades Motrices Básicas para Niños entre 5 y 11 Años (González Palacio, Montoya Grisales, Cardona, Marín & Muñoz, 2021 · Dialnet 7925607) y los estadios evolutivos de David L. Gallahue.
-Debes contrastar los fotogramas del estudiante contra la siguiente telemetría instrumental ya medida en el navegador mediante MediaPipe Pose (33 landmarks):
+Debes contrastar los fotogramas del estudiante contra la siguiente telemetría instrumental ya medida en el navegador mediante MediaPipe Pose (33 landmarks) y Máquinas de Estados Cinemáticas (FSM):
 
 DATOS CINEMÁTICOS REALES MEDIDOS EN EL NAVEGADOR:
 ${skillInstruction}
 - Edad Calibrada: ${grade}
+- Ciclo de Fases detectadas por FSM: [${fsmChain}]
 - Flexión mínima de rodilla medida: ${telemetry.minKneeAngle}°
 - Ángulo medio de codos (braceo): ${telemetry.avgElbowAngle}°
 - Inclinación promedio de tronco: ${telemetry.avgTrunkAngle}°
