@@ -72,7 +72,7 @@ def diagnosticar_y_guardar(evaluacion: Evaluacion, muestras: Sequence[Dict[str, 
     evaluacion.version_motor = VERSION_MOTOR
 
     try:
-        diag = run_local_engine(codigo, evaluacion.grado, evaluacion.observaciones_docente, frames)
+        diag = run_local_engine(codigo, evaluacion.grado, evaluacion.observaciones_docente, frames, origen="servidor")
     except SinPersonaDetectada as exc:
         evaluacion.estado = Evaluacion.Estado.ERROR
         evaluacion.mensaje_error = str(exc)
@@ -122,9 +122,15 @@ def diagnosticar_y_guardar(evaluacion: Evaluacion, muestras: Sequence[Dict[str, 
     return evaluacion
 
 
-def consolidar_grupo(grupal: EvaluacionGrupal) -> Dict[str, Any]:
-    """Errores más frecuentes del salón (port de ``generateGroupPlan``), ordenados de mayor a menor."""
-    evaluaciones = list(grupal.evaluaciones.filter(estado=Evaluacion.Estado.LISTA))
+def consolidar_grupo(grupal: EvaluacionGrupal, habilidad: Optional[Habilidad] = None) -> Dict[str, Any]:
+    """Errores más frecuentes del salón (port de ``generateGroupPlan``), ordenados de mayor a menor.
+
+    Con ``habilidad`` solo cuenta las evaluaciones de esa habilidad (los errores de habilidades
+    distintas no son comparables)."""
+    qs = grupal.evaluaciones.filter(estado=Evaluacion.Estado.LISTA)
+    if habilidad is not None:
+        qs = qs.filter(habilidad_detectada=habilidad)
+    evaluaciones = list(qs)
     total = len(evaluaciones)
     conteo: Counter = Counter()
     for ev in evaluaciones:
@@ -138,6 +144,8 @@ def consolidar_grupo(grupal: EvaluacionGrupal) -> Dict[str, Any]:
         "progreso_pct": min(100, round(total / grupal.estudiantes_objetivo * 100)) if grupal.estudiantes_objetivo else 0,
         "errores": [{"error": err, "estudiantes": n, "porcentaje": round(n / total * 100)}
                     for err, n in conteo.most_common()],
+        "estadios": dict(Counter(ev.estadio_gallahue for ev in evaluaciones)),
+        "madurez_media": round(sum(ev.porcentaje_madurez or 0 for ev in evaluaciones) / total) if total else None,
     }
 
 

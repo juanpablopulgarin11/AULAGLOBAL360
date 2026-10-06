@@ -42,6 +42,7 @@ function cargarMotorJS() {
     const src = fs.readFileSync(path.join(RAIZ, 'script.js'), 'utf8');
     // const/class de nivel superior no quedan en el global del contexto: se exportan explícitamente
     vm.runInContext(src + '\n;globalThis.__exp = { biomechanicalRulesTable };', contexto, { filename: 'script.js' });
+    contexto.__fijarGrado = (g) => { elementoFalso.value = g; };
     return contexto;
 }
 
@@ -172,6 +173,11 @@ const CAMPOS_HITO = ['isMilestonePeak', 'isSubMilestone', 'isFinalMilestone', 'm
 const HABILIDADES = ['Carrera', 'Salto Horizontal', 'Marcha', 'Salto Unipodal', 'Lanzamiento Sobre Hombro',
     'Recepción y Atrape', 'Patear', 'Equilibrio Dinámico', 'Equilibrio Estático Unipodal'];
 const CODIGOS = ['auto', 'carrera', 'salto', 'marcha', 'salto_unipodal', 'lanzar', 'atrapar', 'patear', 'equilibrio', 'equilibrio_estatico'];
+const PREFERENCIAS = [
+    { format: 'Cuento Motor', pedagogy: 'Descubrimiento Guiado', materials: 'Conos, Aros', duration: '45', period: '2', totalClasses: '8' },
+    { format: 'Circuito de Estaciones', pedagogy: 'Asignación de Tareas', materials: 'Aros, Conos y recursos corporales', duration: '50', period: '1', totalClasses: '12' },
+    { format: 'Retos Cooperativos', pedagogy: 'Resolución de Problemas', materials: 'Balones', duration: '90', period: '4', totalClasses: '3' },
+];
 const TEXTOS = ['', 'el niño patea la pelota', 'salto largo', 'camina en linea', 'se queda parado en un pie', 'corre rápido'];
 
 function serializarFSM(fsm) {
@@ -223,7 +229,10 @@ function ejecutarCaso(caso, js, rnd) {
         try {
             const d = js.runLocalBiomechanicalEngine(codigo, grado, obs, frames.map(f => ({ ...f })));
             const { fsm, ...telSinFsm } = d.telemetria_medida;
-            salida.motor.push({ entrada, diagnostico: { ...d, telemetria_medida: telSinFsm }, fsm: serializarFSM(fsm) });
+            js.__fijarGrado(grado);
+            const planes = PREFERENCIAS.map(prefs => ({ prefs, plan: js.generateDidacticPlan(d, prefs, false) }));
+            planes.push({ prefs: PREFERENCIAS[0], grupal: true, plan: js.generateDidacticPlan(d, PREFERENCIAS[0], true) });
+            salida.motor.push({ entrada, diagnostico: { ...d, telemetria_medida: telSinFsm }, fsm: serializarFSM(fsm), planes });
         } catch (e) {
             salida.motor.push({ entrada, error: e.message });
         }

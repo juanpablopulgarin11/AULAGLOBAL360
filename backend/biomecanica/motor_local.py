@@ -16,12 +16,22 @@ VERSION_MOTOR = "1.0.0-paridad-js"
 BATERIA_REFERENCIA = ("Batería de Habilidades Motrices Básicas (5-11 años) · "
                       "González Palacio, Montoya Grisales et al. (2021, Dialnet 7925607)")
 
-# Textos heredados del JS. Cuando la detección corra en el servidor conviene cambiarlos
-# (ya no será WASM ni hay muestreo por luminancia); se mantienen por paridad con la web.
-ETIQUETA_AUTO = "🔍 [Detección Automática por Cinemática WASM: {habilidad}]"
-ETIQUETA_DIRIGIDA = "[Evaluación Dirigida: {habilidad}]"
-FUENTE_POSE = "**MediaPipe Pose Tasks (WASM)**"
-NOTA_MUESTREO = "mediante muestreo adaptativo por luminancia"
+# Textos según dónde se detectó la pose. "web" reproduce el JS (paridad); "servidor" describe
+# el procesamiento real en Django (no hay WASM ni muestreo por luminancia).
+TEXTOS_ORIGEN = {
+    "web": {
+        "auto": "🔍 [Detección Automática por Cinemática WASM: {habilidad}]",
+        "dirigida": "[Evaluación Dirigida: {habilidad}]",
+        "fuente": "**MediaPipe Pose Tasks (WASM)**",
+        "muestreo": "mediante muestreo adaptativo por luminancia",
+    },
+    "servidor": {
+        "auto": "🔍 [Detección automática por cinemática: {habilidad}]",
+        "dirigida": "[Evaluación dirigida: {habilidad}]",
+        "fuente": "**MediaPipe Pose (33 puntos corporales)**",
+        "muestreo": "en la ventana del gesto anclada al ángulo inicial",
+    },
+}
 
 SIN_ERRORES = {
     "error": "Sin fallos biomecánicos críticos",
@@ -48,7 +58,7 @@ def estadio_gallahue(porcentaje: int) -> str:
 
 
 def run_local_engine(codigo_habilidad: Optional[str], grado: Optional[str], observaciones: str,
-                     frames: Sequence[Dict[str, Any]]) -> Dict[str, Any]:
+                     frames: Sequence[Dict[str, Any]], origen: str = "web") -> Dict[str, Any]:
     """Diagnóstico completo con el contrato JSON ``Diagnostico`` (docs/02 §10).
 
     ``frames``: dicts con ``landmarks`` (33 puntos o ``None``), ``angles`` y ``timestampNum``.
@@ -81,7 +91,8 @@ def run_local_engine(codigo_habilidad: Optional[str], grado: Optional[str], obse
     porcentaje = js_round((aprobados / total) * 100)
     estadio = estadio_gallahue(porcentaje)
 
-    origen = (ETIQUETA_AUTO if es_auto else ETIQUETA_DIRIGIDA).format(habilidad=habilidad)
+    textos = TEXTOS_ORIGEN[origen]
+    etiqueta = textos["auto" if es_auto else "dirigida"].format(habilidad=habilidad)
     cadena = " ➔ ".join(telemetria["fsmPhases"]) if telemetria["fsmPhases"] else "Secuencia detectada"
     t = telemetria
 
@@ -96,8 +107,8 @@ def run_local_engine(codigo_habilidad: Optional[str], grado: Optional[str], obse
         "estadio_gallahue": estadio,
         "porcentaje_madurez": porcentaje,
         "resumen_biomecanico": (
-            f"{origen} Evaluación cinemática instrumental según la **Batería de HMB (González Palacio & Montoya Grisales, "
-            f"2021 · Dialnet 7925607)** mediante {FUENTE_POSE} y **Máquinas de Estado Cinemáticas (FSM)**. "
+            f"{etiqueta} Evaluación cinemática instrumental según la **Batería de HMB (González Palacio & Montoya Grisales, "
+            f"2021 · Dialnet 7925607)** mediante {textos['fuente']} y **Máquinas de Estado Cinemáticas (FSM)**. "
             f"Ciclo de fases completadas: [{cadena}]. El estudiante obtiene un puntaje de **{aprobados}/{total} puntos "
             f"({porcentaje}%)**, ubicándose en **Estadio {estadio}**. Parámetros articulares medidos: flexión de rodilla "
             f"{v(t['minKneeAngle'])}°, braceo medio {v(t['avgElbowAngle'])}°, inclinación de tronco {v(t['avgTrunkAngle'])}° "
@@ -109,7 +120,7 @@ def run_local_engine(codigo_habilidad: Optional[str], grado: Optional[str], obse
                                     f"{v(t['avgElbowAngle'])}°, Inclinación tronco: {v(t['avgTrunkAngle'])}°"),
             "cadena_cinetica": (f"Simetría bilateral calculada en {v(t['symmetryScore'])}%. Progresión de fases FSM: "
                                 f"[{cadena}]. Fase de vuelo: {'Confirmada' if t['flightDetected'] else 'No evidente'}."),
-            "apoyo_y_base": f"Apertura angular máxima de zancada/base: {v(t['maxHipAngle'])}° {NOTA_MUESTREO}.",
+            "apoyo_y_base": f"Apertura angular máxima de zancada/base: {v(t['maxHipAngle'])}° {textos['muestreo']}.",
         },
         "errores_criticos": errores or [dict(SIN_ERRORES)],
         "frases_profe": list(regla.frases),

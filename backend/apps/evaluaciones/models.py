@@ -92,6 +92,30 @@ class Evaluacion(models.Model):
         ordering = ["-creado"]
         indexes = [models.Index(fields=["estudiante", "-creado"]), models.Index(fields=["estado"])]
 
+    def como_diagnostico(self) -> dict:
+        """El resultado en el contrato JSON ``Diagnostico`` (docs/02 §10), para planeación y reportes."""
+        from biomecanica.habilidades import grado_y_ciclo
+
+        h = self.habilidad_detectada
+        return {
+            "habilidad_detectada": h.nombre if h else "",
+            "es_deteccion_automatica": self.es_deteccion_automatica,
+            "componente_hmb": h.componente_etiqueta if h else "",
+            "prueba_nro": h.prueba_nro if h else None,
+            "puntaje_obtenido": f"{self.puntaje}/{self.puntaje_maximo}",
+            "edad_calibrada": grado_y_ciclo(self.grado)["grado"],
+            "estadio_gallahue": self.estadio_gallahue,
+            "porcentaje_madurez": self.porcentaje_madurez,
+            "resumen_biomecanico": self.resumen,
+            "criterios": [{"criterio": r.texto, "fase": r.fase, "puntaje": r.puntaje, "medido": r.medido,
+                           "umbral": r.umbral, "observacion": r.observacion} for r in self.resultados.all()],
+            "analisis_articular": self.analisis_articular,
+            "errores_criticos": self.errores_criticos,
+            "frases_profe": self.frases_profe,
+            "telemetria_medida": self.telemetria,
+            "modelo_utilizado": self.modelo_ia,
+        }
+
     def __str__(self) -> str:
         quien = self.estudiante or "Sin estudiante"
         que = self.habilidad_detectada or self.habilidad_solicitada or "auto"
