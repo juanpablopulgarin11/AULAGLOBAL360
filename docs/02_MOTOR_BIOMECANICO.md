@@ -197,7 +197,7 @@ Toma `validAngles = [f.angles for f in frames if f.angles]`.
  "samplingMethod": "Adaptativo por Diferencial de Luminancia"}
 ```
 
-> Importante: con estos valores el motor **igual emite un diagnóstico** (ver doc 07). En Django conviene devolver un error "no se detectó a la persona".
+> El motor local ya **no** diagnostica con estos valores: lanza el error "No se detectó a la persona…" (corregido en `script.js` y en `backend/biomecanica`). Se conservan porque `assignKeyframeMilestones` y el prompt de Gemini aún pueden recibirlos.
 
 ### 5.2 Con landmarks
 
@@ -358,7 +358,7 @@ Los títulos, descripciones y colores exactos están en `script.js:2104-2497`; s
   "prueba_nro": 3,                                       // solo motor local
   "puntaje_obtenido": "4/5",
   "bateria_referencia": "Batería de Habilidades Motrices Básicas (5-11 años) · ...",
-  "edad_calibrada": "7 anos",                            // grade.replace('_',' ', 1)
+  "edad_calibrada": "Grado 2º de Primaria (7 años)",     // etiqueta de getGradeAndCycle
   "estadio_gallahue": "Inicial|Elemental|Maduro",
   "porcentaje_madurez": 80,
   "resumen_biomecanico": "texto con **markdown**",

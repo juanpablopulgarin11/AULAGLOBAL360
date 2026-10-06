@@ -248,19 +248,7 @@ class Sesion(models.Model):
 | alertas, wizard, drawer, drag & drop | templates + HTMX/Alpine (o JS mínimo) |
 | `localStorage` | sesión de Django / modelo `PreferenciasDocente` |
 
-Ejemplo de cómo pasar una regla:
-
-```python
-# biomecanica/reglas.py
-REGLAS = {
-    "carrera_braceo":   lambda t: 75 <= t.avg_elbow_angle <= 110,
-    "carrera_tronco":   lambda t: 4 <= t.avg_trunk_angle <= 16,
-    "carrera_propulsion": lambda t: t.max_hip_angle >= 32,
-    "carrera_recobro":  lambda t: t.min_knee_angle <= 95,
-    "carrera_vuelo":    lambda t: t.flight_detected,
-    # ... 40 más (doc 03)
-}
-```
+Implementación real (`backend/biomecanica/reglas.py`): cada criterio es un `Criterio(texto, fase, condicion, medido, umbral, observacion_ok, observacion_falla, error, impacto)`. Los ángulos y la telemetría se manejan como `dict` con las **mismas claves camelCase del JS** (`t["avgElbowAngle"]`), porque son el contrato JSON que se guarda en `Evaluacion.telemetria`, se envía a Gemini y se compara en los fixtures.
 
 ## 6. Flujo de la aplicación Django
 
@@ -301,7 +289,7 @@ Los umbrales del JS se ajustaron a mano durante muchos commits (ver historial: c
 | Fase | Entregable | Criterio de "hecho" |
 |---|---|---|
 | 0 | Repositorio Django vacío, settings, Celery, Postgres, CI con pytest | `pytest` en verde |
-| 1 | Paquete `biomecanica` (sin video): geometría, ángulos, telemetría, clasificador, FSM, reglas, motor local | Paridad 100 % con dorados de Node |
+| 1 ✅ | Paquete `biomecanica` (sin video): geometría, ángulos, telemetría, clasificador, FSM, reglas, motor local — **hecho en [`backend/`](../backend/README.md)** | Paridad 100 % con dorados de Node (769 pruebas) |
 | 2 | Catálogo: modelos + comando `cargar_catalogo` que lee `docs/datos/*.json` | 9 habilidades, 45 criterios, 36 plantillas en BD |
 | 3 | Extracción de video en Python (cv2 + mediapipe) + tarea Celery | Videos de prueba clasificados igual que en la web actual |
 | 4 | Generador de unidad didáctica + exportes `.docx` | Documentos equivalentes a los `.doc` actuales |

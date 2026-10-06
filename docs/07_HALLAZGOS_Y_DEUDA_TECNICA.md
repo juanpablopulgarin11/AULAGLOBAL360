@@ -1,23 +1,24 @@
 # 07 · Hallazgos, errores y deuda técnica
 
-Lista de problemas encontrados al documentar el código. La migración debe decidir conscientemente si **replica** el comportamiento (fase de paridad) o lo **corrige** (fase de mejoras). Gravedad: 🔴 afecta resultados o seguridad · 🟠 funcionalidad incompleta · 🟡 menor.
+Lista de problemas encontrados al documentar el código. La migración debe decidir conscientemente si **replica** el comportamiento (fase de paridad) o lo **corrige** (fase de mejoras). Gravedad: 🔴 afecta resultados o seguridad · 🟠 funcionalidad incompleta · 🟡 menor · ✅ corregido en la rama `migracion-django` (en `script.js` y en el port Python).
 
 ## 1. Errores de lógica
 
 | # | Gravedad | Dónde | Problema | Efecto |
 |---|---|---|---|---|
-| 1 | 🔴 | `aggregateVideoTelemetry` (`script.js:2620`) | Si MediaPipe no detecta a nadie, devuelve **valores inventados** (rodilla 108°, codo 94°, simetría 86 %…) y el motor emite un diagnóstico normal | El docente recibe una evaluación que no corresponde a ninguna medición. En Django: estado `ERROR` "no se detectó a la persona" |
+| 1 | ✅ corregido | `aggregateVideoTelemetry` (`script.js:2620`) | Si MediaPipe no detectaba a nadie, el motor local diagnosticaba con **valores inventados** (rodilla 108°, codo 94°, simetría 86 %…) | Ahora `runLocalBiomechanicalEngine` (y `run_local_engine` en Python) lanza un error "No se detectó a la persona…" |
 | 2 | 🔴 | Canvas 640×360 (`script.js:1728`, `1933`) | Todo video o foto se estira a 16:9 sin conservar la proporción. Un video vertical de celular (9:16) queda muy deformado | Los ángulos en el plano de la imagen se distorsionan (rodillas, tronco, cadera). Corregir con *letterbox* o usando la resolución original |
 | 3 | 🟠 | `SaltoHorizontalFSM` y `CarreraFSM` (`script.js:1040`, `1120`) | Usan `angles.flightDetected`, que no existe en los ángulos por fotograma (es un campo de la telemetría agregada) | Esas ramas nunca se activan; solo afecta al texto de fases |
 | 4 | 🟠 | `analyzeEquilibriumFromPythonReference` (`script.js:1426-1428`) | Dentro de `angRodillaApoyo > 155` se pregunta `angRodillaApoyo < 150`: condición imposible | Código muerto; la "flexión claudicante" nunca se marca como pérdida en esa rama |
-| 5 | 🟠 | Prompt de Gemini (`script.js:4177`) | Usa `telemetry.singleSupportKick`, que no existe | Siempre informa "Pateo: NO" a la IA, lo que la sesga en contra de Patear |
-| 6 | 🟠 | `generateGroupPlan` (`script.js:5518`) | Pinta el resultado con `addMsg` en `#chatScroll`, que está oculto (`display:none`) desde el rediseño a asistente | **El plan consolidado del salón no se ve en pantalla**; solo funciona el botón de descarga si se llega a ver |
+| 5 | ✅ corregido | Prompt de Gemini (`script.js:4177`) | Usaba `telemetry.singleSupportKick`, que no existe, y siempre informaba "Pateo: NO" | Ahora usa `transientKickPeak` |
+| 6 | ✅ corregido | `generateGroupPlan` | Pintaba el resultado en `#chatScroll`, oculto desde el rediseño, **y dejaba `isAnalyzing = true` para siempre** (el botón Analizar quedaba bloqueado) | Ahora se muestra en el paso 3 y libera el candado |
 | 7 | 🟠 | `generateGroupPlan` | Usa la habilidad fija "Carrera y Locomoción Colectiva" y no prioriza sesiones con los errores consolidados | El plan grupal es siempre el mismo plan de carrera |
 | 8 | 🟠 | `getSkillProgressionTemplates` | Solo 3 de 9 habilidades tienen plantillas; las otras 6 reciben las sesiones de **Carrera** | Un estudiante evaluado en Equilibrio Estático recibe 12 clases de carrera |
-| 9 | 🟡 | `runLocalBiomechanicalEngine` (`script.js:4031`) | `'9_11_anos'.replace('_',' ')` → `"9 11_anos"` (JS solo reemplaza la primera) | Texto feo en reporte. Usar `getGradeAndCycle` |
-| 10 | 🟡 | `showAlert(..., {type: 'danger'})` (`script.js:4372`, `4379`) | El CSS define `type-error`, no `type-danger` | Alertas de error sin estilo de error |
+| 9 | ✅ corregido | `runLocalBiomechanicalEngine` y prompt de Gemini | `'9_11_anos'.replace('_',' ')` daba `"9 11_anos"` | Ahora usan la etiqueta de `getGradeAndCycle` ("Grado 4º - 5º (9 a 11 años)") |
+| 10 | ✅ corregido | `showAlert(..., {type: 'danger'})` | El CSS define `type-error`, no `type-danger` | Ahora usa `type: 'error'` |
 | 11 | 🟡 | `codigodelsalto.py` | `calcular_angulo` usa `np.arctan2(c-b, c-b)` (incorrecto) y solo considera el pie izquierdo | No reutilizar esa función (ver doc 02 §11) |
 | 12 | 🟡 | `symmetryScore` | Se limita a [65, 98]; varios criterios piden `>= 65` | Lanzamiento #5 siempre pasa; en Patear #1 y Salto Horizontal #4 la parte de simetría siempre se cumple |
+| 14 | 🔴 | Clasificador (`minWristDist <= 0.26` → +160 a Recepción y Atrape) | Las distancias están en coordenadas de imagen y **no se normalizan por el tamaño del cuerpo** (`torsoHeight` se calcula pero no se usa). Con los brazos relajados a los lados, las muñecas suelen estar a menos de 0.26 | En las pruebas sintéticas, una postura de pie en reposo se clasifica como Recepción y Atrape. Normalizar distancias por `torsoHeight` tras validar con videos reales |
 | 13 | 🟡 | Clasificador por palabras clave | "pelota" o "tiro" → Patear aunque sea lanzar o atrapar; "parado" → Equilibrio Estático | Clasificación equivocada según las observaciones del docente |
 
 ## 2. Inconsistencias de texto vs código
@@ -45,7 +46,7 @@ Lista de problemas encontrados al documentar el código. La migración debe deci
 - Funciones y alias heredados sin uso o con uso residual: `renderDiagnosticoHTML`, `selectSkill`, `applyApiKey`, `useLocalEngine`, `updateKeyStatus`, sistema de "chat" (`addMsg`, `showTyping`) oculto.
 - Referencias defensivas a IDs que no existen (`uploadZoneTitle`, `videoPlayer`, `imagePreview`…), restos de versiones anteriores del HTML.
 - `preview.html` redefine `goToStep` con otra lógica (`.wizard-pane`) y envuelve `addMsg`; depende de IDs del `index.html` que no tiene. Es un prototipo de diseño, no la app en uso; decidir si se descarta o solo se toma como referencia visual.
-- No hay pruebas automatizadas; la calibración se hizo a mano commit a commit (ver `git log`: varias correcciones de confusión Patear / Equilibrio / Salto).
+- No hay pruebas automatizadas en el JS (el port Python sí tiene: `backend/tests`); la calibración se hizo a mano commit a commit (ver `git log`: varias correcciones de confusión Patear / Equilibrio / Salto).
 - Sin control de versiones del motor: un mismo video puede dar otro resultado tras un cambio de umbrales sin que quede registro (en Django: campo `version_motor`).
 
 ## 5. Limitaciones del método (para el equipo pedagógico)
