@@ -1,0 +1,18 @@
+{% extends "base.html" %}{% load aula %}
+{% block titulo %}{{ est }}{% endblock %}
+{% block contenido %}
+<div class="migas"><a href="{% url 'grupos' %}">Salones</a> · <a href="{% url 'grupo' est.grupo.pk %}">{{ est.grupo }}</a></div>
+<div class="cabecera-pagina"><div><h1>{{ est }}</h1><p class="muted">{{ est.grupo.get_grado_display }}{% if est.acudiente %} · Acudiente: {{ est.acudiente }}{% endif %}</p>
+    <p class="subtle">Consentimiento de video: {{ est.consentimiento_video|yesno:"sí,no" }} · IA en la nube: {{ est.consentimiento_ia_nube|yesno:"sí,no" }}</p></div>
+    <div class="acciones"><a class="btn" href="{% url 'evaluar' %}?estudiante={{ est.pk }}">Evaluar</a><a class="btn btn-secundario" href="{% url 'estudiante_editar' est.pk %}">Editar ficha</a></div></div>
+<section class="tarjeta">
+    <h2>Evolución por habilidad</h2>
+    {% for h, evs in por_habilidad.items %}
+        <div style="margin-bottom:14px"><strong>{{ h|icono }} {{ h.nombre }}</strong>
+        {% for ev in evs %}<div style="display:flex;align-items:center;gap:10px;margin-top:6px;font-size:13px">
+            <span class="subtle" style="width:90px">{{ ev.creado|date:"d M Y" }}</span>
+            <div class="barra" style="flex:1"><div style="width:{{ ev.porcentaje_madurez }}%"></div></div>
+            <a href="{% url 'evaluacion' ev.pk %}"><span class="estadio estadio-{{ ev.estadio_gallahue }}">{{ ev.porcentaje_madurez }}% · {{ ev.estadio_gallahue }}</span></a></div>{% endfor %}</div>
+    {% empty %}<div class="vacio">Aún no hay evaluaciones de este estudiante.</div>{% endfor %}
+</section>
+{% endblock %}

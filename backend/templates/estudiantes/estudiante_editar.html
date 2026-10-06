@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block titulo %}Editar estudiante{% endblock %}
+{% block clase_contenedor %}contenedor-angosto{% endblock %}
+{% block contenido %}
+<div class="migas"><a href="{% url 'estudiante' est.pk %}">← {{ est }}</a></div>
+<h1>Ficha del estudiante</h1>
+<form class="tarjeta" method="post">{% csrf_token %}
+    {% for campo in form %}{% include "parciales/campo.html" %}{% endfor %}
+    <button class="btn" type="submit">Guardar</button>
+</form>
+{% endblock %}

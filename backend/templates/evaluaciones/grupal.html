@@ -1,0 +1,36 @@
+{% extends "base.html" %}{% load aula %}
+{% block titulo %}Evaluación del salón{% endblock %}
+{% block contenido %}
+<div class="migas"><a href="{% url 'grupos' %}">Salones</a> · <a href="{% url 'grupo' grupal.grupo.pk %}">{{ grupal.grupo }}</a></div>
+<div class="cabecera-pagina"><div><h1>Evaluación del salón {{ grupal.grupo.nombre }}</h1><p class="muted">Iniciada el {{ grupal.creado|date:"d M Y" }}</p></div>
+<a class="btn" href="{% url 'evaluar' %}?grupal={{ grupal.pk }}">＋ Evaluar sin asociar estudiante</a></div>
+<section class="tarjeta">
+    <div style="display:flex;justify-content:space-between;font-weight:600"><span>Progreso: {{ consolidado.evaluados }} de {{ grupal.estudiantes_objetivo }} estudiantes</span><span>{{ consolidado.progreso_pct }}%</span></div>
+    <div class="barra" style="margin:8px 0 12px"><div style="width:{{ consolidado.progreso_pct }}%"></div></div>
+    {% if consolidado.madurez_media is not None %}<p class="muted">Madurez media: <strong>{{ consolidado.madurez_media }}%</strong> ·
+        {% for e, n in consolidado.estadios.items %}<span class="estadio estadio-{{ e }}">{{ e }}: {{ n }}</span> {% endfor %}</p>{% endif %}
+</section>
+<div class="rejilla-2">
+<section class="tarjeta">
+    <h2>Estudiantes</h2>
+    {% if estudiantes %}<div class="tabla-scroll"><table class="tabla"><tbody>{% for est, ev in estudiantes %}<tr>
+        <td><a href="{% url 'estudiante' est.pk %}">{{ est }}</a></td>
+        <td>{% if ev %}<a href="{% url 'evaluacion' ev.pk %}">{% if ev.estadio_gallahue %}<span class="estadio estadio-{{ ev.estadio_gallahue }}">{{ ev.estadio_gallahue }}</span>{% else %}{{ ev.get_estado_display }}{% endif %}</a>
+            {% else %}<a class="btn btn-chico" href="{% url 'evaluar' %}?estudiante={{ est.pk }}&grupal={{ grupal.pk }}">Evaluar</a>{% endif %}</td></tr>{% endfor %}</tbody></table></div>
+    {% else %}<div class="vacio">El salón no tiene estudiantes registrados. Puedes evaluar sin asociar estudiantes o <a href="{% url 'grupo' grupal.grupo.pk %}">agregarlos</a>.</div>{% endif %}
+</section>
+<section class="tarjeta">
+    <h2>Matriz de deficiencias colectivas</h2>
+    {% for e in consolidado.errores %}<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;gap:8px;font-size:14px"><strong>{{ e.error }}</strong><span>{{ e.porcentaje }}% ({{ e.estudiantes }}/{{ consolidado.evaluados }})</span></div>
+        <div class="barra"><div style="width:{{ e.porcentaje }}%;background:#D97706"></div></div></div>
+    {% empty %}<p class="subtle">{% if consolidado.evaluados %}El grupo no presenta fallas críticas.{% else %}Aún no hay evaluaciones terminadas.{% endif %}</p>{% endfor %}
+</section>
+</div>
+<section class="tarjeta">
+    <h2>Planeación consolidada del salón</h2>
+    {% if debil %}<p class="muted">Se trabajará <strong>{{ debil.icono }} {{ debil.nombre }}</strong> (la habilidad con menor madurez media) y las primeras sesiones atacarán los errores presentes en al menos 25 % del salón.</p>{% endif %}
+    {% for u in unidades %}<p>📄 <a href="{% url 'unidad' u.pk %}">{{ u }}</a> <span class="subtle">· {{ u.creado|date:"d M Y" }}</span></p>{% endfor %}
+    {% if consolidado.evaluados %}{% url 'grupal_plan' grupal.pk as accion %}{% include "parciales/preferencias.html" with form=form_unidad accion=accion boton="Generar planeación del salón" %}
+    {% else %}<p class="subtle">Evalúa al menos un estudiante para generar la planeación.</p>{% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,79 @@
+{% extends "base.html" %}{% load aula %}
+{% block titulo %}Resultado{% endblock %}
+{% block contenido %}
+<div class="migas"><a href="{% url 'evaluaciones' %}">Evaluaciones</a>{% if ev.estudiante %} · <a href="{% url 'estudiante' ev.estudiante.pk %}">{{ ev.estudiante }}</a>{% endif %}{% if ev.evaluacion_grupal %} · <a href="{% url 'grupal' ev.evaluacion_grupal.pk %}">Evaluación del salón</a>{% endif %}</div>
+<div class="pasos"><div class="paso hecho"><span class="num">✓</span>Habilidad</div><div class="paso hecho"><span class="num">✓</span>Video</div><div class="paso activo"><span class="num">3</span>Resultado</div></div>
+
+{% if procesando %}
+<div class="tarjeta procesando" data-estado-url="{% url 'evaluacion_estado' ev.pk %}">
+    <div class="spinner"></div><h2>Analizando el movimiento…</h2>
+    <p class="muted">Extrayendo fotogramas, detectando la pose y evaluando los criterios de la batería. Suele tardar unos segundos.</p>
+</div>
+{% elif ev.estado == "error" %}
+<div class="tarjeta"><div class="aviso aviso-error"><strong>No se pudo analizar la evidencia.</strong><br>{{ ev.mensaje_error }}</div>
+    <div class="acciones"><a class="btn" href="{% url 'evaluar' %}{% if ev.estudiante %}?estudiante={{ ev.estudiante.pk }}{% endif %}">Subir otro video</a>
+    <form method="post" action="{% url 'evaluacion_eliminar' ev.pk %}">{% csrf_token %}<button class="btn btn-secundario">Eliminar</button></form></div></div>
+{% else %}
+<section class="tarjeta tarjeta-acento">
+    {% if ev.es_deteccion_automatica %}<span class="etiqueta-chip" style="margin-bottom:10px">🔍 Detección automática: {{ ev.habilidad_detectada.nombre }}</span>{% endif %}
+    <div class="diag-cabecera">
+        <div class="diag-titulo"><span class="icono">{{ ev.habilidad_detectada|icono }}</span>
+            <div><h1 style="margin:0">{{ ev.estudiante|default:"Diagnóstico biomecánico" }}</h1>
+            <div class="muted">{{ ev.habilidad_detectada.nombre }} · {{ ev.habilidad_detectada.componente_etiqueta }} · Puntaje <strong>{{ ev.puntaje }}/{{ ev.puntaje_maximo }}</strong> · {{ ev.get_grado_display }}</div>
+            <div class="subtle">{{ ev.creado|date:"d M Y, H:i" }} · Motor: {% if ev.modelo_ia %}Gemini ({{ ev.modelo_ia }}){% else %}local{% endif %}</div></div></div>
+        <span class="estadio estadio-{{ ev.estadio_gallahue }}">Estadio {{ ev.estadio_gallahue }}</span>
+    </div>
+    <div class="medidor"><div class="circulo" style="--pct: {{ ev.porcentaje_madurez }}"><b>{{ ev.porcentaje_madurez }}%</b></div>
+        <div style="flex:1"><div style="display:flex;justify-content:space-between;font-weight:600;font-size:14px"><span>Índice de madurez motriz</span><span>{{ ev.porcentaje_madurez }}/100</span></div>
+        <div class="barra"><div style="width:{{ ev.porcentaje_madurez }}%"></div></div></div></div>
+    {% if ev.advertencias %}<div class="aviso aviso-advertencia"><strong>Sobre la grabación:</strong><ul>{% for a in ev.advertencias %}<li>{{ a }}</li>{% endfor %}</ul></div>{% endif %}
+    <p class="muted">{{ ev.resumen|negritas }}</p>
+    <div class="consignas"><strong>Consignas para el estudiante ("El lenguaje del profe")</strong><ul>{% for f in ev.frases_profe %}<li>“{{ f }}”</li>{% endfor %}</ul></div>
+    <div class="acciones">
+        <a class="btn" href="{% url 'reporte' ev.pk %}">Descargar reporte del estudiante (.docx)</a>
+        <a class="btn btn-secundario" href="{% url 'evaluar' %}{% if ev.estudiante %}?estudiante={{ ev.estudiante.pk }}{% endif %}{% if ev.evaluacion_grupal %}{% if ev.estudiante %}&{% else %}?{% endif %}grupal={{ ev.evaluacion_grupal.pk }}{% endif %}">Nueva evaluación</a>
+    </div>
+
+    <details open><summary>Criterios evaluados ({{ ev.puntaje }}/{{ ev.puntaje_maximo }})</summary>
+        <div class="tabla-scroll"><table class="tabla tabla-apilable" style="margin-top:8px"><thead><tr><th>Criterio y fase</th><th>Medición</th><th>Estado</th></tr></thead><tbody>
+        {% for r in resultados %}<tr><td><strong>{{ r.texto }}</strong><div class="subtle">Fase: {{ r.fase }} · {{ r.observacion }}</div></td>
+            <td class="mono">{{ r.medido|default:"—" }}{% if r.umbral %}<div class="subtle">Umbral: {{ r.umbral }}</div>{% endif %}</td>
+            <td>{% if r.puntaje %}<span class="logrado">✓ Logrado</span>{% else %}<span class="en-proceso">✗ En proceso</span>{% endif %}</td></tr>{% endfor %}
+        </tbody></table></div></details>
+
+    <details><summary>Fallas y observaciones técnicas ({{ ev.errores_criticos|length }})</summary>
+        {% for e in ev.errores_criticos %}<div class="aviso aviso-error" style="margin-top:8px"><strong>{{ e.error }}</strong><br>{{ e.impacto_biomecanico }}</div>{% endfor %}</details>
+
+    {% if fotogramas %}<details open><summary>Fotogramas analizados ({{ fotogramas|length }})</summary>
+        <div class="tira" style="margin-top:10px">{% for f in fotogramas %}
+            <div class="fotograma {% if f.hito_tipo == 'pico' %}pico{% endif %}">
+                {% if f.hito_badge %}<div class="hito" style="background:{{ f.hito_color|default:'#64748B' }}">{{ f.hito_badge }}</div>{% endif %}
+                {% if f.imagen_esqueleto %}<img loading="lazy" src="{% url 'fotograma' ev.pk f.orden 'esqueleto' %}" alt="Fotograma {{ f.orden }}">{% else %}<div class="vacio" style="padding:20px 8px">Imagen borrada por retención</div>{% endif %}
+                <div class="pie"><strong>#{{ f.orden }} · {{ f.tiempo_s|floatformat:2 }} s</strong><div class="subtle">{{ f.hito_desc|default:f.fase }}</div>
+                {% if f.angulos %}<div class="angulos"><span>🦵 {{ f.angulos.kneeMin }}°</span><span>💪 {{ f.angulos.elbowAvg }}°</span><span>📐 {{ f.angulos.trunkLean }}°</span></div>{% endif %}</div>
+            </div>{% endfor %}</div></details>{% endif %}
+
+    <details><summary>Telemetría articular medida</summary>
+        <div class="telemetria">
+            <div>Flexión mín. rodilla<b>{{ t.minKneeAngle }}°</b></div><div>Ángulo medio codo<b>{{ t.avgElbowAngle }}°</b></div>
+            <div>Inclinación tronco<b>{{ t.avgTrunkAngle }}°</b></div><div>Apertura de cadera<b>{{ t.maxHipAngle }}°</b></div>
+            <div>Fase aérea<b>{% if t.flightDetected %}✓ Detectada{% else %}✗ No evidente{% endif %}</b></div><div>Simetría bilateral<b>{{ t.symmetryScore }}%</b></div>
+        </div>
+        {% if ev.fases_fsm %}<p class="subtle" style="margin-top:8px">Fases detectadas: {{ ev.fases_fsm|join:" ➔ " }}</p>{% endif %}
+        {% if ev.meta_video.ventana_s %}<p class="subtle">Ventana analizada: {{ ev.meta_video.ventana_s.0 }}–{{ ev.meta_video.ventana_s.1 }} s de {{ ev.meta_video.duracion_s }} s · {{ ev.meta_video.ancho }}×{{ ev.meta_video.alto }} · {{ ev.meta_video.fps }} fps</p>{% endif %}
+        <p class="subtle">Versión del motor: {{ ev.version_motor }}</p>
+    </details>
+    <div class="acciones" style="margin-top:14px">
+        <form method="post" action="{% url 'evaluacion_reprocesar' ev.pk %}">{% csrf_token %}<button class="btn btn-secundario btn-chico" {% if not ev.archivo %}disabled title="El video ya se borró"{% endif %}>Volver a analizar</button></form>
+        <form method="post" action="{% url 'evaluacion_eliminar' ev.pk %}" onsubmit="return confirm('¿Eliminar la evaluación y sus imágenes?')">{% csrf_token %}<button class="btn btn-secundario btn-chico">Eliminar</button></form>
+    </div>
+</section>
+
+<section class="tarjeta">
+    <h2>Unidad didáctica a partir de este diagnóstico</h2>
+    <p class="muted">Las primeras sesiones refuerzan los criterios que el estudiante aún no logra.{% if not ev.habilidad_detectada.tiene_plantillas_propias %} <br><span class="aviso aviso-advertencia" style="display:inline-block;margin-top:6px">{{ ev.habilidad_detectada.nombre }} aún no tiene banco de sesiones propio: se usan las sesiones de Carrera.</span>{% endif %}</p>
+    {% for u in unidades %}<p>📄 <a href="{% url 'unidad' u.pk %}">{{ u }}</a> <span class="subtle">· {{ u.creado|date:"d M Y" }}</span></p>{% endfor %}
+    {% url 'unidad_crear' ev.pk as accion %}{% include "parciales/preferencias.html" with form=form_unidad accion=accion %}
+</section>
+{% endif %}
+{% endblock %}

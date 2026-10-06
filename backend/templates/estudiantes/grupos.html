@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block titulo %}Salones{% endblock %}
+{% block contenido %}
+<div class="cabecera-pagina"><div><h1>Salones</h1><p class="muted">Registra tus grupos y estudiantes para llevar su historial y evaluar al salón completo.</p></div></div>
+<div class="rejilla-2">
+<section class="tarjeta">
+    {% for g in grupos %}<p><a href="{% url 'grupo' g.pk %}"><strong>{{ g.nombre }}</strong></a> <span class="subtle">· {{ g.get_grado_display }} · {{ g.anio }} · {{ g.n }} estudiantes</span></p>
+    {% empty %}<div class="vacio">Aún no tienes salones.</div>{% endfor %}
+</section>
+<form class="tarjeta" method="post">{% csrf_token %}
+    <h2>Nuevo salón</h2>
+    {% for campo in form %}{% include "parciales/campo.html" %}{% endfor %}
+    <button class="btn" type="submit">Crear salón</button>
+</form>
+</div>
+{% endblock %}

@@ -1,0 +1,37 @@
+{% load static aula %}<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block titulo %}Panel{% endblock %} · Aula Global 360</title>
+    <link rel="icon" type="image/svg+xml" href="{% static 'img/logo-icon.svg' %}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/aula.css' %}">
+</head>
+<body>
+{% if user.is_authenticated %}
+<header class="topbar">
+    <a class="brand" href="{% url 'panel' %}"><img src="{% static 'img/logo-icon.svg' %}" alt="">Aula Global 360</a>
+    <nav class="nav">
+        <a href="{% url 'evaluar' %}" class="{% activo '/evaluar' %}">Evaluar</a>
+        <a href="{% url 'evaluaciones' %}" class="{% activo '/evaluaciones/' %}">Evaluaciones</a>
+        <a href="{% url 'grupos' %}" class="{% activo '/grupos' '/estudiantes' '/evaluaciones-grupales' %}">Salones</a>
+        <a href="{% url 'unidades' %}" class="{% activo '/unidades' %}">Planeaciones</a>
+    </nav>
+    <div class="usuario">
+        <span class="nombre-usuario">{{ user.get_full_name|default:user.username }}{% if user.institucion %} · {{ user.institucion }}{% endif %}</span>
+        {% if user.is_staff %}<a href="{% url 'admin:index' %}">Admin</a>{% endif %}
+        <form method="post" action="{% url 'salir' %}">{% csrf_token %}<button class="btn-enlace" type="submit">Salir</button></form>
+    </div>
+</header>
+{% endif %}
+<main class="contenedor {% block clase_contenedor %}{% endblock %}">
+    {% for m in messages %}<div class="aviso aviso-{{ m.tags|default:'info' }}">{{ m }}</div>{% endfor %}
+    {% block contenido %}{% endblock %}
+</main>
+<footer class="pie-pagina">Aula Global 360 · Batería HMB (González Palacio &amp; Montoya Grisales, 2021 · Dialnet 7925607) · Estadios de Gallahue</footer>
+<script src="{% static 'js/aula.js' %}" defer></script>
+</body>
+</html>

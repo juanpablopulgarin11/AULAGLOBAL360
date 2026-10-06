@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block titulo %}{{ g.nombre }}{% endblock %}
+{% block contenido %}
+<div class="migas"><a href="{% url 'grupos' %}">Salones</a></div>
+<div class="cabecera-pagina"><div><h1>{{ g.nombre }}</h1><p class="muted">{{ g.get_grado_display }} · {{ g.anio }} · {{ g.institucion }}</p></div>
+<form class="acciones" method="post" action="{% url 'grupal_crear' g.pk %}">{% csrf_token %}
+    <label class="subtle" for="id_estudiantes_objetivo">Estudiantes</label>{{ form_grupal.estudiantes_objetivo }}
+    <button class="btn" type="submit">Iniciar evaluación del salón</button></form></div>
+{% if grupales %}<div class="aviso aviso-info">Evaluaciones de salón: {% for gr in grupales %}<a href="{% url 'grupal' gr.pk %}">{{ gr.creado|date:"d M Y" }}</a>{% if not forloop.last %} · {% endif %}{% endfor %}</div>{% endif %}
+<div class="rejilla-2">
+<section class="tarjeta">
+    <h2>Estudiantes ({{ estudiantes|length }})</h2>
+    {% if estudiantes %}<div class="tabla-scroll"><table class="tabla"><tbody>{% for e in estudiantes %}<tr>
+        <td><a href="{% url 'estudiante' e.pk %}">{{ e }}</a>{% if not e.consentimiento_video %}<div class="subtle">⚠ Sin consentimiento de video registrado</div>{% endif %}</td>
+        <td class="subtle">{{ e.n_eval }} evaluaciones</td>
+        <td><a class="btn btn-secundario btn-chico" href="{% url 'evaluar' %}?estudiante={{ e.pk }}">Evaluar</a></td></tr>{% endfor %}</tbody></table></div>
+    {% else %}<div class="vacio">Agrega la lista de estudiantes del salón.</div>{% endif %}
+</section>
+<form class="tarjeta" method="post">{% csrf_token %}
+    <h2>Agregar estudiantes</h2>
+    {% include "parciales/campo.html" with campo=form.nombres %}
+    <button class="btn" type="submit">Agregar</button>
+    <p class="ayuda" style="margin-top:10px">Recuerda registrar el consentimiento del acudiente (Ley 1581 de 2012) en la ficha de cada estudiante antes de grabarlo.</p>
+</form>
+</div>
+{% endblock %}

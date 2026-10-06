@@ -30,6 +30,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -75,6 +76,16 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_DIRS = [BASE_DIR / "static"]
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": env("DJANGO_STATICFILES_BACKEND",
+                                   default="django.contrib.staticfiles.storage.StaticFilesStorage")},
+}
+
+LOGIN_URL = "ingresar"
+LOGIN_REDIRECT_URL = "panel"
+LOGOUT_REDIRECT_URL = "inicio"
 
 # Videos y fotogramas de menores: almacenamiento privado, nunca bajo MEDIA_URL público.
 # Se sirven solo mediante vistas autenticadas.

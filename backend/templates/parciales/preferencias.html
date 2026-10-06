@@ -1,0 +1,12 @@
+<form method="post" action="{{ accion }}" data-un-envio>
+    {% csrf_token %}
+    <div class="fila-campos">
+        {% include "parciales/campo.html" with campo=form.formato %}
+        {% include "parciales/campo.html" with campo=form.metodologia %}
+        {% include "parciales/campo.html" with campo=form.periodo %}
+        {% include "parciales/campo.html" with campo=form.duracion_min %}
+        {% include "parciales/campo.html" with campo=form.total_clases %}
+    </div>
+    <div class="campo"><span class="etiqueta">{{ form.materiales.label }}</span><div class="checks">{% for c in form.materiales %}{{ c }}{% endfor %}</div></div>
+    <button class="btn" type="submit" data-enviando="Generando planeación…">{{ boton|default:"Generar unidad didáctica" }}</button>
+</form>

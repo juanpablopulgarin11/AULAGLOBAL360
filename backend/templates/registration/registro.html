@@ -1,0 +1,13 @@
+{% extends "base.html" %}{% load static %}
+{% block titulo %}Registro{% endblock %}
+{% block contenido %}
+<div class="auth tarjeta">
+    <div class="logo"><a href="{% url 'inicio' %}"><img src="{% static 'img/logo.svg' %}" alt="Aula Global 360" height="44"></a></div>
+    <h1>Crear cuenta de docente</h1>
+    <form method="post" data-un-envio>{% csrf_token %}
+        {% for campo in form %}{% include "parciales/campo.html" %}{% endfor %}
+        <button class="btn btn-grande" type="submit">Crear cuenta</button>
+    </form>
+    <p class="subtle" style="margin-top:14px">¿Ya tienes cuenta? <a href="{% url 'ingresar' %}">Ingresa</a></p>
+</div>
+{% endblock %}

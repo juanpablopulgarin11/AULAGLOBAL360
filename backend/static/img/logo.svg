@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 60" width="100%" height="100%" fill="none">
+  <defs>
+    <!-- Gradiente para el orbe de 360° y vector de movimiento -->
+    <linearGradient id="ag360Gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8" />
+      <stop offset="50%" stop-color="#0D9488" />
+      <stop offset="100%" stop-color="#2563EB" />
+    </linearGradient>
+    <linearGradient id="accentGlow" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0D9488" stop-opacity="0.2" />
+      <stop offset="100%" stop-color="#38BDF8" stop-opacity="0" />
+    </linearGradient>
+  </defs>
+
+  <!-- ISOTIPO: Símbolo Biomecánico 360° -->
+  <g transform="translate(6, 6)">
+    <!-- Círculo base con brillo tenue -->
+    <circle cx="24" cy="24" r="22" fill="url(#accentGlow)" stroke="#334155" stroke-width="1.5" stroke-dasharray="2 3" />
+    
+    <!-- Anillo orbital de 360° con apertura de rotación -->
+    <path d="M 24 4 A 20 20 0 1 1 7.2 34.8" fill="none" stroke="url(#ag360Gradient)" stroke-width="2.5" stroke-linecap="round" />
+    
+    <!-- Flecha indicadora de vector 360° -->
+    <polygon points="7.2,34.8 5,28 12,30" fill="#38BDF8" />
+
+    <!-- Nodos cinemáticos biomecánicos (Landmarks anatómicos) -->
+    <!-- Cabeza -->
+    <circle cx="24" cy="14" r="3.2" fill="#F8FAFC" stroke="#0D9488" stroke-width="1.2" />
+    
+    <!-- Tronco e impulsión -->
+    <path d="M 24 17.5 L 23 27 L 31 34" stroke="#F8FAFC" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="M 23 27 L 16 35 L 12 33" stroke="#94A3B8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+    
+    <!-- Braceo en plano sagital -->
+    <path d="M 23 21 L 29 23 L 33 19" stroke="url(#ag360Gradient)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="M 23 21 L 18 20 L 16 25" stroke="#94A3B8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+
+    <!-- Articulaciones activas (Keypoints) -->
+    <circle cx="23" cy="21" r="1.5" fill="#38BDF8" />
+    <circle cx="23" cy="27" r="1.5" fill="#0D9488" />
+    <circle cx="31" cy="34" r="1.6" fill="#38BDF8" />
+    <circle cx="16" cy="35" r="1.4" fill="#94A3B8" />
+    <circle cx="29" cy="23" r="1.4" fill="#2563EB" />
+  </g>
+
+  <!-- LOGOTIPO: Tipografía Institucional Escalar -->
+  <g transform="translate(64, 18)">
+    <!-- AULA GLOBAL -->
+    <text x="0" y="14" font-family="'DM Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif" font-size="15" font-weight="800" fill="#F8FAFC" letter-spacing="0.06em">
+      AULA GLOBAL
+    </text>
+
+    <!-- 360 con gradiente de marca -->
+    <text x="110" y="14" font-family="'JetBrains Mono', monospace" font-size="15" font-weight="800" fill="url(#ag360Gradient)" letter-spacing="-0.02em">
+      360
+    </text>
+
+    <!-- Subtítulo técnico descriptor -->
+    <text x="0" y="27" font-family="'DM Sans', -apple-system, sans-serif" font-size="8.5" font-weight="600" fill="#64748B" letter-spacing="0.08em" text-transform="uppercase">
+      BIOMECÁNICA · EVALUACIÓN HMB
+    </text>
+  </g>
+</svg>

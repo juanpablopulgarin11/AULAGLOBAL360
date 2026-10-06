@@ -1,0 +1,13 @@
+{% extends "base.html" %}{% load aula %}
+{% block titulo %}Planeaciones{% endblock %}
+{% block contenido %}
+<div class="cabecera-pagina"><div><h1>Planeaciones</h1><p class="muted">Unidades didácticas generadas desde evaluaciones individuales o del salón.</p></div></div>
+<div class="tarjeta" style="padding:0">
+{% if unidades %}<div class="tabla-scroll"><table class="tabla"><thead><tr><th>Unidad</th><th>Origen</th><th>Formato</th><th>Fecha</th></tr></thead><tbody>
+{% for u in unidades %}<tr><td>{{ u.habilidad|icono }} <a href="{% url 'unidad' u.pk %}">{{ u }}</a></td>
+    <td>{% if u.evaluacion_grupal %}Salón {{ u.evaluacion_grupal.grupo.nombre }}{% elif u.evaluacion %}{{ u.evaluacion.estudiante|default:"Evaluación individual" }}{% endif %}</td>
+    <td class="subtle">{{ u.formato }}</td><td class="subtle">{{ u.creado|date:"d M Y" }}</td></tr>{% endfor %}
+</tbody></table></div>
+{% else %}<div class="vacio">Genera una planeación desde el resultado de una evaluación.</div>{% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends "base.html" %}{% load aula %}
+{% block titulo %}Evaluaciones{% endblock %}
+{% block contenido %}
+<div class="cabecera-pagina"><h1>Evaluaciones</h1><a class="btn" href="{% url 'evaluar' %}">＋ Nueva evaluación</a></div>
+<form class="acciones" method="get" style="margin-bottom:12px">
+    <select name="estadio" class="btn btn-secundario btn-chico" onchange="this.form.submit()">
+        <option value="">Todos los estadios</option>
+        <option value="Inicial" {% if request.GET.estadio == "Inicial" %}selected{% endif %}>Inicial</option>
+        <option value="Elemental" {% if request.GET.estadio == "Elemental" %}selected{% endif %}>Elemental</option>
+        <option value="Maduro" {% if request.GET.estadio == "Maduro" %}selected{% endif %}>Maduro</option>
+    </select>
+</form>
+<div class="tarjeta" style="padding:0">
+{% if pagina.object_list %}
+<div class="tabla-scroll"><table class="tabla"><thead><tr><th>Estudiante</th><th>Habilidad</th><th>Resultado</th><th>Fecha</th></tr></thead><tbody>
+{% for ev in pagina %}<tr>
+    <td><a href="{% url 'evaluacion' ev.pk %}">{{ ev.estudiante|default:"Sin estudiante" }}</a>{% if ev.estudiante %}<div class="subtle">{{ ev.estudiante.grupo }}</div>{% endif %}</td>
+    <td>{{ ev.habilidad_detectada|icono }} {{ ev.habilidad_detectada.nombre|default:"—" }}</td>
+    <td>{% if ev.estadio_gallahue %}<span class="estadio estadio-{{ ev.estadio_gallahue }}">{{ ev.estadio_gallahue }} · {{ ev.porcentaje_madurez }}%</span>{% else %}<span class="etiqueta-chip">{{ ev.get_estado_display }}</span>{% endif %}</td>
+    <td class="subtle">{{ ev.creado|date:"d M Y" }}</td></tr>{% endfor %}
+</tbody></table></div>
+{% else %}<div class="vacio">No hay evaluaciones con ese filtro.</div>{% endif %}
+</div>
+{% if pagina.has_other_pages %}<div class="acciones">{% if pagina.has_previous %}<a class="btn btn-secundario btn-chico" href="?pagina={{ pagina.previous_page_number }}">← Anterior</a>{% endif %}<span class="subtle">Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>{% if pagina.has_next %}<a class="btn btn-secundario btn-chico" href="?pagina={{ pagina.next_page_number }}">Siguiente →</a>{% endif %}</div>{% endif %}
+{% endblock %}

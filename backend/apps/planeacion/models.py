@@ -4,16 +4,16 @@ from django.db import models
 
 
 class Formato(models.TextChoices):
-    CUENTO_MOTOR = "Cuento Motor"
-    CIRCUITO = "Circuito de Estaciones"
-    RETOS = "Retos Cooperativos"
-    JUEGO_LIBRE = "Juego Libre Dirigido"
+    CUENTO_MOTOR = "Cuento Motor", "Cuento Motor"
+    CIRCUITO = "Circuito de Estaciones", "Circuito de Estaciones"
+    RETOS = "Retos Cooperativos", "Retos Cooperativos"
+    JUEGO_LIBRE = "Juego Libre Dirigido", "Juego Libre Dirigido"
 
 
 class Metodologia(models.TextChoices):
-    DESCUBRIMIENTO = "Descubrimiento Guiado"
-    PROBLEMAS = "Resolución de Problemas"
-    TAREAS = "Asignación de Tareas"
+    DESCUBRIMIENTO = "Descubrimiento Guiado", "Descubrimiento Guiado"
+    PROBLEMAS = "Resolución de Problemas", "Resolución de Problemas"
+    TAREAS = "Asignación de Tareas", "Asignación de Tareas"
 
 
 DURACIONES = [(m, f"{m} min") for m in (45, 50, 55, 60, 90)]
@@ -42,6 +42,11 @@ class UnidadDidactica(models.Model):
 
     def __str__(self) -> str:
         return f"{self.habilidad.nombre} · Período {self.periodo} · {self.total_clases} clases"
+
+    def get_absolute_url(self) -> str:
+        from django.urls import reverse
+
+        return reverse("unidad", args=[self.pk])
 
 
 class Sesion(models.Model):

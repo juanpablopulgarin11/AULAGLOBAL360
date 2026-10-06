@@ -1,0 +1,36 @@
+{% extends "base.html" %}{% load aula %}
+{% block titulo %}Panel{% endblock %}
+{% block contenido %}
+<div class="cabecera-pagina">
+    <div><h1>Hola, {{ user.first_name|default:user.username }}</h1><p class="muted">Evalúa habilidades motrices con video y genera la planeación de tu clase.</p></div>
+    <a class="btn" href="{% url 'evaluar' %}">＋ Nueva evaluación</a>
+</div>
+<div class="rejilla">
+    <div class="tarjeta"><div class="subtle">Evaluaciones</div><div class="dato">{{ total }}</div></div>
+    <div class="tarjeta"><div class="subtle">Estadio maduro</div><div class="dato">{{ por_estadio|get:"Maduro"|default:0 }}</div></div>
+    <div class="tarjeta"><div class="subtle">Estadio elemental</div><div class="dato">{{ por_estadio|get:"Elemental"|default:0 }}</div></div>
+    <div class="tarjeta"><div class="subtle">Estadio inicial</div><div class="dato">{{ por_estadio|get:"Inicial"|default:0 }}</div></div>
+</div>
+<div class="rejilla-2">
+    <section class="tarjeta">
+        <h2>Evaluaciones recientes</h2>
+        {% if recientes %}
+        <div class="tabla-scroll"><table class="tabla"><tbody>
+        {% for ev in recientes %}
+            <tr><td>{{ ev.habilidad_detectada|icono }} <a href="{% url 'evaluacion' ev.pk %}">{{ ev.estudiante|default:"Sin estudiante" }}</a><div class="subtle">{{ ev.habilidad_detectada.nombre|default:"En proceso" }} · {{ ev.creado|date:"d M Y" }}</div></td>
+                <td>{% if ev.estadio_gallahue %}<span class="estadio estadio-{{ ev.estadio_gallahue }}">{{ ev.estadio_gallahue }}</span>{% else %}<span class="etiqueta-chip">{{ ev.get_estado_display }}</span>{% endif %}</td></tr>
+        {% endfor %}
+        </tbody></table></div>
+        <p style="margin-top:10px"><a href="{% url 'evaluaciones' %}">Ver todas →</a></p>
+        {% else %}<div class="vacio">Aún no hay evaluaciones. <a href="{% url 'evaluar' %}">Sube el primer video</a>.</div>{% endif %}
+    </section>
+    <section class="tarjeta">
+        <h2>Salones</h2>
+        {% for g in grupos %}<p><a href="{% url 'grupo' g.pk %}">{{ g.nombre }}</a> <span class="subtle">· {{ g.get_grado_display }} · {{ g.n }} estudiantes</span></p>
+        {% empty %}<div class="vacio">Crea un salón para registrar estudiantes y evaluar al grupo completo. <a href="{% url 'grupos' %}">Crear salón</a></div>{% endfor %}
+        <h2 style="margin-top:18px">Últimas planeaciones</h2>
+        {% for u in unidades %}<p><a href="{% url 'unidad' u.pk %}">{{ u }}</a> <span class="subtle">· {{ u.creado|date:"d M Y" }}</span></p>
+        {% empty %}<p class="subtle">Las unidades didácticas se generan desde el resultado de una evaluación.</p>{% endfor %}
+    </section>
+</div>
+{% endblock %}

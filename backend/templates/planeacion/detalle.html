@@ -1,0 +1,45 @@
+{% extends "base.html" %}{% load aula %}
+{% block titulo %}Unidad didáctica{% endblock %}
+{% block contenido %}
+<div class="migas"><a href="{% url 'unidades' %}">Planeaciones</a>{% if u.evaluacion %} · <a href="{% url 'evaluacion' u.evaluacion.pk %}">Evaluación de origen</a>{% elif u.evaluacion_grupal %} · <a href="{% url 'grupal' u.evaluacion_grupal.pk %}">Evaluación del salón</a>{% endif %}</div>
+<div class="cabecera-pagina">
+    <div><h1>{{ u.habilidad|icono }} Unidad didáctica · Período {{ u.periodo }}</h1>
+    <p class="muted">{{ c.tema }}<br>{{ c.grado }} · {{ u.total_clases }} sesiones de {{ u.duracion_min }} min · {{ u.formato }} · {{ u.metodologia }}</p></div>
+    <div class="acciones"><a class="btn" href="{% url 'unidad_docx' u.pk %}">Descargar en Word (.docx)</a>
+    <form method="post" action="{% url 'unidad_eliminar' u.pk %}" onsubmit="return confirm('¿Eliminar esta planeación?')">{% csrf_token %}<button class="btn btn-secundario">Eliminar</button></form></div>
+</div>
+<section class="tarjeta">
+    <h2>Pregunta problematizadora</h2><p><em>{{ c.pregunta_problematizadora }}</em></p>
+    <h3>Objetivo general</h3><p>{{ c.objetivo_general }}</p>
+    <ul>{% for o in c.objetivos_especificos %}<li>{{ o }}</li>{% endfor %}</ul>
+    <div class="rejilla" style="margin-top:12px">
+        <div class="tarjeta" style="margin:0"><strong>Saber (cognitivo)</strong><p class="muted">{{ c.indicadores.saber }}</p></div>
+        <div class="tarjeta" style="margin:0"><strong>Hacer (procedimental)</strong><p class="muted">{{ c.indicadores.hacer }}</p></div>
+        <div class="tarjeta" style="margin:0"><strong>Ser (actitudinal)</strong><p class="muted">{{ c.indicadores.ser }}</p></div>
+    </div>
+</section>
+<h2>Secuencia de sesiones</h2>
+<p class="subtle">Puedes ajustar cualquier sesión; el Word descargado usa tus cambios.</p>
+{% for s in sesiones %}
+<article class="sesion {% if s.es_refuerzo %}refuerzo{% endif %}" id="sesion-{{ s.numero }}">
+    <h3><span>Sesión {{ s.numero }}: {{ s.titulo }}</span><span class="acciones">{% if s.es_refuerzo %}<span class="etiqueta-chip chip-refuerzo">🎯 Refuerzo dirigido</span>{% endif %}<span class="etiqueta-chip">{{ s.fase_pedagogica }}</span><a class="btn btn-secundario btn-chico" href="{% url 'sesion_editar' u.pk s.numero %}">Editar</a></span></h3>
+    {% if s.es_refuerzo and s.error_reforzado %}<div class="aviso aviso-info">En la evaluación se identificó <em>«{{ s.error_reforzado }}»</em>. Esta sesión trabaja con énfasis prioritario esa falencia.</div>{% endif %}
+    <dl>
+        <dt>Objetivo</dt><dd>{{ s.objetivo }}</dd>
+        <dt>Inicial · {{ c.duraciones.inicial }}</dt><dd>{{ s.actividad_inicial }}</dd>
+        <dt>Montaje</dt><dd>{{ s.distribucion }}</dd>
+        <dt>Central · {{ c.duraciones.central }}</dt><dd>{{ s.actividad_central }}</dd>
+        <dt>Final · {{ c.duraciones.final }}</dt><dd>{{ s.actividad_final }}</dd>
+        <dt>Consigna</dt><dd><em>“{{ s.consigna }}”</em></dd>
+        <dt>Indicador</dt><dd>{{ s.criterio_eval }}</dd>
+    </dl>
+</article>
+{% endfor %}
+<section class="tarjeta">
+    <h2>Lineamientos metodológicos e inclusión</h2>
+    <p><strong>Adaptaciones (PIAR / DUA):</strong> {{ c.adaptaciones_piar }}</p>
+    <p><strong>Evaluación formativa:</strong> {{ c.evaluacion }}</p>
+    <p><strong>Tarea extracurricular:</strong> {{ c.tarea_extracurricular }}</p>
+    <div class="consignas"><strong>Consignas clave</strong><ul>{% for f in c.retroalimentacion_tips %}<li>“{{ f }}”</li>{% endfor %}</ul></div>
+</section>
+{% endblock %}

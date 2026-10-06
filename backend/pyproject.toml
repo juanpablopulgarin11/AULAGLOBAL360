@@ -8,3 +8,4 @@ requires-python = ">=3.10"
 testpaths = ["tests"]
 pythonpath = ["."]
 DJANGO_SETTINGS_MODULE = "config.settings.test"
+filterwarnings = ["ignore:No directory at:UserWarning"]

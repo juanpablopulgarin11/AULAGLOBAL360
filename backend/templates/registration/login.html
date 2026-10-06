@@ -1,0 +1,16 @@
+{% extends "base.html" %}{% load static %}
+{% block titulo %}Ingresar{% endblock %}
+{% block contenido %}
+<div class="auth tarjeta">
+    <div class="logo"><a href="{% url 'inicio' %}"><img src="{% static 'img/logo.svg' %}" alt="Aula Global 360" height="44"></a></div>
+    <h1>Ingresar</h1>
+    {% if form.non_field_errors %}<div class="aviso aviso-error">Usuario o contraseña incorrectos.</div>{% endif %}
+    <form method="post">{% csrf_token %}
+        {% include "parciales/campo.html" with campo=form.username %}
+        {% include "parciales/campo.html" with campo=form.password %}
+        <input type="hidden" name="next" value="{{ next }}">
+        <button class="btn btn-grande" type="submit">Ingresar</button>
+    </form>
+    <p class="subtle" style="margin-top:14px">¿No tienes cuenta? <a href="{% url 'registro' %}">Regístrate como docente</a></p>
+</div>
+{% endblock %}
