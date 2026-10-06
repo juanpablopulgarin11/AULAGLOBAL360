@@ -35,6 +35,10 @@
 3. Sube un video o imagen del estudiante (o usa el modo simulado).
 4. Obtén el diagnóstico biomecánico y descarga la planeación de clase o reporte en Word.
 
+## 🐍 Versión Python / Django
+
+La carpeta [`backend/`](backend/README.md) contiene la versión completa en Django: el video se analiza en el servidor con MediaPipe, los resultados quedan guardados por estudiante y salón, y las planeaciones y reportes se descargan en Word (`.docx`). Instrucciones de instalación local y con Docker en su README.
+
 ## 📚 Documentación técnica
 
 La documentación completa del funcionamiento interno (motor biomecánico, reglas de la batería, planeación, Gemini) y el plan de migración a Python/Django está en [`docs/`](docs/README.md).

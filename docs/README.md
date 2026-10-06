@@ -8,6 +8,10 @@ Documentación completa de la versión actual (HTML + JavaScript estático en Gi
 - El conocimiento valioso que hay que conservar es: **las fórmulas y umbrales** (doc 02), **las 45 reglas de la batería** (doc 03), **las 36 plantillas de sesiones y el algoritmo de priorización** (doc 04) y **el prompt de Gemini** (doc 05).
 - Recomendación: un paquete Python puro `biomecanica/` probado contra el JS para obtener los mismos resultados, envuelto en un proyecto Django con Celery, PostgreSQL y exportes `.docx` reales (doc 06).
 
+## Estado
+
+La migración está implementada en [`backend/`](../backend/README.md): aplicación Django completa (evaluación por video en el servidor, salones, historial, planeaciones editables, Word, Gemini opcional) con 1.541 pruebas, incluida la paridad con `script.js`. Esta carpeta documenta el sistema original y el plan que se siguió.
+
 ## Índice
 
 | Documento | Contenido |

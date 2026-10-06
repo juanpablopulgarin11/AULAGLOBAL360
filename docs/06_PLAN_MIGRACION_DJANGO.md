@@ -1,5 +1,7 @@
 # 06 · Plan de migración a Python + Django
 
+> **Estado (2026-10-05):** fases 0 a 7 implementadas en [`backend/`](../backend/README.md). Este documento conserva el plan original; las decisiones finales están en el README del backend.
+
 ## 1. Decisión principal: ¿dónde se detecta la pose?
 
 | Opción | Cómo | A favor | En contra |
@@ -294,11 +296,11 @@ Los umbrales del JS se ajustaron a mano durante muchos commits (ver historial: c
 | 1 ✅ | Paquete `biomecanica` (sin video): geometría, ángulos, telemetría, clasificador, FSM, reglas, motor local — **hecho en [`backend/`](../backend/README.md)** | Paridad 100 % con dorados de Node (769 pruebas) |
 | 2 ✅ | Todos los modelos + comando `cargar_catalogo` (criterios desde `biomecanica.reglas`, plantillas desde `docs/datos`) + `servicios.diagnosticar_y_guardar` | 9 habilidades, 45 criterios, 36 plantillas en BD; 777 pruebas |
 | 3 ✅ | Extracción de video en Python (cv2 + mediapipe) + tarea Celery + retención — `biomecanica/extraccion.py`, `apps/evaluaciones/tasks.py` | Lógica de ventanas probada con video sintético; MediaPipe real verificado con una foto. **Falta** comparar con videos reales en la web actual |
-| 4 | Generador de unidad didáctica + exportes `.docx` | Documentos equivalentes a los `.doc` actuales |
-| 5 | UI: asistente de 3 pasos con templates + HTMX, reutilizando `styles.css` | Flujo completo individual |
-| 6 | Modo grupal, estudiantes, historial | Plan consolidado por grupo |
-| 7 | Gemini en servidor (SDK oficial, Pydantic, prompts versionados) | Respaldo local probado |
-| 8 | Mejoras (doc 07): plantillas para las 6 habilidades faltantes, lateralidad, medición temporal real del equilibrio, criterios con mejores proxies | Validadas con el equipo pedagógico |
+| 4 ✅ | Generador de unidad didáctica (`biomecanica/didactica.py`) + exportes `.docx` (`apps/reportes`) | Paridad con 720 planeaciones del JS; Word revisados visualmente |
+| 5 ✅ | UI con templates Django y JS mínimo propio (sin HTMX ni dependencias externas); estilos con los tokens de `styles.css` | Flujo completo probado por HTTP real; escritorio y móvil revisados |
+| 6 ✅ | Salones, estudiantes con consentimientos, evaluación del salón, historial | Plan consolidado con la habilidad más débil y sus errores frecuentes |
+| 7 ✅ | Gemini en servidor (`google-genai`, Pydantic, prompt versionado con criterios oficiales, permisos) | Respaldo local probado con cliente simulado; **sin probar con clave real** |
+| 8 (parcial) | Hecho: encuadre sin deformación, escaneo denso, suavizado, avisos de calidad, plan grupal priorizado. Pendiente (doc 07): plantillas para 6 habilidades, lateralidad, medición temporal real del equilibrio, normalizar distancias por tamaño corporal, mejores proxies | Validar con videos reales y con el equipo pedagógico |
 
 ## 9. Seguridad y datos personales
 

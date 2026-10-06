@@ -7,19 +7,19 @@ Lista de problemas encontrados al documentar el código. La migración debe deci
 | # | Gravedad | Dónde | Problema | Efecto |
 |---|---|---|---|---|
 | 1 | ✅ corregido | `aggregateVideoTelemetry` (`script.js:2620`) | Si MediaPipe no detectaba a nadie, el motor local diagnosticaba con **valores inventados** (rodilla 108°, codo 94°, simetría 86 %…) | Ahora `runLocalBiomechanicalEngine` (y `run_local_engine` en Python) lanza un error "No se detectó a la persona…" |
-| 2 | 🔴 | Canvas 640×360 (`script.js:1728`, `1933`) | Todo video o foto se estira a 16:9 sin conservar la proporción. Un video vertical de celular (9:16) queda muy deformado | Los ángulos en el plano de la imagen se distorsionan (rodillas, tronco, cadera). Corregir con *letterbox* o usando la resolución original |
-| 3 | 🟠 | `SaltoHorizontalFSM` y `CarreraFSM` (`script.js:1040`, `1120`) | Usan `angles.flightDetected`, que no existe en los ángulos por fotograma (es un campo de la telemetría agregada) | Esas ramas nunca se activan; solo afecta al texto de fases |
+| 2 | ✅ corregido | Canvas 640×360 | Todo video se estiraba a 16:9. Verificado con MediaPipe real: en video vertical una rodilla a 87° se leía como 157–165° | Ahora encuadre sin deformación en web y servidor; la pose se detecta sobre el contenido y se lleva al lienzo 16:9 calibrado (16:9 idéntico al original) |
+| 3 | 🟡 sin efecto | `SaltoHorizontalFSM` y `CarreraFSM` (`script.js:1040`, `1120`) | Usan `angles.flightDetected`, que no existe en los ángulos por fotograma (es un campo de la telemetría agregada) | Esas ramas nunca se activan; solo afecta al texto de fases |
 | 4 | 🟠 | `analyzeEquilibriumFromPythonReference` (`script.js:1426-1428`) | Dentro de `angRodillaApoyo > 155` se pregunta `angRodillaApoyo < 150`: condición imposible | Código muerto; la "flexión claudicante" nunca se marca como pérdida en esa rama |
 | 5 | ✅ corregido | Prompt de Gemini (`script.js:4177`) | Usaba `telemetry.singleSupportKick`, que no existe, y siempre informaba "Pateo: NO" | Ahora usa `transientKickPeak` |
 | 6 | ✅ corregido | `generateGroupPlan` | Pintaba el resultado en `#chatScroll`, oculto desde el rediseño, **y dejaba `isAnalyzing = true` para siempre** (el botón Analizar quedaba bloqueado) | Ahora se muestra en el paso 3 y libera el candado |
-| 7 | 🟠 | `generateGroupPlan` | Usa la habilidad fija "Carrera y Locomoción Colectiva" y no prioriza sesiones con los errores consolidados | El plan grupal es siempre el mismo plan de carrera |
+| 7 | ✅ corregido (Django) | `generateGroupPlan` | Usaba siempre Carrera y no priorizaba | En Django el plan del salón usa la habilidad con menor madurez media y prioriza los errores presentes en ≥ 25 % del salón |
 | 8 | 🟠 | `getSkillProgressionTemplates` | Solo 3 de 9 habilidades tienen plantillas; las otras 6 reciben las sesiones de **Carrera** | Un estudiante evaluado en Equilibrio Estático recibe 12 clases de carrera |
 | 9 | ✅ corregido | `runLocalBiomechanicalEngine` y prompt de Gemini | `'9_11_anos'.replace('_',' ')` daba `"9 11_anos"` | Ahora usan la etiqueta de `getGradeAndCycle` ("Grado 4º - 5º (9 a 11 años)") |
 | 10 | ✅ corregido | `showAlert(..., {type: 'danger'})` | El CSS define `type-error`, no `type-danger` | Ahora usa `type: 'error'` |
 | 11 | 🟡 | `codigodelsalto.py` | `calcular_angulo` usa `np.arctan2(c-b, c-b)` (incorrecto) y solo considera el pie izquierdo | No reutilizar esa función (ver doc 02 §11) |
 | 12 | 🟡 | `symmetryScore` | Se limita a [65, 98]; varios criterios piden `>= 65` | Lanzamiento #5 siempre pasa; en Patear #1 y Salto Horizontal #4 la parte de simetría siempre se cumple |
 | 14 | 🔴 | Clasificador (`minWristDist <= 0.26` → +160 a Recepción y Atrape) | Las distancias están en coordenadas de imagen y **no se normalizan por el tamaño del cuerpo** (`torsoHeight` se calcula pero no se usa). Con los brazos relajados a los lados, las muñecas suelen estar a menos de 0.26 | En las pruebas sintéticas, una postura de pie en reposo se clasifica como Recepción y Atrape. Normalizar distancias por `torsoHeight` tras validar con videos reales |
-| 15 | 🟠 | Clasificador con una sola foto | Sin secuencia temporal, la perspectiva basta para que un tobillo quede "más alto" que el otro (`ankleYDiff ≥ 0.035`) | Verificado con MediaPipe real: una postura de yoga con ambos pies apoyados se clasificó como **Equilibrio Estático Unipodal, Maduro (80 %)**. Para fotos conviene exigir que el docente elija la habilidad |
+| 15 | 🟠 mitigado | Clasificador con una sola foto | Sin secuencia temporal, la perspectiva basta para que un tobillo quede "más alto" que el otro (`ankleYDiff ≥ 0.035`) | Verificado con MediaPipe real: una postura de yoga con ambos pies apoyados se clasificó como **Equilibrio Estático Unipodal, Maduro (80 %)**. En Django, con foto el docente debe elegir la habilidad |
 | 16 | 🟠 | MediaPipe en macOS (servidor) | mediapipe 1.x con delegado CPU aborta el proceso (`graph_service.h: Service is unavailable`), no lanza excepción | Un *worker* de Celery mal configurado muere en cada tarea. Se usa GPU en Mac (`AULA360_POSE_GPU`) y hay que verificar CPU en el Linux de producción |
 | 13 | 🟡 | Clasificador por palabras clave | "pelota" o "tiro" → Patear aunque sea lanzar o atrapar; "parado" → Equilibrio Estático | Clasificación equivocada según las observaciones del docente |
 
@@ -33,6 +33,8 @@ Lista de problemas encontrados al documentar el código. La migración debe deci
 - `README.md` describe una estructura de 3 archivos; no menciona `landing.html`, `preview.html` ni `codigodelsalto.py`.
 
 ## 3. Seguridad y privacidad
+
+> En la versión Django: clave de Gemini solo en el servidor; videos e imágenes en almacenamiento privado servidos únicamente al docente dueño (probado: otro docente recibe 404); retención con borrado automático; consentimiento del acudiente y autorización institucional antes de usar IA en la nube; todo el texto se escapa en las plantillas (el resumen solo admite **negritas**). Los riesgos de abajo siguen vigentes en la web estática.
 
 | Gravedad | Problema |
 |---|---|

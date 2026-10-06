@@ -1,0 +1,62 @@
+# Despliegue completo: docker compose up --build
+# Variables obligatorias en .env: DJANGO_SECRET_KEY, DJANGO_ALLOWED_HOSTS, POSTGRES_PASSWORD
+x-app: &app
+  build:
+    context: .
+    additional_contexts:
+      datos: ../docs/datos
+  env_file: .env
+  environment:
+    DATABASE_URL: postgres://aula:${POSTGRES_PASSWORD}@db:5432/aulaglobal360
+    CELERY_BROKER_URL: redis://redis:6379/0
+    CELERY_TASK_ALWAYS_EAGER: "false"
+    AULA360_PRIVATE_MEDIA_ROOT: /app/privado
+  volumes:
+    - privado:/app/privado
+    - modelos:/app/modelos
+  depends_on:
+    db: {condition: service_healthy}
+    redis: {condition: service_started}
+
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: aulaglobal360
+      POSTGRES_USER: aula
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aula -d aulaglobal360"]
+      interval: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+
+  web:
+    <<: *app
+    ports: ["8000:8000"]
+
+  worker:
+    <<: *app
+    environment:
+      DATABASE_URL: postgres://aula:${POSTGRES_PASSWORD}@db:5432/aulaglobal360
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_TASK_ALWAYS_EAGER: "false"
+      AULA360_PRIVATE_MEDIA_ROOT: /app/privado
+      AULA360_PREPARAR: "0"
+    command: ["celery", "-A", "config", "worker", "--loglevel=info", "--concurrency=2"]
+
+  beat:
+    <<: *app
+    environment:
+      DATABASE_URL: postgres://aula:${POSTGRES_PASSWORD}@db:5432/aulaglobal360
+      CELERY_BROKER_URL: redis://redis:6379/0
+      AULA360_PREPARAR: "0"
+    command: ["celery", "-A", "config", "beat", "--loglevel=info"]
+
+volumes:
+  pgdata:
+  privado:
+  modelos:

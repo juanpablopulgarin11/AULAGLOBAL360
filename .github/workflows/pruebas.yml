@@ -1,0 +1,41 @@
+name: Pruebas backend
+
+on:
+  push:
+    paths: ["backend/**", "docs/datos/**", "script.js", ".github/workflows/pruebas.yml"]
+  pull_request:
+    paths: ["backend/**", "docs/datos/**", "script.js"]
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements/*.txt
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Bibliotecas de sistema para OpenCV/MediaPipe
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libgl1 libegl1 libgles2
+      - name: Dependencias
+        run: pip install -r requirements/dev.txt
+      - name: Los dorados coinciden con script.js
+        run: |
+          node tests/golden/generar_dorados.js
+          git diff --quiet --exit-code tests/golden/dorados.json || (echo "script.js cambió: regenera y revisa los dorados" && exit 1)
+      - name: Migraciones al día
+        run: python manage.py makemigrations --check --dry-run
+      - name: Pruebas
+        run: python -m pytest -q
+      - name: Chequeo de producción
+        env:
+          DJANGO_SECRET_KEY: ${{ github.run_id }}-clave-de-ci-suficientemente-larga-y-aleatoria-para-el-chequeo
+          DJANGO_ALLOWED_HOSTS: localhost
+        run: python manage.py check --deploy --settings=config.settings.prod --fail-level ERROR

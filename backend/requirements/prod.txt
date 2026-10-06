@@ -1,0 +1,4 @@
+-r base.txt
+gunicorn>=23
+psycopg[binary]>=3.2
+redis>=5

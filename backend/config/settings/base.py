@@ -98,7 +98,7 @@ AULA360_MODELO_POSE = Path(env("AULA360_MODELO_POSE", default=str(BASE_DIR / "mo
 AULA360_POSE_GPU = env.bool("AULA360_POSE_GPU", default=sys.platform == "darwin")
 
 # Datos de referencia (reglas y plantillas extraídas de script.js)
-AULA360_DATOS_DIR = REPO_DIR / "docs" / "datos"
+AULA360_DATOS_DIR = Path(env("AULA360_DATOS_DIR", default=str(REPO_DIR / "docs" / "datos")))
 
 # Gemini (fase 7): la clave vive solo en el servidor
 GEMINI_API_KEY = env("GEMINI_API_KEY", default="")
