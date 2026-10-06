@@ -5,6 +5,7 @@ recibe ya la lista de fotogramas con landmarks.
 """
 from __future__ import annotations
 
+import logging
 from collections import Counter
 from typing import Any, Dict, List, Optional, Sequence
 
@@ -16,7 +17,9 @@ from biomecanica import (
     VERSION_MOTOR, SinPersonaDetectada, assign_keyframe_milestones, compute_joint_angles, run_local_engine,
 )
 
-from .models import Evaluacion, EvaluacionGrupal, Fotograma, ResultadoCriterio
+from .models import Evaluacion, EvaluacionGrupal, Fotograma, Motor, ResultadoCriterio
+
+log = logging.getLogger(__name__)
 
 # Diagnóstico "sin errores" que el motor devuelve cuando todo se logra; no cuenta como falencia
 _SIN_FALLOS = "sin fallos"
@@ -38,6 +41,30 @@ def preparar_frames(muestras: Sequence[Dict[str, Any]]) -> List[Dict[str, Any]]:
             "imagen_esqueleto_jpeg": m.get("imagen_esqueleto_jpeg"),
         })
     return frames
+
+
+def _criterio_del_catalogo(criterios: Dict[int, CriterioHMB], orden: int, texto: str) -> Optional[CriterioHMB]:
+    """El criterio del catálogo en esa posición, solo si el texto coincide (la IA puede reformularlo)."""
+    c = criterios.get(orden)
+    return c if c is not None and c.texto.strip().lower() == (texto or "").strip().lower() else None
+
+
+def _intentar_gemini(evaluacion: Evaluacion, frames: List[Dict[str, Any]], diag_local: Dict[str, Any]) -> Dict[str, Any]:
+    """Diagnóstico con Gemini si está permitido; ante cualquier fallo, el motor local con un aviso."""
+    from apps.ia import cliente as ia
+
+    ok, motivo = ia.permitido(evaluacion)
+    if not ok:
+        evaluacion.advertencias = [*evaluacion.advertencias, motivo]
+        return diag_local
+    habilidad = evaluacion.habilidad_solicitada.nombre if evaluacion.habilidad_solicitada else None
+    try:
+        return ia.diagnosticar(frames, diag_local, habilidad, diag_local["edad_calibrada"])
+    except Exception as exc:   # noqa: BLE001 - cualquier fallo externo cae al motor local
+        log.warning("Gemini no disponible para la evaluación %s: %s", evaluacion.pk, exc)
+        evaluacion.advertencias = [*evaluacion.advertencias,
+                                   f"No se pudo usar Gemini ({str(exc)[:160]}); se usó el motor biomecánico local."]
+        return diag_local
 
 
 def borrar_fotogramas(evaluacion: Evaluacion) -> None:
@@ -79,6 +106,10 @@ def diagnosticar_y_guardar(evaluacion: Evaluacion, muestras: Sequence[Dict[str, 
         evaluacion.save()
         return evaluacion
 
+    if evaluacion.motor == Motor.GEMINI:
+        assign_keyframe_milestones(frames, diag["habilidad_detectada"])   # Gemini recibe la etiqueta de cada fotograma
+        diag = _intentar_gemini(evaluacion, frames, diag)
+
     assign_keyframe_milestones(frames, diag["habilidad_detectada"])
     habilidad = Habilidad.objects.get(nombre=diag["habilidad_detectada"])
     criterios = {c.orden: c for c in CriterioHMB.objects.filter(habilidad=habilidad)}
@@ -99,11 +130,14 @@ def diagnosticar_y_guardar(evaluacion: Evaluacion, muestras: Sequence[Dict[str, 
     evaluacion.frases_profe = diag["frases_profe"]
     evaluacion.fases_fsm = telemetria.get("fsmPhases", [])
     evaluacion.telemetria = telemetria
-    evaluacion.modelo_ia = ""
+    evaluacion.modelo_ia = diag.get("modelo_utilizado", "")
+    if evaluacion.modelo_ia:
+        evaluacion.version_motor = f"{VERSION_MOTOR}+gemini:{diag.get('version_prompt', '')}"
     evaluacion.save()
 
     ResultadoCriterio.objects.bulk_create([
-        ResultadoCriterio(evaluacion=evaluacion, criterio=criterios.get(i), orden=i, texto=c["criterio"],
+        ResultadoCriterio(evaluacion=evaluacion, criterio=_criterio_del_catalogo(criterios, i, c["criterio"]), orden=i,
+                          texto=c["criterio"],
                           fase=c["fase"], puntaje=c["puntaje"], medido=c.get("medido", ""),
                           umbral=c.get("umbral", ""), observacion=c.get("observacion", ""))
         for i, c in enumerate(diag["criterios"], start=1)
