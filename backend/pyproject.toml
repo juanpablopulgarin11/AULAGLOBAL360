@@ -1,13 +1,10 @@
 [project]
-name = "aulaglobal360-biomecanica"
-version = "1.0.0"
-description = "Motor biomecánico de AULA GLOBAL 360 (port de script.js a Python puro)"
-requires-python = ">=3.9"
-dependencies = []
-
-[project.optional-dependencies]
-dev = ["pytest>=7"]
+name = "aulaglobal360"
+version = "0.2.0"
+description = "AULA GLOBAL 360 en Python/Django: motor biomecánico (biomecanica/) y aplicación web (apps/, config/)"
+requires-python = ">=3.10"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+DJANGO_SETTINGS_MODULE = "config.settings.test"

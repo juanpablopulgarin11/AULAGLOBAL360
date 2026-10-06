@@ -1,68 +1,83 @@
-# backend · Motor biomecánico en Python
+# backend · AULA GLOBAL 360 en Python/Django
 
-Fase 1 de la migración a Django ([docs/06](../docs/06_PLAN_MIGRACION_DJANGO.md)): el motor de `script.js` portado a **Python puro** (sin Django ni dependencias externas), verificado contra el JavaScript original.
+Migración del sistema web (`script.js`) a Python. Plan completo: [docs/06](../docs/06_PLAN_MIGRACION_DJANGO.md).
+
+| Fase | Estado |
+|---|---|
+| 0 · Proyecto Django, settings por entorno, Celery, pruebas | ✅ |
+| 1 · Motor `biomecanica` en Python puro con paridad contra el JS | ✅ |
+| 2 · Modelos de datos y carga del catálogo | ✅ |
+| 3 · Extracción de fotogramas desde video (opencv + mediapipe) y tarea Celery | pendiente |
+| 4 · Generador de unidad didáctica y exportes `.docx` | pendiente |
+| 5–7 · Interfaz, modo grupal completo, Gemini en servidor | pendiente |
+
+## Puesta en marcha
+
+Requiere **Python 3.10+** (Django 5.2 LTS). El paquete `biomecanica` solo usa la biblioteca estándar.
+
+```bash
+cd backend
+python3.12 -m venv .venv
+.venv/bin/pip install -r requirements/dev.txt
+cp .env.example .env                      # opcional: sin .env usa SQLite y Celery síncrono
+.venv/bin/python manage.py migrate
+.venv/bin/python manage.py cargar_catalogo
+.venv/bin/python manage.py createsuperuser
+.venv/bin/python manage.py runserver      # admin en http://127.0.0.1:8000/admin/
+.venv/bin/python -m pytest -q             # 777 pruebas
+```
+
+Para PostgreSQL y Redis basta con definir `DATABASE_URL` y `CELERY_BROKER_URL` (ver `.env.example`). En producción: `DJANGO_SETTINGS_MODULE=config.settings.prod` y `DJANGO_SECRET_KEY` obligatorio.
 
 ## Estructura
 
 ```
 backend/
-├── biomecanica/
-│   ├── jsutil.py        # Math.round, formateo de números y `||` como en JS
-│   ├── landmarks.py     # Punto e índices de MediaPipe Pose
-│   ├── geometria.py     # ángulo 3D, ángulo 2D, inclinación horizontal
-│   ├── angulos.py       # compute_joint_angles, analizar_equilibrio
-│   ├── gatillo.py       # ángulo inicial del ejercicio
-│   ├── telemetria.py    # agregación de los fotogramas
-│   ├── clasificador.py  # detección automática de la habilidad
-│   ├── fsm.py           # 9 máquinas de estado
-│   ├── hitos.py         # etiquetas visuales por fotograma
-│   ├── habilidades.py   # catálogo, alias y grados MEN
-│   ├── reglas.py        # 45 criterios de la Batería HMB
-│   └── motor_local.py   # run_local_engine → Diagnostico
+├── config/                 # settings (base, dev, test, prod), urls, celery, wsgi/asgi
+├── apps/
+│   ├── cuentas/            # Institucion, Docente (modelo de usuario propio)
+│   ├── catalogo/           # Habilidad, CriterioHMB, PlantillaSesion + comando cargar_catalogo
+│   ├── estudiantes/        # Grupo (salón), Estudiante con consentimientos (Ley 1581)
+│   ├── evaluaciones/       # Evaluacion, Fotograma, ResultadoCriterio, EvaluacionGrupal + servicios.py
+│   └── planeacion/         # UnidadDidactica, Sesion (el generador llega en la fase 4)
+├── biomecanica/            # motor en Python puro (sin Django)
+│   ├── geometria.py · angulos.py · gatillo.py · telemetria.py · clasificador.py
+│   ├── fsm.py · hitos.py · habilidades.py · reglas.py · motor_local.py · jsutil.py
 └── tests/
-    ├── golden/generar_dorados.js   # ejecuta el script.js real y guarda entradas/salidas
-    ├── golden/dorados.json
-    ├── test_paridad.py             # Python == JS en 91 casos sintéticos + 301 de geometría
-    └── test_motor.py               # pruebas de comportamiento legibles
+    ├── golden/             # generar_dorados.js ejecuta el script.js real → dorados.json
+    ├── test_paridad.py     # Python == JS (769 casos)
+    ├── test_motor.py
+    ├── test_catalogo.py
+    └── test_evaluaciones.py
 ```
 
-## Uso
+## Decisiones de diseño
 
-```bash
-cd backend
-python3 -m venv .venv && .venv/bin/pip install pytest
-.venv/bin/python -m pytest -q          # pyproject.toml ya agrega backend/ al path
-```
+- **Las reglas de la batería son código, no datos.** Las condiciones y los textos con valores medidos viven en `biomecanica/reglas.py`, cubiertos por las pruebas de paridad. `CriterioHMB` guarda solo lo descriptivo (texto, fase, umbral, error) para el admin, las relaciones y los reportes, y `cargar_catalogo` lo sincroniza desde el código. Así no hay dos fuentes de verdad.
+- **El contrato JSON conserva las claves del JS** (`avgElbowAngle`, `kneeMin`…), porque es lo que se guarda en `Evaluacion.telemetria`, se envía a Gemini y se compara en los fixtures.
+- **Videos y fotogramas de menores en almacenamiento privado** (`PRIVATE_MEDIA_ROOT`, fuera de `MEDIA_URL`). Se servirán solo con vistas autenticadas. `AULA360_DIAS_RETENCION_VIDEO` queda listo para la tarea de borrado.
+- **`Evaluacion.version_motor`** registra la versión del motor para poder explicar resultados si cambian los umbrales.
+
+## Uso del motor desde Django
 
 ```python
-from biomecanica import compute_joint_angles, run_local_engine, assign_keyframe_milestones
+from apps.evaluaciones.models import Evaluacion
+from apps.evaluaciones.servicios import diagnosticar_y_guardar, consolidar_grupo
 
-# landmarks: 33 puntos de MediaPipe (objetos con .x .y .z, dicts o listas [x, y, z, vis])
-frames = [{"timestampNum": t, "time": f"{t:.2f}s", "landmarks": lm, "angles": compute_joint_angles(lm)}
-          for t, lm in muestras]
-assign_keyframe_milestones(frames, None)          # None = detección automática
-diagnostico = run_local_engine("auto", "7_anos", "observaciones del docente", frames)
+ev = Evaluacion.objects.create(docente=request.user, estudiante=est, grado="7_anos")   # sin habilidad = automática
+diagnosticar_y_guardar(ev, [{"timestampNum": t, "landmarks": lm} for t, lm in muestras])
+ev.estado            # "lista" o "error" ("No se detectó a la persona…")
+ev.resultados.all()  # 5 criterios enlazados a CriterioHMB
 ```
-
-`run_local_engine` lanza `SinPersonaDetectada` si ningún fotograma tiene landmarks.
 
 ## Paridad con el JavaScript
 
-Si cambia la lógica de `script.js` mientras dure la migración, regenerar los dorados y volver a correr las pruebas:
+Si cambia la lógica de `script.js` mientras dure la migración:
 
 ```bash
 node backend/tests/golden/generar_dorados.js     # desde la raíz del repo
 ```
 
-Los dorados usan poses sintéticas deterministas (10 escenarios × 9 semillas + un caso sin persona). Antes de cambiar umbrales conviene agregar landmarks de **videos reales** de cada habilidad (ver docs/06 §7).
+Los dorados usan poses sintéticas deterministas. Antes de cambiar umbrales conviene agregar landmarks de **videos reales** de cada habilidad (docs/06 §7).
 
-Diferencias intencionales respecto al JS del commit `72e7a88` (ya aplicadas también en `script.js`, así que la paridad se mantiene):
-
-- Sin landmarks → error en vez de un diagnóstico con valores inventados.
-- `edad_calibrada` usa la etiqueta del grado ("Grado 2º de Primaria (7 años)") en vez de `"9 11_anos"`.
-
-## Pendiente (fases siguientes)
-
-- Extracción de fotogramas desde video con `opencv` + `mediapipe` (fase 3).
-- Generador de unidad didáctica y exportes `.docx` (fase 4).
-- Proyecto Django, modelos y tareas Celery (fases 0, 2, 5–7).
+Diferencias intencionales respecto al JS de `72e7a88` (aplicadas también en `script.js`, así que la paridad se mantiene): sin landmarks → error en vez de diagnóstico inventado; `edad_calibrada` con la etiqueta del grado.

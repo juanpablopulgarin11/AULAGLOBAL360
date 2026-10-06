@@ -68,6 +68,8 @@ Separar `biomecanica/` de Django permite probar la paridad con el JS sin base de
 
 ## 4. Modelos de datos propuestos
 
+> Implementados en `backend/apps/*/models.py` con un cambio: `CriterioHMB` no guarda plantillas de texto ni la clave de la regla. La lógica y los textos interpolados viven solo en `biomecanica/reglas.py` (probados contra el JS), y el modelo guarda lo descriptivo. Se añadieron `Estudiante.apellidos`, `acudiente`, `fecha_consentimiento`, `Evaluacion.mensaje_error` y `puntaje_maximo`.
+
 ```python
 # apps/cuentas
 class Institucion(models.Model):
@@ -288,9 +290,9 @@ Los umbrales del JS se ajustaron a mano durante muchos commits (ver historial: c
 
 | Fase | Entregable | Criterio de "hecho" |
 |---|---|---|
-| 0 | Repositorio Django vacío, settings, Celery, Postgres, CI con pytest | `pytest` en verde |
+| 0 ✅ | Proyecto Django 5.2 LTS, settings por entorno, Celery (síncrono sin broker), SQLite/Postgres por `DATABASE_URL`, pytest — **hecho en [`backend/`](../backend/README.md)** | `pytest` en verde |
 | 1 ✅ | Paquete `biomecanica` (sin video): geometría, ángulos, telemetría, clasificador, FSM, reglas, motor local — **hecho en [`backend/`](../backend/README.md)** | Paridad 100 % con dorados de Node (769 pruebas) |
-| 2 | Catálogo: modelos + comando `cargar_catalogo` que lee `docs/datos/*.json` | 9 habilidades, 45 criterios, 36 plantillas en BD |
+| 2 ✅ | Todos los modelos + comando `cargar_catalogo` (criterios desde `biomecanica.reglas`, plantillas desde `docs/datos`) + `servicios.diagnosticar_y_guardar` | 9 habilidades, 45 criterios, 36 plantillas en BD; 777 pruebas |
 | 3 | Extracción de video en Python (cv2 + mediapipe) + tarea Celery | Videos de prueba clasificados igual que en la web actual |
 | 4 | Generador de unidad didáctica + exportes `.docx` | Documentos equivalentes a los `.doc` actuales |
 | 5 | UI: asistente de 3 pasos con templates + HTMX, reutilizando `styles.css` | Flujo completo individual |
