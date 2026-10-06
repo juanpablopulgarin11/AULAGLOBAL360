@@ -1,4 +1,5 @@
 """Configuración común de AULA GLOBAL 360. Los valores sensibles vienen de variables de entorno."""
+import sys
 from pathlib import Path
 
 import environ
@@ -81,6 +82,10 @@ PRIVATE_MEDIA_ROOT = Path(env("AULA360_PRIVATE_MEDIA_ROOT", default=str(BASE_DIR
 AULA360_DIAS_RETENCION_VIDEO = env.int("AULA360_DIAS_RETENCION_VIDEO", default=30)
 AULA360_MAX_SUBIDA_MB = env.int("AULA360_MAX_SUBIDA_MB", default=60)
 
+# Detección de pose (MediaPipe). En macOS solo funciona con GPU (Metal); en Linux, CPU.
+AULA360_MODELO_POSE = Path(env("AULA360_MODELO_POSE", default=str(BASE_DIR / "modelos" / "pose_landmarker_lite.task")))
+AULA360_POSE_GPU = env.bool("AULA360_POSE_GPU", default=sys.platform == "darwin")
+
 # Datos de referencia (reglas y plantillas extraídas de script.js)
 AULA360_DATOS_DIR = REPO_DIR / "docs" / "datos"
 
@@ -94,3 +99,7 @@ CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", default=None)
 CELERY_TASK_ALWAYS_EAGER = env.bool("CELERY_TASK_ALWAYS_EAGER", default=True)
 CELERY_TASK_EAGER_PROPAGATES = True
 CELERY_TIMEZONE = TIME_ZONE
+CELERY_BEAT_SCHEDULE = {
+    "purgar-evidencias-vencidas": {"task": "evaluaciones.purgar_evidencias_vencidas", "schedule": 60 * 60 * 24},
+}
+CELERY_TASK_TIME_LIMIT = 5 * 60

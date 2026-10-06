@@ -5,6 +5,8 @@ from django.db import models
 
 from apps.catalogo.models import GRADO_CHOICES
 
+from .validadores import validar_evidencia
+
 
 def almacenamiento_privado():
     """Videos y fotogramas de menores: fuera de MEDIA_URL, solo accesibles por vistas autenticadas."""
@@ -50,7 +52,9 @@ class Evaluacion(models.Model):
     estudiante = models.ForeignKey("estudiantes.Estudiante", null=True, blank=True, on_delete=models.SET_NULL, related_name="evaluaciones")
     evaluacion_grupal = models.ForeignKey(EvaluacionGrupal, null=True, blank=True, on_delete=models.SET_NULL, related_name="evaluaciones")
 
-    archivo = models.FileField(upload_to="evidencias/%Y/%m/", storage=almacenamiento_privado, blank=True)
+    archivo = models.FileField(upload_to="evidencias/%Y/%m/", storage=almacenamiento_privado, blank=True,
+                               validators=[validar_evidencia])
+    archivo_purgado = models.DateTimeField(null=True, blank=True, help_text="Fecha en que se borró el video por retención")
     tipo_archivo = models.CharField(max_length=10, choices=[("video", "Video"), ("imagen", "Imagen")], blank=True)
     habilidad_solicitada = models.ForeignKey("catalogo.Habilidad", null=True, blank=True, on_delete=models.PROTECT,
                                              related_name="+", help_text="Vacío = detección automática")

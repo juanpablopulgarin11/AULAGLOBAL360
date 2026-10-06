@@ -7,7 +7,7 @@ Migración del sistema web (`script.js`) a Python. Plan completo: [docs/06](../d
 | 0 · Proyecto Django, settings por entorno, Celery, pruebas | ✅ |
 | 1 · Motor `biomecanica` en Python puro con paridad contra el JS | ✅ |
 | 2 · Modelos de datos y carga del catálogo | ✅ |
-| 3 · Extracción de fotogramas desde video (opencv + mediapipe) y tarea Celery | pendiente |
+| 3 · Extracción de fotogramas desde video (opencv + mediapipe), tarea Celery y retención de videos | ✅ |
 | 4 · Generador de unidad didáctica y exportes `.docx` | pendiente |
 | 5–7 · Interfaz, modo grupal completo, Gemini en servidor | pendiente |
 
@@ -22,9 +22,10 @@ python3.12 -m venv .venv
 cp .env.example .env                      # opcional: sin .env usa SQLite y Celery síncrono
 .venv/bin/python manage.py migrate
 .venv/bin/python manage.py cargar_catalogo
+.venv/bin/python manage.py descargar_modelo_pose   # MediaPipe Pose lite, verificado por SHA-256
 .venv/bin/python manage.py createsuperuser
 .venv/bin/python manage.py runserver      # admin en http://127.0.0.1:8000/admin/
-.venv/bin/python -m pytest -q             # 777 pruebas
+.venv/bin/python -m pytest -q             # 787 pruebas (+1 con MediaPipe real si se define AULA360_IMAGEN_PRUEBA)
 ```
 
 Para PostgreSQL y Redis basta con definir `DATABASE_URL` y `CELERY_BROKER_URL` (ver `.env.example`). En producción: `DJANGO_SETTINGS_MODULE=config.settings.prod` y `DJANGO_SECRET_KEY` obligatorio.
@@ -43,12 +44,14 @@ backend/
 ├── biomecanica/            # motor en Python puro (sin Django)
 │   ├── geometria.py · angulos.py · gatillo.py · telemetria.py · clasificador.py
 │   ├── fsm.py · hitos.py · habilidades.py · reglas.py · motor_local.py · jsutil.py
+│   └── extraccion.py       # video/foto → 8 fotogramas (opencv + mediapipe; detector inyectable)
 └── tests/
     ├── golden/             # generar_dorados.js ejecuta el script.js real → dorados.json
     ├── test_paridad.py     # Python == JS (769 casos)
     ├── test_motor.py
     ├── test_catalogo.py
-    └── test_evaluaciones.py
+    ├── test_evaluaciones.py
+    └── test_extraccion.py  # video sintético + detector falso; tarea Celery; purga
 ```
 
 ## Decisiones de diseño
@@ -57,6 +60,19 @@ backend/
 - **El contrato JSON conserva las claves del JS** (`avgElbowAngle`, `kneeMin`…), porque es lo que se guarda en `Evaluacion.telemetria`, se envía a Gemini y se compara en los fixtures.
 - **Videos y fotogramas de menores en almacenamiento privado** (`PRIVATE_MEDIA_ROOT`, fuera de `MEDIA_URL`). Se servirán solo con vistas autenticadas. `AULA360_DIAS_RETENCION_VIDEO` queda listo para la tarea de borrado.
 - **`Evaluacion.version_motor`** registra la versión del motor para poder explicar resultados si cambian los umbrales.
+
+## Procesamiento de video (fase 3)
+
+```python
+ev = Evaluacion(docente=request.user, estudiante=est, grado="7_anos")
+ev.archivo.save(subida.name, subida, save=False)   # valida formato y tamaño (AULA360_MAX_SUBIDA_MB)
+ev.full_clean(); ev.save()
+procesar_evaluacion.delay(ev.pk)                   # extracción → motor → BD; estado "lista" o "error"
+```
+
+- **MediaPipe en macOS solo funciona con GPU (Metal).** Con delegado CPU, mediapipe 1.x aborta el proceso entero al abrir el grafo, sin lanzar una excepción de Python. Por eso `AULA360_POSE_GPU` vale `True` por defecto en Mac y `False` en Linux. Antes de desplegar hay que verificar el servidor Linux real con `AULA360_IMAGEN_PRUEBA=foto.jpg pytest -k mediapipe_real`.
+- **Retención**: Celery Beat ejecuta `purgar_evidencias_vencidas` cada día (o `manage.py purgar_evidencias`). Borra el video y las imágenes de los fotogramas a los `AULA360_DIAS_RETENCION_VIDEO` días y conserva landmarks, ángulos y resultados.
+- Igual que la web, todo se redimensiona a 640×360 (deforma videos verticales, docs/07 #2). Se mantiene para no mover la calibración.
 
 ## Uso del motor desde Django
 

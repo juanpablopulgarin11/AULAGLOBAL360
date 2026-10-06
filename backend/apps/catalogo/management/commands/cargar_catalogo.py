@@ -81,6 +81,8 @@ class Command(BaseCommand):
                 n_plant += 1
             habilidad.plantillas.filter(orden__gt=len(sesiones)).delete()
 
+        if opts["verbosity"] < 1:
+            return
         sin_plantillas = list(Habilidad.objects.filter(plantillas__isnull=True).values_list("nombre", flat=True))
         self.stdout.write(self.style.SUCCESS(
             f"Catálogo sincronizado: {len(CODIGO_A_HABILIDAD)} habilidades, {n_crit} criterios, {n_plant} plantillas."))

@@ -10,3 +10,14 @@ def catalogo(db):
 @pytest.fixture
 def docente(db, django_user_model):
     return django_user_model.objects.create_user(username="profe", password="x-segura-123", first_name="Ana")
+
+
+@pytest.fixture(scope="session", autouse=True)
+def limpiar_almacenamiento_privado():
+    """Las pruebas escriben videos e imágenes en PRIVATE_MEDIA_ROOT (settings de test)."""
+    import shutil
+
+    from django.conf import settings
+
+    yield
+    shutil.rmtree(settings.PRIVATE_MEDIA_ROOT, ignore_errors=True)

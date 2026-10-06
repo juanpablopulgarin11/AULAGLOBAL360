@@ -293,7 +293,7 @@ Los umbrales del JS se ajustaron a mano durante muchos commits (ver historial: c
 | 0 ✅ | Proyecto Django 5.2 LTS, settings por entorno, Celery (síncrono sin broker), SQLite/Postgres por `DATABASE_URL`, pytest — **hecho en [`backend/`](../backend/README.md)** | `pytest` en verde |
 | 1 ✅ | Paquete `biomecanica` (sin video): geometría, ángulos, telemetría, clasificador, FSM, reglas, motor local — **hecho en [`backend/`](../backend/README.md)** | Paridad 100 % con dorados de Node (769 pruebas) |
 | 2 ✅ | Todos los modelos + comando `cargar_catalogo` (criterios desde `biomecanica.reglas`, plantillas desde `docs/datos`) + `servicios.diagnosticar_y_guardar` | 9 habilidades, 45 criterios, 36 plantillas en BD; 777 pruebas |
-| 3 | Extracción de video en Python (cv2 + mediapipe) + tarea Celery | Videos de prueba clasificados igual que en la web actual |
+| 3 ✅ | Extracción de video en Python (cv2 + mediapipe) + tarea Celery + retención — `biomecanica/extraccion.py`, `apps/evaluaciones/tasks.py` | Lógica de ventanas probada con video sintético; MediaPipe real verificado con una foto. **Falta** comparar con videos reales en la web actual |
 | 4 | Generador de unidad didáctica + exportes `.docx` | Documentos equivalentes a los `.doc` actuales |
 | 5 | UI: asistente de 3 pasos con templates + HTMX, reutilizando `styles.css` | Flujo completo individual |
 | 6 | Modo grupal, estudiantes, historial | Plan consolidado por grupo |

@@ -8,6 +8,7 @@ from __future__ import annotations
 from collections import Counter
 from typing import Any, Dict, List, Optional, Sequence
 
+from django.core.files.base import ContentFile
 from django.db import transaction
 
 from apps.catalogo.models import CriterioHMB, Habilidad
@@ -33,8 +34,19 @@ def preparar_frames(muestras: Sequence[Dict[str, Any]]) -> List[Dict[str, Any]]:
             "landmarks": m.get("landmarks"),
             "angles": compute_joint_angles(m.get("landmarks")),
             "isInitialTrigger": bool(m.get("isInitialTrigger")),
+            "imagen_jpeg": m.get("imagen_jpeg"),
+            "imagen_esqueleto_jpeg": m.get("imagen_esqueleto_jpeg"),
         })
     return frames
+
+
+def borrar_fotogramas(evaluacion: Evaluacion) -> None:
+    """Elimina los fotogramas y sus archivos de imagen (el borrado en BD no toca el disco)."""
+    for foto in evaluacion.fotogramas.all():
+        for campo in (foto.imagen, foto.imagen_esqueleto):
+            if campo:
+                campo.delete(save=False)
+    evaluacion.fotogramas.all().delete()
 
 
 def _tipo_hito(f: Dict[str, Any]) -> str:
@@ -55,7 +67,7 @@ def diagnosticar_y_guardar(evaluacion: Evaluacion, muestras: Sequence[Dict[str, 
     frames = preparar_frames(muestras)
     codigo = evaluacion.habilidad_solicitada.codigo if evaluacion.habilidad_solicitada else "auto"
 
-    evaluacion.fotogramas.all().delete()
+    borrar_fotogramas(evaluacion)
     evaluacion.resultados.all().delete()
     evaluacion.version_motor = VERSION_MOTOR
 
@@ -96,14 +108,17 @@ def diagnosticar_y_guardar(evaluacion: Evaluacion, muestras: Sequence[Dict[str, 
                           umbral=c.get("umbral", ""), observacion=c.get("observacion", ""))
         for i, c in enumerate(diag["criterios"], start=1)
     ])
-    Fotograma.objects.bulk_create([
-        Fotograma(evaluacion=evaluacion, orden=i, tiempo_s=f["timestampNum"], fase=f["phase"],
-                  landmarks=f["landmarks"], angulos=f["angles"], es_gatillo=f["isInitialTrigger"],
-                  hito_tipo=_tipo_hito(f), hito_badge=f.get("milestoneBadge") or "",
-                  hito_titulo=f.get("milestoneTitle") or "", hito_desc=(f.get("milestoneDesc") or "")[:200],
-                  hito_color=f.get("milestoneColor") or "")
-        for i, f in enumerate(frames, start=1)
-    ])
+    for i, f in enumerate(frames, start=1):
+        foto = Fotograma(evaluacion=evaluacion, orden=i, tiempo_s=f["timestampNum"], fase=f["phase"],
+                         landmarks=f["landmarks"], angulos=f["angles"], es_gatillo=f["isInitialTrigger"],
+                         hito_tipo=_tipo_hito(f), hito_badge=f.get("milestoneBadge") or "",
+                         hito_titulo=f.get("milestoneTitle") or "", hito_desc=(f.get("milestoneDesc") or "")[:200],
+                         hito_color=f.get("milestoneColor") or "")
+        if f.get("imagen_jpeg"):
+            foto.imagen.save(f"ev{evaluacion.pk}_{i}.jpg", ContentFile(f["imagen_jpeg"]), save=False)
+        if f.get("imagen_esqueleto_jpeg"):
+            foto.imagen_esqueleto.save(f"ev{evaluacion.pk}_{i}_esq.jpg", ContentFile(f["imagen_esqueleto_jpeg"]), save=False)
+        foto.save()
     return evaluacion
 
 
