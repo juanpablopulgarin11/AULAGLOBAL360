@@ -3956,6 +3956,11 @@ function runLocalBiomechanicalEngine(skillCode, gradeCode, obsText, frames) {
     const telemetry = aggregateVideoTelemetry(frames);
     lastAnalyzedTelemetry = telemetry;
 
+    // Sin landmarks la telemetría trae valores de relleno: no se emite un diagnóstico ficticio
+    if (!telemetry.hasLandmarks) {
+        throw new Error('No se detectó a la persona en ningún fotograma. Graba de nuevo con el cuerpo completo visible, buena luz y la cámara fija.');
+    }
+
     // 2. Resolver la habilidad: si es manual, respetar la selección; si es 'auto', clasificar con cinemática
     let resolvedSkill = null;
     let isAutoDetected = false;
@@ -4028,7 +4033,7 @@ function runLocalBiomechanicalEngine(skillCode, gradeCode, obsText, frames) {
         prueba_nro: ruleSet.prueba_nro || 1,
         puntaje_obtenido: `${passedCount}/${totalCount}`,
         bateria_referencia: 'Batería de Habilidades Motrices Básicas (5-11 años) · González Palacio, Montoya Grisales et al. (2021, Dialnet 7925607)',
-        edad_calibrada: (gradeCode || '7_anos').replace('_', ' '),
+        edad_calibrada: getGradeAndCycle(gradeCode || '7_anos').grado,
         estadio_gallahue: estadio,
         porcentaje_madurez: maturityPct,
         resumen_biomecanico: `${detectionOrigin} Evaluación cinemática instrumental según la **Batería de HMB (González Palacio & Montoya Grisales, 2021 · Dialnet 7925607)** mediante **MediaPipe Pose Tasks (WASM)** y **Máquinas de Estado Cinemáticas (FSM)**. Ciclo de fases completadas: [${fsmChain}]. El estudiante obtiene un puntaje de **${passedCount}/${totalCount} puntos (${maturityPct}%)**, ubicándose en **Estadio ${estadio}**. Parámetros articulares medidos: flexión de rodilla ${telemetry.minKneeAngle}°, braceo medio ${telemetry.avgElbowAngle}°, inclinación de tronco ${telemetry.avgTrunkAngle}° y simetría bilateral ${telemetry.symmetryScore}%.`,
@@ -4134,6 +4139,7 @@ async function callGeminiVision(skill, grade, obsText, frames) {
     lastAnalyzedTelemetry = telemetry;
 
     const isAuto = (!skill || skill === 'auto' || skill === 'Detección Automática' || skill.includes('Automática'));
+    const gradeLabel = getGradeAndCycle(grade).grado;
     const suggestedSkill = classifySkillFromKinematics(telemetry, obsText);
     const targetSkillForFSM = isAuto ? suggestedSkill : skill;
 
@@ -4165,7 +4171,7 @@ Debes contrastar los fotogramas del estudiante contra la siguiente telemetría i
 
 DATOS CINEMÁTICOS REALES MEDIDOS EN EL NAVEGADOR:
 ${skillInstruction}
-- Edad Calibrada: ${grade}
+- Edad Calibrada: ${gradeLabel}
 - Ciclo de Fases detectadas por FSM: [${fsmChain}]
 - Desplazamiento horizontal de cadera (traslación espacial): ${telemetry.hipDisplacement < 0.08 ? 'NULO/MÍNIMO (' + telemetry.hipDisplacement.toFixed(3) + ' - Permanece en el mismo sitio, descartar salto)' : 'DINÁMICO (' + telemetry.hipDisplacement.toFixed(3) + ' - Se traslada en el espacio)'}
 - Postura de equilibrio unipodal sostenida: ${telemetry.unipodalHoldFrames >= 2 || (telemetry.unipodalRaisedFrames || 0) >= 2 ? 'SÍ (' + (telemetry.unipodalMaintainedFrames || telemetry.unipodalHoldFrames) + ' fotogramas en un solo pie)' : 'NO'}
@@ -4174,7 +4180,7 @@ ${skillInstruction}
 - Ángulo medio de codos (braceo): ${telemetry.avgElbowAngle}°
 - Inclinación promedio de tronco: ${telemetry.avgTrunkAngle}°
 - Apertura máxima de zancada / cadera: ${telemetry.maxHipAngle}°
-- Apoyo unipodal con oscilación de patada (Pateo): ${telemetry.singleSupportKick ? 'DETECTADO (Un pie en suelo y pierna contraria en péndulo de golpeo)' : 'NO'}
+- Apoyo unipodal con oscilación de patada (Pateo): ${telemetry.transientKickPeak ? 'DETECTADO (Un pie en suelo y pierna contraria en péndulo de golpeo)' : 'NO'}
 - Elevación de muñeca sobre hombro: ${telemetry.maxWristAboveShoulder ? 'SÍ (Gesto elevado / braceo alto)' : 'NO'}
 - Distancia mínima entre muñecas: ${telemetry.minWristDist.toFixed(2)} (Manos juntas en copa: ${telemetry.minWristDist < 0.26 ? 'SÍ' : 'NO'})
 - Asimetría vertical máxima de tobillos: ${telemetry.maxAnkleYDiff.toFixed(2)}
@@ -4192,7 +4198,7 @@ DEBES RESPONDER EXCLUSIVAMENTE CON UN OBJETO JSON VÁLIDO CON LA SIGUIENTE ESTRU
   "componente_hmb": "[HMB-L] Locomoción | [HMB-M] Manipulación | [HMB-E] Estabilidad-Equilibrio",
   "bateria_referencia": "Batería de Habilidades Motrices Básicas (González Palacio et al., 2021 · Dialnet 7925607)",
   "puntaje_obtenido": "4/5",
-  "edad_calibrada": "${grade}",
+  "edad_calibrada": "${gradeLabel}",
   "estadio_gallahue": "Inicial | Elemental | Maduro",
   "porcentaje_madurez": 75,
   "resumen_biomecanico": "Diagnóstico general de la cadena cinética citando explícitamente el número de fotograma donde se evidencia la acción cumbre (ej: 'En el Fotograma #4 se evidencia con claridad la pateada / impacto al balón...').",
@@ -4369,14 +4375,14 @@ async function sendMsg() {
                 console.error('Error en fallback local:', fallbackErr);
                 showAlert(`Error en el análisis: ${fallbackErr.message || 'Verifique el video.'}`, {
                     title: 'Error de análisis',
-                    type: 'danger',
+                    type: 'error',
                     icon: '❌'
                 });
             }
         } else {
             showAlert(`Error al ejecutar el motor local: ${err.message || 'Verifique el video.'}`, {
                 title: 'Error de análisis local',
-                type: 'danger',
+                type: 'error',
                 icon: '❌'
             });
         }
@@ -5515,8 +5521,6 @@ function generateGroupPlan() {
             </div>
         `;
 
-        addMsg('bot', consolidatedHTML, true);
-
         // Generar la didáctica adaptada al grupo
         const didacticaGrupal = generateDidacticPlan({
             habilidad_detectada: 'Carrera y Locomoción Colectiva',
@@ -5528,7 +5532,15 @@ function generateGroupPlan() {
             ]
         }, teacherPrefs, true);
 
-        addMsg('bot', renderDidacticaHTML(didacticaGrupal), true);
+        // El chat está oculto desde el rediseño en asistente: se muestra en el paso 3
+        const resultContainer = document.getElementById('resultContainer');
+        if (resultContainer) {
+            resultContainer.innerHTML = consolidatedHTML + renderDidacticaHTML(didacticaGrupal);
+        }
+        markStepComplete(2);
+        markStepComplete(3);
+        goToStep(3);
+        isAnalyzing = false;
     }, 1200);
 }
 
