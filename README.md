@@ -34,3 +34,7 @@
 2. Selecciona la habilidad motriz y tus preferencias de clase en el menú lateral.
 3. Sube un video o imagen del estudiante (o usa el modo simulado).
 4. Obtén el diagnóstico biomecánico y descarga la planeación de clase o reporte en Word.
+
+## 📚 Documentación técnica
+
+La documentación completa del funcionamiento interno (motor biomecánico, reglas de la batería, planeación, Gemini) y el plan de migración a Python/Django está en [`docs/`](docs/README.md).
