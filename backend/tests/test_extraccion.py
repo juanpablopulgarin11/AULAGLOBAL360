@@ -39,7 +39,7 @@ def _pose(sentadilla: bool):
 
 
 def detector_falso(rgb: np.ndarray):
-    assert rgb.shape == (ALTO, ANCHO, 3)
+    assert rgb.shape[2] == 3 and max(rgb.shape[:2]) <= ANCHO
     brillo = float(rgb.mean())
     if brillo < 10:
         return None                     # fotograma negro: no hay persona
@@ -59,16 +59,19 @@ def escribir_video(ruta: Path, segundos: float = 3.0, sin_persona: bool = False)
 def test_video_ancla_la_ventana_en_el_angulo_inicial(tmp_path):
     r = extraer_video(escribir_video(tmp_path / "salto.mp4"), detector_falso)
 
-    # 3 s → 15 pasos de escaneo (dt = 0.1875 s). La primera muestra en sentadilla es t=0.9375,
-    # la ventana empieza 0.1 s antes y termina en la muestra siguiente a la última activa (t=1.875).
-    assert r.muestras_escaneo == 16
-    assert r.ventana == pytest.approx((0.8375, 1.875))
+    # 3 s → 45 pasos (dt = 3/46 s). La primera muestra en sentadilla es i=13 (t≈0.848) y se confirma
+    # en i=14; la ventana empieza 0.1 s antes. Al volver a estar de pie, el gatillo por cambio
+    # angular (referencia ~0.19 s antes) sigue activo 3 muestras más: termina en i=28 (t≈1.826).
+    dt = 3 / 46
+    assert r.muestras_escaneo == 46
+    assert r.ventana == pytest.approx((13 * dt - 0.1, 28 * dt))
     assert r.gatillo["skillHint"] == "Salto Horizontal"
 
     assert len(r.frames) == 8 and r.con_persona == 8
     tiempos = [f["timestampNum"] for f in r.frames]
-    assert tiempos[0] == pytest.approx(0.8375) and tiempos[-1] == pytest.approx(1.875)
-    assert np.allclose(np.diff(tiempos), (1.875 - 0.8375) / 7)
+    assert np.allclose(np.diff(tiempos), (r.ventana[1] - r.ventana[0]) / 7)
+    assert r.meta["fps"] == pytest.approx(30, abs=0.5) and r.meta["fotogramas"] == 90
+    assert r.advertencias == []
 
     primero = r.frames[0]
     assert primero["isInitialTrigger"] and primero["phase"].startswith("Fase 1: Ángulo Inicial (Flexión preparatoria bípode")
@@ -82,6 +85,69 @@ def test_video_sin_gatillo_usa_bordes_naturales():
     assert ventana_de_accion(escaneo, 2.0, -1) == pytest.approx((0.16, 1.84))
 
 
+def test_gatillo_aislado_por_ruido_no_ancla_la_ventana(tmp_path):
+    """Un solo fotograma "en sentadilla" (ruido) antes del gesto real no debe anclar el inicio."""
+    ruta = tmp_path / "ruido.mp4"
+    vw = cv2.VideoWriter(str(ruta), cv2.VideoWriter_fourcc(*"mp4v"), FPS, (320, 180))
+    for i in range(90):
+        t = i / FPS
+        ruido = i == 9                                   # un único fotograma claro en t=0.3 s
+        valor = 200 if (ruido or SENTADILLA[0] <= t < SENTADILLA[1]) else 60
+        vw.write(np.full((180, 320, 3), valor, np.uint8))
+    vw.release()
+    r = extraer_video(ruta, detector_falso)
+    assert r.gatillo["t"] > 0.75
+
+
+def test_lienzo_conserva_la_proporcion():
+    from biomecanica.extraccion import a_lienzo
+    vertical = np.full((1920, 1080, 3), 255, np.uint8)
+    lz = a_lienzo(vertical)
+    assert lz.imagen.shape == (ALTO, ANCHO, 3) and lz.contenido.shape == (360, 203, 3)
+    columnas_blancas = np.where(lz.imagen[ALTO // 2].sum(axis=1) > 0)[0]
+    assert columnas_blancas.min() == 218 and columnas_blancas.max() == 420
+    horizontal = np.full((720, 1280, 3), 255, np.uint8)
+    assert a_lienzo(horizontal).imagen.min() == 255         # 16:9: sin bandas, igual que el JS
+
+
+def test_landmarks_del_contenido_pasan_al_lienzo():
+    """En un video vertical, el centro del contenido debe quedar en el centro del lienzo 16:9."""
+    from biomecanica.extraccion import _detectar, a_lienzo
+    lz = a_lienzo(np.full((1920, 1080, 3), 60, np.uint8))
+    lm = _detectar(lambda rgb: [{"x": 0.5, "y": 0.5, "z": 0.2, "visibility": 1.0}] * 33, lz)
+    assert lm[0]["x"] == pytest.approx(0.5, abs=0.002) and lm[0]["y"] == pytest.approx(0.5)
+    assert lm[0]["z"] == pytest.approx(0.2 * 203 / 640)
+    # Un punto en el borde derecho del contenido cae en el borde derecho de la franja útil
+    lm = _detectar(lambda rgb: [{"x": 1.0, "y": 1.0, "z": 0.0}] * 33, lz)
+    assert lm[0]["x"] == pytest.approx((218 + 203) / 640) and lm[0]["y"] == pytest.approx(1.0)
+
+
+def test_video_vertical_avisa(tmp_path):
+    ruta = tmp_path / "vertical.mp4"
+    vw = cv2.VideoWriter(str(ruta), cv2.VideoWriter_fourcc(*"mp4v"), FPS, (180, 320))
+    for _ in range(60):
+        vw.write(np.full((320, 180, 3), 60, np.uint8))
+    vw.release()
+    r = extraer_video(ruta, detector_falso)
+    assert any("vertical" in a for a in r.advertencias)
+
+
+def test_suavizado_por_mediana():
+    from biomecanica.extraccion import mediana_landmarks
+    base = _pose(False)
+    atipico = [dict(p, x=p["x"] + 0.3) for p in base]
+    med = mediana_landmarks([base, atipico, base])
+    assert med[27]["x"] == pytest.approx(base[27]["x"])
+    assert mediana_landmarks([None, None]) is None
+
+
+def test_cuerpo_poco_visible_no_se_mide():
+    from biomecanica.extraccion import angulos_si_visible
+    oculto = [dict(p, visibility=0.1) for p in _pose(False)]
+    assert angulos_si_visible(oculto) is None
+    assert angulos_si_visible(_pose(False)) is not None
+
+
 def test_ventana_minima_de_medio_segundo():
     escaneo = [(0.0, None, {"triggered": True}), (0.1, {"kneeMin": 170}, {"triggered": False})]
     assert ventana_de_accion(escaneo, 3.0, 0) == pytest.approx((0.04, 1.84))
@@ -92,6 +158,7 @@ def test_imagen_un_solo_fotograma(tmp_path):
     cv2.imwrite(str(ruta), np.full((480, 640, 3), 60, np.uint8))
     r = extraer_imagen(ruta, detector_falso, habilidad="Marcha")
     assert len(r.frames) == 1 and r.frames[0]["phase"] == "Postura Estática" and r.frames[0]["time"] == "0.0s"
+    assert r.advertencias == []                       # con habilidad elegida no hay aviso de foto
     assert r.frames[0]["angles"]["kneeMin"] == 180
 
 

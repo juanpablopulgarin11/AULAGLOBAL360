@@ -1,19 +1,26 @@
-"""Extracción de fotogramas desde video o foto (port de ``extractAdaptiveVideoKeyframes`` y
-``extractImageKeyframe``, ``script.js:1708-1982``).
+"""Extracción de fotogramas desde video o foto (evolución de ``extractAdaptiveVideoKeyframes``
+y ``extractImageKeyframe``, ``script.js:1708-1982``).
 
 Requiere ``opencv-python-headless`` y ``numpy``; el detector por defecto usa ``mediapipe``.
 Estas dependencias se importan aquí y no en el resto de ``biomecanica``, que sigue siendo
-Python puro.
+Python puro. El detector se inyecta (``rgb -> landmarks | None``) para poder probar la
+lógica sin el modelo.
 
-El detector se inyecta (cualquier callable ``rgb -> landmarks | None``) para poder probar la
-lógica de ventanas y fases sin el modelo.
+Mejoras respecto al navegador (la lógica de gatillo, ventana y fases es la misma):
 
-Diferencia inevitable con el navegador: el *seek* de OpenCV y el de ``<video>`` no caen
-exactamente en el mismo fotograma, así que la paridad aquí se valida a nivel de habilidad y
-estadio, no de ángulos exactos (docs/06 §7).
+- **Encuadre sin deformación**: la imagen se ajusta a 640×360 conservando su proporción
+  (bandas negras). Para videos 16:9 el resultado es idéntico al JS; en videos verticales ya
+  no se estiran los ángulos. Los landmarks quedan en coordenadas del lienzo 16:9, que es el
+  espacio en el que se calibraron los umbrales.
+- **Tiempos exactos por fotograma** (videos de celular con frecuencia variable).
+- **Escaneo denso** (15 muestras/s) con gatillo confirmado en 2 muestras seguidas.
+- **Suavizado**: cada fotograma final es la mediana de 3 fotogramas contiguos.
+- **Control de calidad**: se descartan las poses con el cuerpo casi invisible y se generan
+  advertencias para el docente.
 """
 from __future__ import annotations
 
+import bisect
 import math
 import threading
 from dataclasses import dataclass, field
@@ -26,13 +33,19 @@ import numpy as np
 from .angulos import compute_joint_angles
 from .gatillo import check_exercise_trigger_pose
 from .hitos import assign_keyframe_milestones
+from .jsutil import js_round
 
-# Igual que el JS: todo se lleva a 640×360 antes de detectar. Deforma videos verticales
-# (docs/07 #2), pero cambiarlo altera los ángulos calibrados: se hará en un cambio aparte.
 ANCHO, ALTO = 640, 360
 CALIDAD_JPEG = 85
 DURACION_MAX_S = 20.0
 DURACION_MIN_S = 0.6
+PASO_ESCANEO_S = 1 / 15          # el JS usaba ~0.19 s (12–24 muestras en total)
+LAG_DELTA_S = 0.1875             # referencia del gatillo por cambio angular (equivale al paso del JS)
+CONFIRMACION_GATILLO = 2         # muestras seguidas que deben cumplir el gatillo
+MAX_MUESTRAS_ESCANEO = 300
+VECINOS_SUAVIZADO = 1            # fotogramas a cada lado para la mediana (3 en total)
+VISIBILIDAD_MIN_CUERPO = 0.35    # misma referencia que el dibujo del esqueleto en el JS
+ARTICULACIONES_NUCLEO = [11, 12, 23, 24, 25, 26, 27, 28]
 
 Landmarks = List[Dict[str, float]]
 Detector = Callable[[np.ndarray], Optional[Landmarks]]
@@ -122,10 +135,54 @@ def detector_mediapipe(modelo: Union[str, Path], usar_gpu: bool = False) -> Dete
 
 
 # --------------------------------------------------------------------------------------
-# Imagen: redimensionado, esqueleto y JPEG
+# Lienzo, calidad y suavizado
 # --------------------------------------------------------------------------------------
-def _a_lienzo(bgr: np.ndarray) -> np.ndarray:
-    return cv2.resize(bgr, (ANCHO, ALTO), interpolation=cv2.INTER_AREA)
+@dataclass
+class Lienzo:
+    """Imagen ajustada a 640×360 sin deformar y la región que ocupa el contenido real."""
+    imagen: np.ndarray            # 640×360 con bandas negras
+    contenido: np.ndarray         # el contenido sin bandas (donde se detecta la pose)
+    x0: int
+    y0: int
+
+
+def a_lienzo(bgr: np.ndarray) -> Lienzo:
+    """Ajusta la imagen a 640×360 sin deformarla (bandas negras donde sobra espacio)."""
+    h, w = bgr.shape[:2]
+    escala = min(ANCHO / w, ALTO / h)
+    nw, nh = max(1, js_round(w * escala)), max(1, js_round(h * escala))   # igual que Math.round del JS
+    contenido = cv2.resize(bgr, (nw, nh), interpolation=cv2.INTER_AREA)
+    if (nw, nh) == (ANCHO, ALTO):
+        return Lienzo(contenido, contenido, 0, 0)
+    imagen = np.zeros((ALTO, ANCHO, 3), dtype=np.uint8)
+    x0, y0 = (ANCHO - nw) // 2, (ALTO - nh) // 2
+    imagen[y0:y0 + nh, x0:x0 + nw] = contenido
+    return Lienzo(imagen, contenido, x0, y0)
+
+
+def visibilidad_nucleo(landmarks: Optional[Landmarks]) -> float:
+    if not landmarks or len(landmarks) < 33:
+        return 0.0
+    return float(np.mean([landmarks[i].get("visibility", 1.0) or 0.0 for i in ARTICULACIONES_NUCLEO]))
+
+
+def angulos_si_visible(landmarks: Optional[Landmarks]) -> Optional[Dict[str, Any]]:
+    """Ángulos solo si el cuerpo (hombros, caderas, rodillas, tobillos) es razonablemente visible."""
+    if not landmarks or visibilidad_nucleo(landmarks) < VISIBILIDAD_MIN_CUERPO:
+        return None
+    return compute_joint_angles(landmarks)
+
+
+def mediana_landmarks(muestras: Sequence[Optional[Landmarks]]) -> Optional[Landmarks]:
+    """Mediana punto a punto de varias detecciones (atenúa el temblor de MediaPipe)."""
+    validas = [m for m in muestras if m and len(m) >= 33]
+    if not validas:
+        return None
+    if len(validas) == 1:
+        return validas[0]
+    arr = np.array([[[p["x"], p["y"], p.get("z") or 0.0, p.get("visibility", 1.0) or 0.0] for p in m[:33]] for m in validas])
+    med = np.median(arr, axis=0)
+    return [{"x": float(x), "y": float(y), "z": float(z), "visibility": float(v)} for x, y, z, v in med]
 
 
 def _jpeg(bgr: np.ndarray) -> bytes:
@@ -149,7 +206,7 @@ def dibujar_esqueleto(bgr: np.ndarray, landmarks: Optional[Landmarks], angles: O
     h, w = img.shape[:2]
 
     def visible(p):
-        return (p.get("visibility") or 1) > 0.35
+        return (p.get("visibility") or 1) > VISIBILIDAD_MIN_CUERPO
 
     def pt(p):
         return int(round(p["x"] * w)), int(round(p["y"] * h))
@@ -168,64 +225,98 @@ def dibujar_esqueleto(bgr: np.ndarray, landmarks: Optional[Landmarks], angles: O
     return img
 
 
-def _fotograma(bgr: np.ndarray, detector: Detector, t: float, fase: str) -> Dict[str, Any]:
-    lienzo = _a_lienzo(bgr)
-    landmarks = detector(cv2.cvtColor(lienzo, cv2.COLOR_BGR2RGB))
-    angles = compute_joint_angles(landmarks) if landmarks else None
+def _armar_fotograma(lienzo: Lienzo, landmarks: Optional[Landmarks], t: float, fase: str) -> Dict[str, Any]:
+    angles = angulos_si_visible(landmarks)
     return {
         "time": f"{t:.2f}s",
         "timestampNum": t,
         "phase": fase,
         "landmarks": landmarks,
         "angles": angles,
+        "visibilidad": round(visibilidad_nucleo(landmarks), 3),
         "isInitialTrigger": False,
         "triggerInfo": None,
-        "imagen_jpeg": _jpeg(lienzo),
-        "imagen_esqueleto_jpeg": _jpeg(dibujar_esqueleto(lienzo, landmarks, angles)),
+        "imagen_jpeg": _jpeg(lienzo.imagen),
+        "imagen_esqueleto_jpeg": _jpeg(dibujar_esqueleto(lienzo.imagen, landmarks, angles)),
     }
+
+
+def _detectar(detector: Detector, lienzo: Lienzo) -> Optional[Landmarks]:
+    """Detecta sobre el contenido sin bandas (la persona se ve más grande) y expresa los
+    landmarks en coordenadas del lienzo 16:9, el espacio en que se calibraron los umbrales."""
+    lm = detector(cv2.cvtColor(lienzo.contenido, cv2.COLOR_BGR2RGB))
+    if not lm or (lienzo.x0 == 0 and lienzo.y0 == 0):
+        return lm
+    nh, nw = lienzo.contenido.shape[:2]
+    sx, sy = nw / ANCHO, nh / ALTO
+    ox, oy = lienzo.x0 / ANCHO, lienzo.y0 / ALTO
+    # z de MediaPipe usa la escala de x (ancho de la imagen): se ajusta igual que x
+    return [{**p, "x": p["x"] * sx + ox, "y": p["y"] * sy + oy, "z": (p.get("z") or 0.0) * sx} for p in lm]
 
 
 # --------------------------------------------------------------------------------------
 # Video
 # --------------------------------------------------------------------------------------
 class LectorVideo:
-    """Acceso aleatorio por tiempo a un video con OpenCV."""
+    """Acceso por tiempo a un video con los tiempos reales de cada fotograma.
+
+    Un primer recorrido (``grab``, sin convertir imágenes) registra la marca de tiempo de cada
+    fotograma; así los saltos son exactos aunque el celular grabe con frecuencia variable.
+    """
 
     def __init__(self, ruta: Union[str, Path]) -> None:
         self.cap = cv2.VideoCapture(str(ruta))
         if not self.cap.isOpened():
             raise ArchivoIlegible(f"No se pudo abrir el video: {Path(ruta).name}")
-        self.fps = self.cap.get(cv2.CAP_PROP_FPS) or 0.0
-        self.n = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT) or 0)
-        if self.fps <= 0 or self.n <= 0:
-            self._contar()
-        if self.n <= 0:
-            raise ArchivoIlegible("El video no tiene fotogramas legibles")
-        self.duracion = self.n / self.fps
-
-    def _contar(self) -> None:
-        n, ultimo_ms = 0, 0.0
-        while True:
-            ok = self.cap.grab()
-            if not ok:
+        if hasattr(cv2, "CAP_PROP_ORIENTATION_AUTO"):
+            self.cap.set(cv2.CAP_PROP_ORIENTATION_AUTO, 1)   # videos de celular grabados en vertical
+        self.fps_declarado = self.cap.get(cv2.CAP_PROP_FPS) or 0.0
+        self.tiempos: List[float] = []
+        limite_s = DURACION_MAX_S + 1
+        while self.cap.grab():
+            t = self.cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0
+            if self.tiempos and t <= self.tiempos[-1]:   # marcas no monótonas: se reconstruyen
+                t = self.tiempos[-1] + (1 / self.fps_declarado if self.fps_declarado > 0 else 1 / 30)
+            self.tiempos.append(t)
+            if t > limite_s:
                 break
-            n += 1
-            ultimo_ms = self.cap.get(cv2.CAP_PROP_POS_MSEC)
-        self.n = n
-        self.fps = self.fps if self.fps > 0 else (n / (ultimo_ms / 1000) if ultimo_ms > 0 else 30.0)
+        if not self.tiempos:
+            raise ArchivoIlegible("El video no tiene fotogramas legibles")
+        paso = float(np.median(np.diff(self.tiempos))) if len(self.tiempos) > 1 else (1 / (self.fps_declarado or 30))
+        self.fps = 1 / paso if paso > 0 else (self.fps_declarado or 30.0)
+        self.duracion = self.tiempos[-1] - self.tiempos[0] + paso
+        self.t0 = self.tiempos[0]
+        self._actual = -1
         self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+        ok, primero = self.cap.read()
+        if not ok:
+            raise ArchivoIlegible("No se pudo leer el primer fotograma")
+        self.alto, self.ancho = primero.shape[:2]
+        self._actual = 0
 
-    def en(self, t: float) -> np.ndarray:
-        """Fotograma visible en el instante ``t`` (como ``video.currentTime = t``)."""
-        idx = max(0, min(self.n - 1, int(math.floor(t * self.fps))))
-        for intento in (idx, idx - 1, 0):
-            if intento < 0:
-                continue
-            self.cap.set(cv2.CAP_PROP_POS_FRAMES, intento)
-            ok, frame = self.cap.read()
-            if ok and frame is not None:
-                return frame
-        raise ArchivoIlegible(f"No se pudo leer el fotograma en t={t:.2f}s")
+    @property
+    def n(self) -> int:
+        return len(self.tiempos)
+
+    def indice_en(self, t: float) -> int:
+        """Fotograma visible en el instante ``t`` (último con marca ≤ t)."""
+        return max(0, min(self.n - 1, bisect.bisect_right(self.tiempos, self.t0 + t + 1e-6) - 1))
+
+    def leer(self, idx: int) -> np.ndarray:
+        idx = max(0, min(self.n - 1, idx))
+        if self._actual < idx <= self._actual + 90:
+            # Avanzar descartando es más barato que saltar (el salto decodifica desde un fotograma clave)
+            while self._actual + 1 < idx:
+                if not self.cap.grab():
+                    break
+                self._actual += 1
+        if idx != self._actual + 1:
+            self.cap.set(cv2.CAP_PROP_POS_FRAMES, idx)
+        ok, frame = self.cap.read()
+        if not ok or frame is None:
+            raise ArchivoIlegible(f"No se pudo leer el fotograma {idx}")
+        self._actual = idx
+        return frame
 
     def close(self) -> None:
         self.cap.release()
@@ -238,7 +329,9 @@ class ResultadoExtraccion:
     ventana: Tuple[float, float]
     gatillo: Optional[Dict[str, Any]] = None
     muestras_escaneo: int = 0
-    con_persona: int = field(default=0)
+    con_persona: int = 0
+    advertencias: List[str] = field(default_factory=list)
+    meta: Dict[str, Any] = field(default_factory=dict)
 
 
 def ventana_de_accion(escaneo: Sequence[Tuple[float, Optional[Dict[str, Any]], Dict[str, Any]]], dur: float,
@@ -261,6 +354,62 @@ def ventana_de_accion(escaneo: Sequence[Tuple[float, Optional[Dict[str, Any]], D
     return inicio, fin
 
 
+def _escanear(lector: LectorVideo, detector: Detector, dur: float):
+    """Muestrea el video y devuelve (escaneo, índice del primer gatillo confirmado, info)."""
+    pasos = max(12, min(MAX_MUESTRAS_ESCANEO, math.floor(dur / PASO_ESCANEO_S)))
+    dt = dur / (pasos + 1)
+    lag = max(1, round(LAG_DELTA_S / dt))
+    escaneo: List[Tuple[float, Optional[Dict[str, Any]], Dict[str, Any]]] = []
+    for i in range(pasos + 1):
+        t = i * dt
+        landmarks = _detectar(detector, a_lienzo(lector.leer(lector.indice_en(min(t, dur - 0.05)))))
+        angles = angulos_si_visible(landmarks)
+        trig: Dict[str, Any] = {"triggered": False}
+        if angles:
+            # Referencia para el gatillo por cambio angular: la muestra con pose ~0.19 s antes
+            prev = next((escaneo[j][1] for j in range(i - lag, -1, -1) if escaneo[j][1]), None)
+            trig = check_exercise_trigger_pose(angles, prev)
+        escaneo.append((t, angles, trig))
+
+    for i in range(len(escaneo)):
+        racha = escaneo[i:i + CONFIRMACION_GATILLO]
+        if len(racha) == CONFIRMACION_GATILLO and all(r[2].get("triggered") for r in racha):
+            return escaneo, i, {**escaneo[i][2], "t": escaneo[i][0]}
+    # Video muy corto o gesto muy breve: se acepta un gatillo aislado
+    for i, (t, _, trig) in enumerate(escaneo):
+        if trig.get("triggered"):
+            return escaneo, i, {**trig, "t": t}
+    return escaneo, -1, None
+
+
+def _advertencias(lector: Optional[LectorVideo], frames: List[Dict[str, Any]], duracion_real: float) -> List[str]:
+    avisos: List[str] = []
+    if lector is not None:
+        if duracion_real < 1.0:
+            avisos.append("El video dura menos de 1 segundo; graba de 3 a 5 segundos para capturar el gesto completo.")
+        if duracion_real > DURACION_MAX_S:
+            avisos.append(f"El video dura {duracion_real:.0f} s; solo se analizaron los primeros {DURACION_MAX_S:.0f} s.")
+        if lector.alto > lector.ancho:
+            avisos.append("Video vertical: se analizó sin deformarlo, pero la grabación horizontal de perfil da mejores medidas.")
+        if lector.fps < 20:
+            avisos.append(f"Frecuencia baja ({lector.fps:.0f} fps): los gestos rápidos pueden quedar entre fotogramas.")
+    con_pose = [f for f in frames if f["landmarks"]]
+    validos = [f for f in frames if f["angles"]]
+    if con_pose and len(validos) < len(frames):
+        avisos.append(f"En {len(frames) - len(validos)} de {len(frames)} fotogramas el cuerpo no se ve completo; "
+                      "esos fotogramas no se usaron para medir.")
+    tobillos_ocultos = sum(1 for f in con_pose if min(f["landmarks"][27].get("visibility", 1), f["landmarks"][28].get("visibility", 1)) < 0.5)
+    if con_pose and tobillos_ocultos > len(con_pose) / 2:
+        avisos.append("Los pies quedan fuera del encuadre o tapados: aléjate para que se vea el cuerpo completo.")
+    alturas = []
+    for f in validos:
+        ys = [f["landmarks"][i]["y"] for i in (0, 27, 28)]
+        alturas.append(max(ys) - min(ys))
+    if alturas and float(np.median(alturas)) < 0.4:
+        avisos.append("La persona se ve pequeña en el encuadre; acércate un poco (cuerpo completo ocupando casi todo el alto).")
+    return avisos
+
+
 def extraer_video(ruta: Union[str, Path], detector: Detector, n: int = 8,
                   habilidad: Optional[str] = None) -> ResultadoExtraccion:
     """Escanea el video, localiza el ángulo inicial y extrae ``n`` fotogramas equiespaciados."""
@@ -269,28 +418,7 @@ def extraer_video(ruta: Union[str, Path], detector: Detector, n: int = 8,
     lector = LectorVideo(ruta)
     try:
         dur = max(DURACION_MIN_S, min(lector.duracion, DURACION_MAX_S))
-
-        def seek(t: float) -> np.ndarray:
-            return lector.en(max(0.0, min(t, dur - 0.05)))
-
-        # 1. Escaneo para encontrar el ángulo inicial del ejercicio
-        pasos = min(24, max(12, math.floor(dur * 5)))
-        dt = dur / (pasos + 1)
-        escaneo: List[Tuple[float, Optional[Dict[str, Any]], Dict[str, Any]]] = []
-        primer, info, prev = -1, None, None
-        for i in range(pasos + 1):
-            t = i * dt
-            landmarks = detector(cv2.cvtColor(_a_lienzo(seek(t)), cv2.COLOR_BGR2RGB))
-            angles = compute_joint_angles(landmarks) if landmarks else None
-            trig: Dict[str, Any] = {"triggered": False}
-            if angles:
-                trig = check_exercise_trigger_pose(angles, prev)
-                if trig["triggered"] and primer == -1:
-                    primer, info = i, {**trig, "t": t}
-                prev = angles
-            escaneo.append((t, angles, trig))
-
-        # 2. Ventana y 3. instantes equiespaciados desde el ángulo inicial
+        escaneo, primer, info = _escanear(lector, detector, dur)
         inicio, fin = ventana_de_accion(escaneo, dur, primer)
         tiempos = [inicio + (fin - inicio) * k / (n - 1) for k in range(n)]
 
@@ -299,19 +427,26 @@ def extraer_video(ruta: Union[str, Path], detector: Detector, n: int = 8,
         if info:
             fases[0] = f"Fase 1: Ángulo Inicial ({info['reason']})"
 
-        # 4. Fotogramas finales con pose, ángulos y esqueleto
         frames = []
         for k, t in enumerate(tiempos):
-            f = _fotograma(seek(t), detector, t, fases[k] if k < len(fases) else f"Fase {k + 1}")
+            centro = lector.indice_en(min(max(t, 0.0), dur - 0.05))
+            vecinos = range(max(0, centro - VECINOS_SUAVIZADO), min(lector.n, centro + VECINOS_SUAVIZADO + 1))
+            lienzos = {i: a_lienzo(lector.leer(i)) for i in vecinos}
+            landmarks = mediana_landmarks([_detectar(detector, lz) for lz in lienzos.values()])
+            f = _armar_fotograma(lienzos[centro], landmarks, t, fases[k] if k < len(fases) else f"Fase {k + 1}")
             if k == 0 and info:
                 f["isInitialTrigger"], f["triggerInfo"] = True, info
             frames.append(f)
+        avisos = _advertencias(lector, frames, lector.duracion)
+        meta = {"ancho": lector.ancho, "alto": lector.alto, "fps": round(lector.fps, 2),
+                "duracion_s": round(lector.duracion, 3), "fotogramas": lector.n}
     finally:
         lector.close()
 
     assign_keyframe_milestones(frames, habilidad)
     return ResultadoExtraccion(frames=frames, duracion=dur, ventana=(inicio, fin), gatillo=info,
-                               muestras_escaneo=len(escaneo), con_persona=sum(1 for f in frames if f["landmarks"]))
+                               muestras_escaneo=len(escaneo), con_persona=sum(1 for f in frames if f["angles"]),
+                               advertencias=avisos, meta=meta)
 
 
 def extraer_imagen(origen: Union[str, Path, bytes], detector: Detector, habilidad: Optional[str] = None) -> ResultadoExtraccion:
@@ -322,11 +457,17 @@ def extraer_imagen(origen: Union[str, Path, bytes], detector: Detector, habilida
         bgr = cv2.imread(str(origen), cv2.IMREAD_COLOR)
     if bgr is None:
         raise ArchivoIlegible("No se pudo leer la imagen")
-    f = _fotograma(bgr, detector, 0.0, "Postura Estática")
+    lienzo = a_lienzo(bgr)
+    f = _armar_fotograma(lienzo, _detectar(detector, lienzo), 0.0, "Postura Estática")
     f["time"] = "0.0s"
     frames = [f]
+    avisos = _advertencias(None, frames, 0.0)
+    if habilidad is None:
+        avisos.append("Con una sola foto la detección automática es poco fiable; elige la habilidad o sube un video.")
     assign_keyframe_milestones(frames, habilidad)
-    return ResultadoExtraccion(frames=frames, duracion=0.0, ventana=(0.0, 0.0), con_persona=int(bool(f["landmarks"])))
+    h, w = bgr.shape[:2]
+    return ResultadoExtraccion(frames=frames, duracion=0.0, ventana=(0.0, 0.0), con_persona=int(bool(f["angles"])),
+                               advertencias=avisos, meta={"ancho": w, "alto": h})
 
 
 EXTENSIONES_VIDEO = {".mp4", ".mov", ".webm", ".m4v", ".avi", ".mkv", ".3gp"}

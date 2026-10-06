@@ -64,6 +64,8 @@ class Evaluacion(models.Model):
 
     estado = models.CharField(max_length=12, choices=Estado.choices, default=Estado.PENDIENTE)
     mensaje_error = models.TextField(blank=True)
+    advertencias = models.JSONField(default=list, blank=True, help_text="Avisos de calidad de la grabación para el docente")
+    meta_video = models.JSONField(default=dict, blank=True, help_text="Resolución, fps, duración y ventana analizada")
 
     # Resultado
     habilidad_detectada = models.ForeignKey("catalogo.Habilidad", null=True, blank=True, on_delete=models.PROTECT, related_name="+")

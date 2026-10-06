@@ -1704,6 +1704,40 @@ function checkExerciseTriggerPose(angles, prevAngles = null) {
     return { triggered: false };
 }
 
+// ENCUADRE SIN DEFORMACIÓN (LETTERBOX 640×360)
+// La imagen se ajusta al lienzo 16:9 conservando su proporción. La pose se detecta sobre el
+// contenido sin bandas y los landmarks se expresan en coordenadas del lienzo, el espacio en que se
+// calibraron los umbrales. En videos 16:9 el resultado es idéntico al anterior; en verticales evita
+// que una rodilla doblada se lea como extendida. (Misma lógica que backend/biomecanica/extraccion.py)
+function letterboxGeometry(srcW, srcH, W = 640, H = 360) {
+    const s = Math.min(W / srcW, H / srcH);
+    const nw = Math.max(1, Math.round(srcW * s));
+    const nh = Math.max(1, Math.round(srcH * s));
+    return { nw, nh, x0: Math.floor((W - nw) / 2), y0: Math.floor((H - nh) / 2), W, H };
+}
+
+function drawLetterboxed(ctx, src, g) {
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, g.W, g.H);
+    ctx.drawImage(src, g.x0, g.y0, g.nw, g.nh);
+}
+
+const contentCanvas = document.createElement('canvas');
+function detectOnContent(landmarker, lienzo, g) {
+    let fuente = lienzo;
+    if (g.x0 !== 0 || g.y0 !== 0) {
+        contentCanvas.width = g.nw;
+        contentCanvas.height = g.nh;
+        contentCanvas.getContext('2d').drawImage(lienzo, g.x0, g.y0, g.nw, g.nh, 0, 0, g.nw, g.nh);
+        fuente = contentCanvas;
+    }
+    const res = landmarker.detect(fuente);
+    if (!res.landmarks || res.landmarks.length === 0) return null;
+    if (fuente === lienzo) return res.landmarks[0];
+    const sx = g.nw / g.W, sy = g.nh / g.H, ox = g.x0 / g.W, oy = g.y0 / g.H;
+    return res.landmarks[0].map(p => ({ ...p, x: p.x * sx + ox, y: p.y * sy + oy, z: (p.z || 0) * sx }));
+}
+
 // EXTRACCIÓN CINEMÁTICA ANCLADA AL ÁNGULO INICIAL DEL EJERCICIO
 async function extractAdaptiveVideoKeyframes(file, targetCount = 8) {
     return new Promise(async (resolve, reject) => {
@@ -1728,6 +1762,7 @@ async function extractAdaptiveVideoKeyframes(file, targetCount = 8) {
                 hdCanvas.width = 640;
                 hdCanvas.height = 360;
                 const hdCtx = hdCanvas.getContext('2d');
+                const geo = letterboxGeometry(video.videoWidth || 640, video.videoHeight || 360);
 
                 const seekTo = (t) => {
                     return new Promise(res => {
@@ -1752,15 +1787,15 @@ async function extractAdaptiveVideoKeyframes(file, targetCount = 8) {
                 for (let i = 0; i <= scanSteps; i++) {
                     const t = i * dt;
                     await seekTo(t);
-                    hdCtx.drawImage(video, 0, 0, hdCanvas.width, hdCanvas.height);
+                    drawLetterboxed(hdCtx, video, geo);
 
                     let landmarks = null;
                     let angles = null;
                     if (landmarker) {
                         try {
-                            const res = landmarker.detect(hdCanvas);
-                            if (res.landmarks && res.landmarks.length > 0) {
-                                landmarks = res.landmarks[0];
+                            const detected = detectOnContent(landmarker, hdCanvas, geo);
+                            if (detected) {
+                                landmarks = detected;
                                 angles = computeJointAngles(landmarks);
                             }
                         } catch (err) {}
@@ -1855,16 +1890,16 @@ async function extractAdaptiveVideoKeyframes(file, targetCount = 8) {
                 for (let k = 0; k < selectedTimestamps.length; k++) {
                     const t = selectedTimestamps[k];
                     await seekTo(t);
-                    hdCtx.drawImage(video, 0, 0, hdCanvas.width, hdCanvas.height);
+                    drawLetterboxed(hdCtx, video, geo);
 
                     let landmarks = null;
                     let angles = null;
 
                     if (landmarker) {
                         try {
-                            const res = landmarker.detect(hdCanvas);
-                            if (res.landmarks && res.landmarks.length > 0) {
-                                landmarks = res.landmarks[0];
+                            const detected = detectOnContent(landmarker, hdCanvas, geo);
+                            if (detected) {
+                                landmarks = detected;
                                 angles = computeJointAngles(landmarks);
                             }
                         } catch (err) {
@@ -1933,16 +1968,17 @@ async function extractImageKeyframe(file) {
                 canvas.width = 640;
                 canvas.height = 360;
                 const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                const geo = letterboxGeometry(img.naturalWidth || img.width, img.naturalHeight || img.height);
+                drawLetterboxed(ctx, img, geo);
 
                 let landmarks = null;
                 let angles = null;
                 const landmarker = await getPoseLandmarker();
                 if (landmarker) {
                     try {
-                        const res = landmarker.detect(canvas);
-                        if (res.landmarks && res.landmarks.length > 0) {
-                            landmarks = res.landmarks[0];
+                        const detected = detectOnContent(landmarker, canvas, geo);
+                        if (detected) {
+                            landmarks = detected;
                             angles = computeJointAngles(landmarks);
                         }
                     } catch (err) {
