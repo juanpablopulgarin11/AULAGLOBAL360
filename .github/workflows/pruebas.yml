@@ -2,9 +2,9 @@ name: Pruebas backend
 
 on:
   push:
-    paths: ["backend/**", "docs/datos/**", "script.js", ".github/workflows/pruebas.yml"]
+    paths: ["backend/**", "docs/datos/**", "script.js", "package.json", ".github/workflows/pruebas.yml"]
   pull_request:
-    paths: ["backend/**", "docs/datos/**", "script.js"]
+    paths: ["backend/**", "docs/datos/**", "script.js", "package.json"]
 
 jobs:
   pytest:
