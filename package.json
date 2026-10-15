@@ -1,7 +1,6 @@
 {
   "name": "aulaglobal360",
   "private": true,
-  "type": "module",
   "scripts": {
     "build": "node scripts/build.mjs",
     "start": "node scripts/build.mjs && npx --yes serve@14.2.4 dist -l 8080"
