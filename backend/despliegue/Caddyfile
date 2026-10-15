@@ -1,0 +1,8 @@
+# Certificado HTTPS automático (Let's Encrypt) para el dominio de .env
+{$DOMINIO} {
+	encode zstd gzip
+	request_body {
+		max_size 70MB
+	}
+	reverse_proxy web:8000
+}

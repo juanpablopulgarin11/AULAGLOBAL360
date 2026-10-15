@@ -21,12 +21,44 @@
 ## 📁 Estructura del Proyecto
 
 ```
-├── index.html        # Punto de entrada principal (renderizado por GitHub Pages)
-├── script.js          # Lógica interactiva, procesamiento de video y análisis
-├── styles.css         # Hoja de estilos desacoplada y responsive
-├── .nojekyll          # Desactiva Jekyll en GitHub Pages para carga directa
-└── README.md          # Documentación del proyecto
+├── index.html             # App principal (evaluación y planeación)
+├── landing.html / .css    # Página de presentación
+├── preview.html / _styles # Vista previa del rediseño de la interfaz
+├── script.js              # Lógica interactiva, procesamiento de video y análisis
+├── styles.css             # Estilos de la app
+├── scripts/build.mjs      # Genera dist/ para el despliegue
+├── .github/workflows/     # Despliegue automático a GitHub Pages
+├── netlify.toml           # Configuración para Netlify
+├── Data/                  # Material bibliográfico de referencia (no se publica)
+└── codigodelsalto.py      # Prototipo Python de referencia (no se publica)
 ```
+
+## 🖥️ Despliegue en servidor (versión Django)
+
+La guía completa para instalar la versión Django en un servidor gratuito de Oracle Cloud, con HTTPS, PostgreSQL y respaldos diarios, está en **[DESPLIEGUE.md](DESPLIEGUE.md)**.
+
+## 🧪 Probar en local (versión estática)
+
+Requiere Node.js 18+ (no hay dependencias que instalar).
+
+```bash
+npm start      # genera dist/ y lo sirve en http://localhost:8080
+npm run build  # solo genera dist/
+```
+
+No abras `index.html` con doble clic (`file://`): MediaPipe y la cámara necesitan un servidor HTTP.
+
+## ☁️ Publicar la versión estática
+
+`npm run build` genera `dist/` solo con los archivos del sitio (~0.5 MB). La carpeta `Data/` (PDFs de referencia) y `codigodelsalto.py` **no se publican**.
+
+**Opción A — GitHub Pages (manual):**
+1. En GitHub: *Settings → Pages → Build and deployment → Source:* **GitHub Actions**. Esto reemplaza la demo que hoy se sirve desde la rama.
+2. En *Actions*, ejecuta el workflow [Deploy GitHub Pages (estático)](.github/workflows/deploy-pages.yml), que publica `dist/` en `https://<usuario>.github.io/AULAGLOBAL360/`.
+
+**Opción B — Netlify:** importa el repositorio en Netlify; [netlify.toml](netlify.toml) ya define el build (`npm run build`) y la carpeta (`dist`). También puedes ejecutar `npm run build` y arrastrar `dist/` a [app.netlify.com/drop](https://app.netlify.com/drop).
+
+**Análisis con IA (opcional):** cada usuario pega su propia clave de Google AI Studio en la app; se guarda solo en su navegador (`localStorage`). El modo local funciona sin clave.
 
 ## 🚀 Uso Rápido
 

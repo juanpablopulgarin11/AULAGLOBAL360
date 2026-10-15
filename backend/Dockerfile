@@ -14,7 +14,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 COPY requirements/ requirements/
-RUN pip install -r requirements/prod.txt
+# lock.txt fija las versiones probadas (MediaPipe cambia resultados entre versiones)
+RUN pip install -r requirements/prod.txt -c requirements/lock.txt
 
 COPY . .
 # Los datos de referencia (plantillas) viven en docs/datos del repositorio

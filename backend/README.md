@@ -46,8 +46,9 @@ docker compose exec web python manage.py createsuperuser
 
 Levanta **web** (gunicorn), **worker** (Celery: análisis de videos y Gemini), **beat** (purga diaria de videos vencidos), **PostgreSQL** y **Redis**. Al iniciar, `web` migra, sincroniza el catálogo y descarga el modelo. Pon un proxy HTTPS (Nginx, Caddy o el del proveedor) delante del puerto 8000.
 
-> **Sin probar todavía**: la imagen Docker y MediaPipe en **CPU sobre Linux**. En macOS mediapipe solo funciona con GPU; si en Linux con CPU fallara, el worker se cae en cada análisis. Primera verificación en el servidor:
-> `docker compose exec worker env AULA360_IMAGEN_PRUEBA=/app/algo.jpg python -m pytest -q tests/test_extraccion.py -k mediapipe_real`
+**Servidor gratuito con HTTPS y respaldos:** [DESPLIEGUE.md](../DESPLIEGUE.md) explica cómo montarlo en Oracle Cloud Always Free (ARM), con `docker-compose.oracle.yml` (Caddy y reinicio automático), `despliegue/instalar.sh` y `despliegue/respaldo.sh`.
+
+> **Probado** (imagen Docker en Linux x86_64, MediaPipe en CPU): registro, evaluación procesada por Celery (unos 0,7 s por foto), HTTPS detrás de Caddy, respaldo y persistencia tras reiniciar. La imagen también se construye en **ARM64 (aarch64)**, que es lo que usa Oracle: MediaPipe detecta los 33 puntos con los mismos ángulos que en x86, aunque en esa prueba se emuló la arquitectura, no se usó un servidor ARM real. Primera verificación en el servidor: evaluar una foto desde `/evaluar/`.
 
 ## Qué hace la aplicación
 

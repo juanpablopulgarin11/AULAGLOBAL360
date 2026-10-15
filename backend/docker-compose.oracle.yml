@@ -1,0 +1,35 @@
+# Servidor propio (Oracle Cloud u otro VPS): HTTPS con Caddy y reinicio automático.
+# Se combina con docker-compose.yml mediante COMPOSE_FILE en .env (lo escribe despliegue/instalar.sh).
+# Variable adicional en .env: DOMINIO (p. ej. 129-146-10-20.sslip.io)
+services:
+  caddy:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    environment:
+      DOMINIO: ${DOMINIO}
+    ports: ["80:80", "443:443"]
+    volumes:
+      - ./despliegue/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on: [web]
+
+  web:
+    restart: unless-stopped
+    ports: !reset []          # solo se entra por Caddy (HTTPS)
+
+  worker:
+    restart: unless-stopped
+
+  beat:
+    restart: unless-stopped
+
+  db:
+    restart: unless-stopped
+
+  redis:
+    restart: unless-stopped
+
+volumes:
+  caddy_data:
+  caddy_config:
