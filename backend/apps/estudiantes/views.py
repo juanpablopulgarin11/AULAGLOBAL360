@@ -37,7 +37,8 @@ def grupo(request, pk):
     estudiantes = g.estudiantes.annotate(n_eval=Count("evaluaciones"))
     return render(request, "estudiantes/grupo.html", {
         "g": g, "estudiantes": estudiantes, "form": form,
-        "form_grupal": EvaluacionGrupalForm(initial={"estudiantes_objetivo": estudiantes.count() or 30}),
+        "form_grupal": EvaluacionGrupalForm(initial={
+            "estudiantes_objetivo": estudiantes.count() or request.user.configuracion_clase.get("estudiantes", 30)}),
         "grupales": g.evaluaciones_grupales.all()[:5],
     })
 

@@ -1,0 +1,94 @@
+{# Panel «Configurar clase» (mismas secciones que el panel lateral de la versión web). Se usa en el panel lateral de base.html y en /configurar-clase/. #}
+<form method="post" action="{% url 'configurar_clase' %}" class="config-form" data-autoguardar>
+    {% csrf_token %}<input type="hidden" name="siguiente" value="{{ siguiente|default:request.get_full_path }}">
+    {% if form_config.non_field_errors %}<div class="aviso aviso-error">{{ form_config.non_field_errors }}</div>{% endif %}
+    <div class="config-seccion">
+        <label class="config-etiqueta" for="{{ form_config.grado.id_for_label }}">{{ form_config.grado.label }}</label>
+        {{ form_config.grado }}{{ form_config.grado.errors }}
+    </div>
+    <div class="config-seccion">
+        <label class="config-etiqueta" for="{{ form_config.formato.id_for_label }}">Formato didáctico</label>
+        {{ form_config.formato }}
+    </div>
+    <div class="config-seccion">
+        <label class="config-etiqueta" for="{{ form_config.metodologia.id_for_label }}">Metodología pedagógica</label>
+        {{ form_config.metodologia }}
+    </div>
+    <div class="config-fila">
+        <div class="config-seccion">
+            <label class="config-etiqueta" for="{{ form_config.periodo.id_for_label }}">Período</label>
+            {{ form_config.periodo }}
+        </div>
+        <div class="config-seccion">
+            <label class="config-etiqueta" for="{{ form_config.duracion_min.id_for_label }}">Duración de clase</label>
+            {{ form_config.duracion_min }}
+        </div>
+    </div>
+    <div class="config-seccion">
+        <label class="config-etiqueta" for="{{ form_config.total_clases.id_for_label }}">Clases por período</label>
+        {{ form_config.total_clases }}
+    </div>
+    <div class="config-seccion">
+        <span class="config-etiqueta">Materiales disponibles</span>
+        <div class="config-materiales">{% for c in form_config.materiales %}<label>{{ c.tag }} {{ c.choice_label }}</label>{% endfor %}</div>
+    </div>
+    <div class="config-seccion">
+        <label class="config-etiqueta" for="{{ form_config.estudiantes.id_for_label }}">Número de estudiantes</label>
+        {{ form_config.estudiantes }}{{ form_config.estudiantes.errors }}
+        <span class="ayuda">{{ form_config.estudiantes.help_text }}</span>
+    </div>
+    <div class="config-seccion">
+        <span class="config-etiqueta">Motor de análisis</span>
+        <div class="config-opciones">{% for r in form_config.motor %}<label class="config-opcion">{{ r.tag }}<span>{{ r.choice_label }}</span></label>{% endfor %}</div>
+    </div>
+    <div class="config-acciones">
+        <button class="btn" type="submit" data-solo-sin-js>Guardar configuración</button>
+        <span class="config-estado" data-config-estado aria-live="polite"></span>
+    </div>
+</form>
+
+<div class="config-seccion">
+    <span class="config-etiqueta">Modo de evaluación</span>
+    {% with ruta=request.path %}
+    <div class="config-modos">
+        <a class="config-modo {% if not '/grupos' in ruta and not '/evaluaciones-grupales' in ruta %}activo{% endif %}" href="{% url 'evaluar' %}">Individual (un estudiante)</a>
+        <a class="config-modo config-modo-grupo {% if '/grupos' in ruta or '/evaluaciones-grupales' in ruta %}activo{% endif %}" href="{% url 'grupos' %}">Colectivo (salón completo)</a>
+    </div>
+    {% endwith %}
+    <span class="ayuda">El modo colectivo se trabaja desde un salón: registra el número de estudiantes y genera el plan consolidado.</span>
+</div>
+
+<div class="config-seccion config-gemini" data-seccion-gemini {% if motor_preferido != "gemini" and not user.gemini_clave_cifrada %}data-oculta{% endif %}>
+    <span class="config-etiqueta">Clave de Google AI Studio</span>
+    {% if user.gemini_clave_cifrada %}
+    <div class="config-clave">
+        <span class="chip-conectado">Conectado</span><span class="mono">{{ user.gemini_clave_oculta }}</span>
+        <form method="post" action="{% url 'configurar_gemini' %}" data-gemini>{% csrf_token %}
+            <input type="hidden" name="accion" value="desconectar"><input type="hidden" name="siguiente" value="{{ siguiente|default:request.get_full_path }}">
+            <button class="btn-enlace" type="submit">Desconectar</button></form>
+    </div>
+    {% else %}
+    {% if ia_clave_servidor %}<p class="ayuda">La institución ya configuró una clave en el servidor. Si quieres, conecta la tuya.</p>{% endif %}
+    <form method="post" action="{% url 'configurar_gemini' %}" class="config-clave-form" data-gemini>{% csrf_token %}
+        <input type="hidden" name="accion" value="conectar"><input type="hidden" name="siguiente" value="{{ siguiente|default:request.get_full_path }}">
+        <input type="password" name="clave" placeholder="AIzaSy…" autocomplete="off" aria-label="Clave de Google AI Studio">
+        <button class="btn btn-chico" type="submit">Conectar</button>
+    </form>
+    {% endif %}
+    {% if ia_disponible %}
+    <form method="post" action="{% url 'configurar_gemini' %}" class="config-modelo" data-gemini data-gemini-modelo>{% csrf_token %}
+        <input type="hidden" name="accion" value="modelo"><input type="hidden" name="siguiente" value="{{ siguiente|default:request.get_full_path }}">
+        <div class="config-modelo-cabecera">
+            <label class="config-etiqueta" for="modelo-gemini">Modelo de Gemini IA</label>
+            <button class="btn-enlace" type="button" data-actualizar-modelos data-url="{% url 'modelos_gemini' %}">↻ Actualizar</button>
+        </div>
+        <select id="modelo-gemini" name="modelo">
+            <option value="auto">⚡ Automático (Recomendado)</option>
+            {% if user.gemini_modelo %}<option value="{{ user.gemini_modelo }}" selected>{{ user.gemini_modelo }}</option>{% endif %}
+        </select>
+        <button class="btn btn-secundario btn-chico" type="submit" data-solo-sin-js>Usar este modelo</button>
+        <span class="ayuda" data-modelos-estado>Modelos activos en tu cuenta de Google</span>
+    </form>
+    {% endif %}
+    <span class="ayuda">Las imágenes solo se envían a Google si la institución lo autoriza y hay consentimiento del acudiente; si no, se usa el motor local.</span>
+</div>

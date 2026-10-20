@@ -61,7 +61,7 @@ def con_gemini(settings, monkeypatch):
     cache.clear()
 
     def instalar(cliente):
-        monkeypatch.setattr(ia, "crear_cliente", lambda: cliente)
+        monkeypatch.setattr(ia, "crear_cliente", lambda clave=None: cliente)
         return cliente
     return instalar
 
@@ -136,7 +136,7 @@ def test_sin_consentimiento_no_se_envian_imagenes(con_gemini, evaluacion_gemini)
 def test_sin_clave_en_servidor(settings, evaluacion_gemini):
     settings.GEMINI_API_KEY = ""
     ev = diagnosticar_y_guardar(evaluacion_gemini, MUESTRAS)
-    assert ev.estado == "lista" and any("no está configurado" in a for a in ev.advertencias)
+    assert ev.estado == "lista" and any("no tiene clave de Gemini" in a for a in ev.advertencias)
 
 
 @pytest.mark.django_db
@@ -157,3 +157,21 @@ def test_prompt_dirigido_solo_lista_sus_criterios():
     assert '"Patear"' in p and '"Carrera" (prueba' not in p and "descartar salto" in p
     auto = construir_prompt(t, None, "Carrera", "Grado 1º", 8)
     assert "MODO DETECCIÓN AUTOMÁTICA" in auto and auto.count("(prueba ") == 9
+
+
+@pytest.mark.django_db
+def test_clave_propia_del_docente(settings, monkeypatch, evaluacion_gemini):
+    """Como en la web: el docente conecta su clave y elige modelo; se guarda cifrada y tiene prioridad."""
+    settings.GEMINI_API_KEY = ""
+    docente = evaluacion_gemini.docente
+    docente.gemini_clave = "AIzaSy-clave-del-docente-1234"
+    docente.gemini_modelo = "gemini-2.5-flash"
+    docente.save()
+    docente.refresh_from_db()
+    assert "AIzaSy" not in docente.gemini_clave_cifrada and docente.gemini_clave == "AIzaSy-clave-del-docente-1234"
+    assert docente.gemini_clave_oculta == "AIzaSy••••1234"
+    usadas = []
+    cli = ClienteFalso([respuesta_marcha()])
+    monkeypatch.setattr(ia, "crear_cliente", lambda clave=None: usadas.append(clave) or cli)
+    ev = diagnosticar_y_guardar(evaluacion_gemini, MUESTRAS)
+    assert usadas == ["AIzaSy-clave-del-docente-1234"] and ev.modelo_ia == "gemini-2.5-flash"

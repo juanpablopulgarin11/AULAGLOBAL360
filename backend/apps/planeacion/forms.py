@@ -16,6 +16,12 @@ class PreferenciasForm(forms.Form):
     def preferencias(self):
         return preferencias(**self.cleaned_data)
 
+    @classmethod
+    def guardadas(cls, docente) -> "PreferenciasForm":
+        """Formulario ligado a la configuración de clase del docente (o a los valores por defecto)."""
+        inicial = {n: f.initial for n, f in cls.base_fields.items()}
+        return cls(data={**inicial, **docente.preferencias_unidad})
+
 
 class SesionForm(forms.ModelForm):
     class Meta:

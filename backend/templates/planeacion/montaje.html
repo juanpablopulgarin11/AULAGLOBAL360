@@ -1,0 +1,89 @@
+{% extends "base.html" %}{% load static aula %}
+{% block titulo %}Montaje 3D · Sesión {{ sesion.numero }}{% endblock %}
+{% block clase_contenedor %}contenedor-ancho{% endblock %}
+{% block contenido %}
+<div class="migas"><a href="{% url 'unidades' %}">Planeaciones</a> · <a href="{% url 'unidad' u.pk %}#sesion-{{ sesion.numero }}">{{ u.habilidad|icono }} Unidad · Período {{ u.periodo }}</a></div>
+<div class="cabecera-pagina">
+    <div><h1>Montaje 3D · Sesión {{ sesion.numero }}</h1>
+    <p class="muted">{{ sesion.titulo }}<br>{{ escena.resumen }} · área de {{ escena.area.texto }} · {{ estudiantes }} estudiantes</p></div>
+    <div class="acciones">
+        {% if anterior %}<a class="btn btn-secundario btn-chico" href="{% url 'sesion_montaje' u.pk anterior %}">← Sesión {{ anterior }}</a>{% endif %}
+        {% if siguiente %}<a class="btn btn-secundario btn-chico" href="{% url 'sesion_montaje' u.pk siguiente %}">Sesión {{ siguiente }} →</a>{% endif %}
+        <a class="btn btn-secundario btn-chico" href="{% url 'sesion_editar' u.pk sesion.numero %}">Editar montaje</a>
+    </div>
+</div>
+
+<div class="montaje">
+    <div class="visor" id="visor">
+        <div class="visor-lienzo" id="montaje-3d" role="img" aria-label="Vista 3D del montaje: {{ sesion.distribucion }}"></div>
+        <div class="visor-barra">
+            <div class="segmentado" role="group" aria-label="Vista">
+                <button type="button" data-vista="3d" class="activo">3D</button>
+                <button type="button" data-vista="planta">Planta</button>
+                <button type="button" data-vista="docente">Tu vista</button>
+            </div>
+            <div class="visor-opciones">
+                <label><input type="checkbox" data-capa="cotas" checked> Medidas</label>
+                <label><input type="checkbox" data-capa="personas" checked> Estudiantes</label>
+                <label><input type="checkbox" data-capa="rejilla"> Rejilla 1 m</label>
+                <button type="button" class="btn-icono" data-pantalla-completa title="Pantalla completa" aria-label="Pantalla completa">⛶</button>
+            </div>
+        </div>
+        <div class="visor-recorrido">
+            <button type="button" class="btn-icono" data-paso-mover="-1" aria-label="Paso anterior">‹</button>
+            <span data-paso-estado>Montaje completo</span>
+            <button type="button" class="btn-icono" data-paso-mover="1" aria-label="Paso siguiente">›</button>
+            <button type="button" class="btn-enlace" data-paso-todo hidden>Ver todo</button>
+        </div>
+        <p class="visor-ayuda">Arrastra para girar · rueda o pellizco para acercar · clic derecho o dos dedos para desplazar</p>
+        <div class="visor-sin-3d" hidden>Tu navegador no puede mostrar gráficos 3D. Sigue los pasos de montaje de la derecha.</div>
+    </div>
+
+    <aside class="montaje-panel">
+        <section class="tarjeta">
+            <h2>Pasos para montar</h2>
+            <p class="subtle">Toca un paso para verlo en el espacio; los anteriores quedan armados.</p>
+            <ol class="lista-pasos">
+                {% for p in escena.pasos %}<li><button type="button" data-paso="{{ forloop.counter0 }}"><span class="num">{{ forloop.counter }}</span><span>{{ p }}</span></button></li>{% endfor %}
+            </ol>
+        </section>
+        <section class="tarjeta">
+            <h2>Material</h2>
+            <ul class="lista-material">
+                {% for m in escena.materiales %}
+                <li><span class="cantidad">{{ m.cantidad }}</span><div><strong>{% if m.unidad %}{{ m.unidad }} · {% endif %}{{ m.nombre }}</strong>
+                    {% if m.sustituto %}<div class="subtle">{% if m.elegido is False %}No lo marcaste en las preferencias; puedes usar {% else %}Si no tienes: {% endif %}{{ m.sustituto }}.</div>{% endif %}</div></li>
+                {% endfor %}
+            </ul>
+        </section>
+        <section class="tarjeta">
+            <h2>Texto del montaje</h2>
+            <p class="muted">{{ sesion.distribucion }}</p>
+            {% for a in escena.avisos %}<div class="aviso aviso-info">{{ a }}</div>{% endfor %}
+            <form method="get" class="fila-estudiantes">
+                <label for="estudiantes">Estudiantes en clase</label>
+                <input type="number" id="estudiantes" name="estudiantes" min="6" max="45" value="{{ estudiantes }}">
+                <button class="btn btn-secundario btn-chico">Actualizar</button>
+            </form>
+        </section>
+        <section class="tarjeta leyenda">
+            <h2>Convenciones</h2>
+            <ul>
+                <li><span class="muestra muestra-docente"></span> Tú (docente) y tu campo de visión</li>
+                <li><span class="muestra muestra-estudiante"></span> Estudiantes (un color por grupo)</li>
+                <li><span class="muestra muestra-cota"></span> Medidas en metros</li>
+                <li><span class="muestra muestra-linea"></span> Líneas de tiza o cinta</li>
+            </ul>
+        </section>
+    </aside>
+</div>
+{{ escena|json_script:"escena-datos" }}
+<script type="importmap">
+{"imports": {
+    "three": "{% static 'vendor/three/three.module.min.js' %}",
+    "three/addons/controls/OrbitControls.js": "{% static 'vendor/three/OrbitControls.js' %}",
+    "three/addons/renderers/CSS2DRenderer.js": "{% static 'vendor/three/CSS2DRenderer.js' %}"
+}}
+</script>
+<script type="module" src="{% static 'js/montaje3d.js' %}"></script>
+{% endblock %}

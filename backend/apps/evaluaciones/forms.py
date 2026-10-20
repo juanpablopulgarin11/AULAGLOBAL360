@@ -1,5 +1,4 @@
 from django import forms
-from django.conf import settings
 
 from apps.catalogo.models import GRADO_CHOICES, Habilidad
 from apps.estudiantes.models import Estudiante
@@ -33,8 +32,13 @@ class EvaluarForm(forms.Form):
             self.fields["estudiante"].queryset = (Estudiante.objects.filter(grupo__docente=docente)
                                                   .select_related("grupo").order_by("grupo__nombre", "apellidos", "nombres"))
             self.fields["evaluacion_grupal"].queryset = EvaluacionGrupal.objects.filter(docente=docente)
-        if not settings.GEMINI_API_KEY:
+        from apps.ia.cliente import disponible_para
+
+        if docente is not None and docente.configuracion_clase.get("motor") in Motor.values:
+            self.fields["motor"].initial = docente.configuracion_clase["motor"]
+        if not disponible_para(docente):
             self.fields["motor"].choices = [(Motor.LOCAL, Motor.LOCAL.label)]
+            self.fields["motor"].initial = Motor.LOCAL
             self.fields["motor"].widget = forms.HiddenInput()
 
     def clean(self):

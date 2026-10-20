@@ -3,9 +3,13 @@
 Diferencias con el JS (``callGeminiVision``): la clave no sale del servidor, la respuesta se
 valida con Pydantic, el puntaje y el estadio se recalculan a partir de los criterios, y el
 modelo es configurable (``GEMINI_MODEL``) o se elige entre los disponibles en la cuenta.
+
+Como en la web, cada docente puede conectar su propia clave de Google AI Studio y elegir el
+modelo («Configurar clase»); si no lo hace se usan ``GEMINI_API_KEY`` / ``GEMINI_MODEL``.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import re
@@ -32,12 +36,26 @@ class GeminiNoDisponible(RuntimeError):
     """Configuración o permisos impiden usar Gemini (no se reintenta con otros modelos)."""
 
 
-def crear_cliente():
+def clave_para(docente=None) -> str:
+    """Clave propia del docente o, si no tiene, la del servidor."""
+    return (getattr(docente, "gemini_clave", "") or settings.GEMINI_API_KEY or "").strip()
+
+
+def modelo_para(docente=None) -> str:
+    return getattr(docente, "gemini_modelo", "") or settings.GEMINI_MODEL
+
+
+def disponible_para(docente=None) -> bool:
+    return bool(clave_para(docente))
+
+
+def crear_cliente(clave: Optional[str] = None):
     from google import genai
 
-    if not settings.GEMINI_API_KEY:
-        raise GeminiNoDisponible("No hay GEMINI_API_KEY configurada en el servidor")
-    return genai.Client(api_key=settings.GEMINI_API_KEY)
+    clave = clave if clave is not None else settings.GEMINI_API_KEY
+    if not clave:
+        raise GeminiNoDisponible("No hay clave de Gemini: conéctala en «Configurar clase» o define GEMINI_API_KEY")
+    return genai.Client(api_key=clave)
 
 
 def puntuar_modelo(nombre: str) -> float:
@@ -57,24 +75,32 @@ def puntuar_modelo(nombre: str) -> float:
     return puntos
 
 
-def modelos_candidatos(cliente) -> List[str]:
-    if settings.GEMINI_MODEL:
-        return [settings.GEMINI_MODEL]
-    en_cache = cache.get("aula360:gemini:modelos")
-    if en_cache:
+def listar_modelos(cliente, clave: str = "", refrescar: bool = False) -> List[Dict[str, str]]:
+    """Modelos Gemini con visión de la cuenta, del más recomendado al menos (caché de 1 h por clave)."""
+    llave = "aula360:gemini:modelos:" + hashlib.sha256(clave.encode()).hexdigest()[:16]
+    en_cache = None if refrescar else cache.get(llave)
+    if en_cache is not None:
         return en_cache
-    nombres = []
+    modelos = []
     for m in cliente.models.list():
         acciones = getattr(m, "supported_actions", None) or []
         if acciones and "generateContent" not in acciones:
             continue
         nombre = (m.name or "").removeprefix("models/")
         if puntuar_modelo(nombre) >= 0:
-            nombres.append(nombre)
-    nombres.sort(key=puntuar_modelo, reverse=True)
+            modelos.append({"id": nombre, "nombre": getattr(m, "display_name", None) or nombre})
+    modelos.sort(key=lambda m: puntuar_modelo(m["id"]), reverse=True)
+    cache.set(llave, modelos, 60 * 60)
+    return modelos
+
+
+def modelos_candidatos(cliente, preferido: str = "", clave: str = "") -> List[str]:
+    preferido = preferido or settings.GEMINI_MODEL
+    if preferido:
+        return [preferido]
+    nombres = [m["id"] for m in listar_modelos(cliente, clave)]
     if not nombres:
         raise GeminiNoDisponible("La cuenta de Google no tiene modelos Gemini con visión disponibles")
-    cache.set("aula360:gemini:modelos", nombres[:MAX_CANDIDATOS], 60 * 60)
     return nombres[:MAX_CANDIDATOS]
 
 
@@ -138,7 +164,7 @@ def _a_contrato(ia: DiagnosticoIA, telemetria: Dict[str, Any], es_auto: bool, gr
 
 
 def diagnosticar(frames: Sequence[Dict[str, Any]], diag_local: Dict[str, Any], habilidad: Optional[str],
-                 grado: str, cliente=None) -> Dict[str, Any]:
+                 grado: str, cliente=None, docente=None) -> Dict[str, Any]:
     """Diagnóstico con Gemini. ``diag_local`` aporta la telemetría y la sugerencia del clasificador.
 
     Lanza ``GeminiNoDisponible`` (configuración) o la última excepción si ningún modelo respondió bien.
@@ -148,14 +174,14 @@ def diagnosticar(frames: Sequence[Dict[str, Any]], diag_local: Dict[str, Any], h
     con_imagen = [f for f in frames if f.get("imagen_jpeg")]
     if not con_imagen:
         raise GeminiNoDisponible("No hay imágenes de fotogramas para enviar")
-    cliente = cliente or crear_cliente()
+    cliente = cliente or crear_cliente(clave_para(docente))
     telemetria = diag_local["telemetria_medida"]
     prompt = construir_prompt(telemetria, habilidad, diag_local["habilidad_detectada"], grado, len(con_imagen))
     config = types.GenerateContentConfig(system_instruction=prompt, temperature=0.1, response_mime_type="application/json")
     contenido = _contenido(con_imagen)
 
     ultimo: Optional[Exception] = None
-    for modelo in modelos_candidatos(cliente):
+    for modelo in modelos_candidatos(cliente, modelo_para(docente), clave_para(docente)):
         try:
             respuesta = cliente.models.generate_content(model=modelo, contents=contenido, config=config)
             ia = DiagnosticoIA.model_validate(json.loads(_limpiar_json(respuesta.text)))
@@ -175,8 +201,9 @@ def diagnosticar(frames: Sequence[Dict[str, Any]], diag_local: Dict[str, Any], h
 
 def permitido(evaluacion) -> Tuple[bool, str]:
     """Reglas de privacidad para enviar imágenes de un menor a un servicio externo."""
-    if not settings.GEMINI_API_KEY:
-        return False, "El análisis con IA en la nube no está configurado en el servidor; se usó el motor local."
+    if not disponible_para(evaluacion.docente):
+        return False, ("El análisis con IA no tiene clave de Gemini (conéctala en «Configurar clase»); "
+                       "se usó el motor local.")
     inst = getattr(evaluacion.docente, "institucion", None)
     if inst is not None and not inst.usa_ia_nube:
         return False, "La institución no autoriza la IA en la nube; se usó el motor local."

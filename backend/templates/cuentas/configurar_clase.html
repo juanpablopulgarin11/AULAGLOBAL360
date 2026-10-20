@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block titulo %}Configurar clase{% endblock %}
+{% block clase_contenedor %}contenedor-angosto{% endblock %}
+{% block contenido %}
+<div class="cabecera-pagina">
+    <div><h1>⚙ Configurar clase</h1>
+    <p class="muted">Estos valores quedan guardados y se usan por defecto al evaluar, al generar la planeación y en el montaje 3D de cada sesión. Siempre puedes cambiarlos en cada caso.</p></div>
+</div>
+{% if form_config.errors %}<div class="aviso aviso-error">Revisa los campos marcados.</div>{% endif %}
+<section class="tarjeta config-pagina">
+    {% include "parciales/configurar_clase.html" %}
+</section>
+{% endblock %}

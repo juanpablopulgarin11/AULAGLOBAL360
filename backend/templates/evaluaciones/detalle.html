@@ -73,7 +73,40 @@
     <h2>Unidad didáctica a partir de este diagnóstico</h2>
     <p class="muted">Las primeras sesiones refuerzan los criterios que el estudiante aún no logra.{% if not ev.habilidad_detectada.tiene_plantillas_propias %} <br><span class="aviso aviso-advertencia" style="display:inline-block;margin-top:6px">{{ ev.habilidad_detectada.nombre }} aún no tiene banco de sesiones propio: se usan las sesiones de Carrera.</span>{% endif %}</p>
     {% for u in unidades %}<p>📄 <a href="{% url 'unidad' u.pk %}">{{ u }}</a> <span class="subtle">· {{ u.creado|date:"d M Y" }}</span></p>{% endfor %}
-    {% url 'unidad_crear' ev.pk as accion %}{% include "parciales/preferencias.html" with form=form_unidad accion=accion %}
+    {% if plan %}
+    <div class="plan-previo">
+        <div class="diag-cabecera">
+            <div><strong>Unidad didáctica institucional · Período {{ plan.periodo }}</strong>
+                <div class="muted">{{ plan.tema }} · Grado: <strong>{{ plan.grado }}</strong></div>
+                <div class="subtle">Secuencia de <strong>{{ plan.total_clases }} sesiones progresivas</strong> · {{ plan.duracion_clase }} por sesión · {{ plan.formato }} · {{ plan.metodologia }}</div></div>
+            <span class="estadio estadio-Maduro">{{ plan.total_clases }} sesiones</span>
+        </div>
+        <div class="plan-pregunta"><strong>Pregunta problematizadora del período:</strong><p><em>{{ plan.pregunta_problematizadora }}</em></p>
+            <strong>Objetivo general:</strong><p>{{ plan.objetivo_general }}</p></div>
+        <div class="rejilla plan-indicadores">
+            <div><strong>Saber (cognitivo)</strong><p>{{ plan.indicadores.saber }}</p></div>
+            <div><strong>Hacer (procedimental)</strong><p>{{ plan.indicadores.hacer }}</p></div>
+            <div><strong>Ser (actitudinal)</strong><p>{{ plan.indicadores.ser }}</p></div>
+        </div>
+        <details open><summary>Secuencia didáctica ({{ plan.total_clases }} clases planificadas)</summary>
+            <div class="plan-sesiones">{% for c in plan.clases_secuencia %}
+                <div class="sesion {% if c.es_refuerzo %}refuerzo{% endif %}">
+                    <h3><span>Sesión {{ c.numero }} de {{ plan.total_clases }}: {{ c.titulo }}</span><span class="etiqueta-chip">{{ c.fase_pedagogica }}</span></h3>
+                    <p class="muted"><strong>Objetivo:</strong> {{ c.objetivo }}</p>
+                    <p><span class="mono">[INICIAL]</span> {{ c.actividad_inicial }}<br><span class="mono">[DESARROLLO · {{ plan.duraciones.central }}]</span> {{ c.actividad_central }}<br><span class="mono">[CIERRE]</span> {{ c.actividad_final }}</p>
+                    <p class="subtle"><strong>Montaje:</strong> {{ c.distribucion }} · <strong>Consigna:</strong> “{{ c.consigna }}”</p>
+                </div>{% endfor %}</div>
+        </details>
+        <p class="subtle">Generada con tu configuración de clase (<a href="{% url 'configurar_clase' %}?siguiente={{ request.get_full_path|urlencode }}" data-abrir-config>cambiar</a>). Guárdala para editar las sesiones, ver el montaje 3D y descargar el Word.</p>
+        <form method="post" action="{% url 'unidad_crear' ev.pk %}" data-un-envio>{% csrf_token %}
+            {% for campo in form_unidad %}{% if campo.name == "materiales" %}{% for v in campo.value %}<input type="hidden" name="materiales" value="{{ v }}">{% endfor %}{% else %}<input type="hidden" name="{{ campo.name }}" value="{{ campo.value }}">{% endif %}{% endfor %}
+            <button class="btn" type="submit" data-enviando="Guardando planeación…">Guardar planeación (Word y montaje 3D)</button>
+        </form>
+    </div>
+    {% endif %}
+    <details class="plan-preferencias" {% if not plan %}open{% endif %}><summary>{% if plan %}Cambiar preferencias solo para esta unidad{% else %}Preferencias de esta unidad{% endif %}</summary>
+    {% url 'unidad_crear' ev.pk as accion %}{% include "parciales/preferencias.html" with form=form_unidad accion=accion boton="Guardar planeación (Word y montaje 3D)" %}
+    </details>
 </section>
 {% endif %}
 {% endblock %}

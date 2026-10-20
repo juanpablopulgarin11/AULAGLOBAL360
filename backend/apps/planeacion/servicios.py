@@ -60,6 +60,11 @@ def _guardar(docente, habilidad: Habilidad, unidad: Dict[str, Any], prefs: Dict[
     return ud
 
 
+def vista_previa_para_evaluacion(evaluacion: Evaluacion, prefs: Dict[str, Any]) -> Dict[str, Any]:
+    """La unidad que se generaría, sin guardarla: la web la mostraba junto al resultado."""
+    return generar_unidad(evaluacion.como_diagnostico(), prefs, banco_plantillas(), grado=evaluacion.grado)
+
+
 def unidad_para_evaluacion(evaluacion: Evaluacion, docente, prefs: Dict[str, Any]) -> UnidadDidactica:
     """Unidad individual: las sesiones de refuerzo atacan las falencias del estudiante."""
     if evaluacion.estado != Evaluacion.Estado.LISTA or not evaluacion.habilidad_detectada:

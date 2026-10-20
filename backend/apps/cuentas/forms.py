@@ -1,7 +1,13 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 
+from apps.catalogo.models import GRADO_CHOICES
+from apps.planeacion.forms import PreferenciasForm
+
 from .models import Docente, Institucion
+
+# Mismos rótulos que el selector de la cabecera de la versión web
+MOTORES = [("local", "Análisis rápido (motor local)"), ("gemini", "Análisis detallado (con IA)")]
 
 
 class RegistroForm(UserCreationForm):
@@ -22,3 +28,30 @@ class RegistroForm(UserCreationForm):
         if commit:
             docente.save()
         return docente
+
+
+class ConfiguracionClaseForm(PreferenciasForm):
+    """«Configurar clase» de la versión web: se guarda por docente y precarga evaluación, planeación y montaje."""
+
+    grado = forms.ChoiceField(choices=GRADO_CHOICES, initial="7_anos", label="Edad / grado del estudiante")
+    estudiantes = forms.IntegerField(min_value=1, max_value=60, initial=30, label="Número de estudiantes",
+                                     help_text="Se usa en la evaluación grupal y en el montaje 3D de las sesiones.")
+    motor = forms.ChoiceField(choices=MOTORES, initial="local", widget=forms.RadioSelect, label="Motor de análisis")
+
+    field_order = ["grado", "formato", "metodologia", "periodo", "duracion_min", "total_clases", "materiales",
+                   "estudiantes", "motor"]
+
+
+class GeminiForm(forms.Form):
+    """Conexión de la clave de Google AI Studio y elección del modelo (sección Gemini del panel)."""
+
+    accion = forms.ChoiceField(choices=[("conectar", "conectar"), ("modelo", "modelo"), ("desconectar", "desconectar")])
+    clave = forms.CharField(required=False, max_length=200, strip=True,
+                            widget=forms.PasswordInput(attrs={"placeholder": "AIzaSy…", "autocomplete": "off"}))
+    modelo = forms.CharField(required=False, max_length=80)
+
+    def clean(self):
+        datos = super().clean()
+        if datos.get("accion") == "conectar" and not datos.get("clave"):
+            self.add_error("clave", "Pega la clave de Google AI Studio.")
+        return datos

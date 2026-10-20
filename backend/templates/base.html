@@ -20,12 +20,29 @@
         <a href="{% url 'grupos' %}" class="{% activo '/grupos' '/estudiantes' '/evaluaciones-grupales' %}">Salones</a>
         <a href="{% url 'unidades' %}" class="{% activo '/unidades' %}">Planeaciones</a>
     </nav>
+    <form class="selector-motor" method="post" action="{% url 'elegir_motor' %}" role="group" aria-label="Motor de análisis">
+        {% csrf_token %}<input type="hidden" name="siguiente" value="{{ request.get_full_path }}">
+        <button type="submit" name="motor" value="local" class="{% if motor_preferido != 'gemini' %}activo{% endif %}"><span class="punto"></span>Análisis rápido</button>
+        <button type="submit" name="motor" value="gemini" class="{% if motor_preferido == 'gemini' %}activo{% endif %}" data-ia-disponible="{{ ia_disponible|yesno:'1,0' }}" {% if not ia_disponible %}title="Conecta tu clave de Gemini en «Configurar clase»"{% endif %}><span class="punto"></span>Análisis con IA</button>
+    </form>
     <div class="usuario">
+        <a class="btn btn-secundario btn-chico boton-config {% activo '/configurar-clase' %}" href="{% url 'configurar_clase' %}?siguiente={{ request.get_full_path|urlencode }}" data-abrir-config>⚙ <span>Configurar clase</span></a>
         <span class="nombre-usuario">{{ user.get_full_name|default:user.username }}{% if user.institucion %} · {{ user.institucion }}{% endif %}</span>
         {% if user.is_staff %}<a href="{% url 'admin:index' %}">Admin</a>{% endif %}
         <form method="post" action="{% url 'salir' %}">{% csrf_token %}<button class="btn-enlace" type="submit">Salir</button></form>
     </div>
 </header>
+{% if request.resolver_match.url_name != "configurar_clase" %}
+<div class="panel-fondo" data-cerrar-config hidden></div>
+<aside class="panel-config" id="panel-config" aria-label="Configurar clase" aria-hidden="true" inert>
+    <div class="panel-config-cabecera">
+        <span class="panel-config-titulo">Configurar clase</span>
+        <button type="button" class="panel-config-cerrar" data-cerrar-config aria-label="Cerrar configuración">&times;</button>
+    </div>
+    <div class="panel-config-cuerpo">{% include "parciales/configurar_clase.html" %}</div>
+    <div class="panel-config-pie">Batería: González Palacio &amp; Montoya Grisales<br>Habilidades Motrices Básicas (HMB) · 5 a 11 años</div>
+</aside>
+{% endif %}
 {% endif %}
 <main class="contenedor {% block clase_contenedor %}{% endblock %}">
     {% for m in messages %}<div class="aviso aviso-{{ m.tags|default:'info' }}">{{ m }}</div>{% endfor %}

@@ -9,7 +9,7 @@ from django.views.decorators.http import require_POST
 from apps.estudiantes.forms import EvaluacionGrupalForm
 from apps.estudiantes.models import Grupo
 from apps.planeacion.forms import PreferenciasForm
-from apps.planeacion.servicios import unidad_para_grupo
+from apps.planeacion.servicios import unidad_para_grupo, vista_previa_para_evaluacion
 from apps.reportes.servicios import reporte_de_evaluacion
 
 from .forms import EvaluarForm
@@ -27,7 +27,7 @@ def _evaluacion(request, pk):
 
 @login_required
 def evaluar(request):
-    inicial = {}
+    inicial = {"grado": request.user.configuracion_clase["grado"]} if "grado" in request.user.configuracion_clase else {}
     if request.GET.get("estudiante"):
         inicial["estudiante"] = request.GET["estudiante"]
     if request.GET.get("grupal"):
@@ -56,10 +56,12 @@ def detalle(request, pk):
     ev = _evaluacion(request, pk)
     contexto = {"ev": ev, "procesando": ev.estado in (Evaluacion.Estado.PENDIENTE, Evaluacion.Estado.PROCESANDO)}
     if ev.estado == Evaluacion.Estado.LISTA:
+        guardadas = PreferenciasForm.guardadas(request.user)
         contexto.update({
             "resultados": ev.resultados.all(),
             "fotogramas": ev.fotogramas.all(),
-            "form_unidad": PreferenciasForm(initial=request.session.get("preferencias_unidad")),
+            "plan": vista_previa_para_evaluacion(ev, guardadas.preferencias()) if guardadas.is_valid() else None,
+            "form_unidad": PreferenciasForm(initial=request.user.preferencias_unidad or None),
             "unidades": ev.unidades.all(),
             "t": ev.telemetria,
         })
@@ -145,7 +147,7 @@ def grupal_detalle(request, pk):
     contexto = {
         "grupal": grupal, "estudiantes": estudiantes, "evaluaciones": evaluaciones,
         "consolidado": consolidar_grupo(grupal), "debil": habilidad_mas_debil(grupal),
-        "form_unidad": PreferenciasForm(initial=request.session.get("preferencias_unidad")),
+        "form_unidad": PreferenciasForm(initial=request.user.preferencias_unidad or None),
         "unidades": grupal.unidades.all(),
     }
     return render(request, "evaluaciones/grupal.html", contexto)
@@ -159,7 +161,7 @@ def grupal_plan(request, pk):
     if not form.is_valid() or not consolidar_grupo(grupal)["evaluados"]:
         messages.error(request, "Evalúa al menos un estudiante y revisa las preferencias antes de generar el plan.")
         return redirect("grupal", pk=pk)
-    request.session["preferencias_unidad"] = form.cleaned_data
+    request.user.recordar_preferencias(form.cleaned_data)
     ud = unidad_para_grupo(grupal, request.user, form.preferencias())
     messages.success(request, f"Plan del salón generado con {ud.total_clases} sesiones.")
     return redirect("unidad", pk=ud.pk)

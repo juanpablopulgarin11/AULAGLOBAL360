@@ -59,7 +59,7 @@ def _intentar_gemini(evaluacion: Evaluacion, frames: List[Dict[str, Any]], diag_
         return diag_local
     habilidad = evaluacion.habilidad_solicitada.nombre if evaluacion.habilidad_solicitada else None
     try:
-        return ia.diagnosticar(frames, diag_local, habilidad, diag_local["edad_calibrada"])
+        return ia.diagnosticar(frames, diag_local, habilidad, diag_local["edad_calibrada"], docente=evaluacion.docente)
     except Exception as exc:   # noqa: BLE001 - cualquier fallo externo cae al motor local
         log.warning("Gemini no disponible para la evaluación %s: %s", evaluacion.pk, exc)
         evaluacion.advertencias = [*evaluacion.advertencias,
