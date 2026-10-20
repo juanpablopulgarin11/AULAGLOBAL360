@@ -8,6 +8,7 @@ from .models import Docente, Institucion
 
 # Mismos rótulos que el selector de la cabecera de la versión web
 MOTORES = [("local", "Análisis rápido (motor local)"), ("gemini", "Análisis detallado (con IA)")]
+MODOS = [("individual", "Individual (un estudiante)"), ("colectivo", "Colectivo (salón completo)")]
 
 
 class RegistroForm(UserCreationForm):
@@ -36,10 +37,19 @@ class ConfiguracionClaseForm(PreferenciasForm):
     grado = forms.ChoiceField(choices=GRADO_CHOICES, initial="7_anos", label="Edad / grado del estudiante")
     estudiantes = forms.IntegerField(min_value=1, max_value=60, initial=30, label="Número de estudiantes",
                                      help_text="Se usa en la evaluación grupal y en el montaje 3D de las sesiones.")
-    motor = forms.ChoiceField(choices=MOTORES, initial="local", widget=forms.RadioSelect, label="Motor de análisis")
+    motor = forms.ChoiceField(choices=MOTORES, initial="local", widget=forms.HiddenInput, label="Motor de análisis",
+                              required=False)
+    modo = forms.ChoiceField(choices=MODOS, initial="individual", widget=forms.HiddenInput, label="Modo de evaluación",
+                             required=False)
 
     field_order = ["grado", "formato", "metodologia", "periodo", "duracion_min", "total_clases", "materiales",
-                   "estudiantes", "motor"]
+                   "estudiantes", "motor", "modo"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for nombre, campo in self.fields.items():
+            if nombre not in ("materiales", "motor", "modo"):
+                campo.widget.attrs["class"] = "drawer-select"
 
 
 class GeminiForm(forms.Form):

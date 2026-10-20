@@ -23,6 +23,8 @@ urlpatterns = [
     path("cuentas/clave/", auth_views.PasswordChangeView.as_view(success_url="/panel/"), name="cambiar_clave"),
 
     path("evaluar/", evaluaciones.evaluar, name="evaluar"),
+    path("evaluar/colectivo/", evaluaciones.grupal_iniciar, name="grupal_iniciar"),
+    path("evaluar/colectivo/reiniciar/", evaluaciones.grupal_reiniciar, name="grupal_reiniciar"),
     path("evaluaciones/", evaluaciones.lista, name="evaluaciones"),
     path("evaluaciones/<int:pk>/", evaluaciones.detalle, name="evaluacion"),
     path("evaluaciones/<int:pk>/estado/", evaluaciones.estado, name="evaluacion_estado"),

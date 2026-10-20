@@ -25,8 +25,11 @@ def crear_desde_evaluacion(request, evaluacion_pk):
         messages.error(request, "Revisa las preferencias de la clase.")
         return redirect("evaluacion", pk=ev.pk)
     request.user.recordar_preferencias(form.cleaned_data)
-    ud = unidad_para_evaluacion(ev, request.user, form.preferencias())
-    return redirect("unidad", pk=ud.pk)
+    d = form.cleaned_data
+    ud = ev.unidades.filter(formato=d["formato"], metodologia=d["metodologia"], periodo=d["periodo"],
+                            duracion_min=d["duracion_min"], total_clases=d["total_clases"],
+                            materiales=d["materiales"]).first() or unidad_para_evaluacion(ev, request.user, form.preferencias())
+    return redirect("unidad_docx" if request.POST.get("descargar") else "unidad", pk=ud.pk)
 
 
 @login_required

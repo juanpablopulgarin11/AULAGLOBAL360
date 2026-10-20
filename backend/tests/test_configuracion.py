@@ -58,10 +58,10 @@ def test_evaluacion_grupal_usa_estudiantes_configurados(client, catalogo, docent
 def test_panel_lateral_en_todas_las_paginas_y_guardado_al_instante(client, catalogo, docente):
     client.force_login(docente)
     html = client.get(reverse("panel")).content.decode()
-    assert 'id="panel-config"' in html and "Materiales disponibles" in html and "Modo de evaluación" in html
-    assert html.count('class="selector-motor"') == 1
+    assert 'id="configDrawer"' in html and "Materiales disponibles" in html and "Modo de evaluación" in html
+    assert html.count('class="engine-toggle"') == 1
     html = client.get(reverse("evaluar")).content.decode()
-    assert 'id="config_grado"' in html and 'id="id_grado"' in html      # sin ids repetidos con el formulario de evaluar
+    assert 'id="config_grado"' in html and 'id="wizardStep1"' in html and 'class="skill-card skill-card--auto active"' in html
     r = client.post(reverse("configurar_clase"), CONFIG, HTTP_X_REQUESTED_WITH="fetch")
     assert r.json() == {"ok": True}
     r = client.post(reverse("configurar_clase"), {**CONFIG, "estudiantes": 0}, HTTP_X_REQUESTED_WITH="fetch")
@@ -142,10 +142,13 @@ def test_guardar_el_plan_de_la_vista_previa(client, catalogo, docente, evaluacio
     client.force_login(docente)
     html = client.get(reverse("evaluacion", args=[evaluacion.pk])).content.decode()
     import re
-    form = re.search(r'<form method="post" action="(/evaluaciones/\d+/unidad/)" data-un-envio>(.*?)</form>', html, re.S)
+    form = re.search(r'<form method="post" action="(/evaluaciones/\d+/unidad/)" class="plan-acciones">(.*?)</form>', html, re.S)
     datos = {}
     for nombre, valor in re.findall(r'<input type="hidden" name="(\w+)" value="([^"]*)">', form.group(2)):
         datos.setdefault(nombre, []).append(valor)
-    client.post(form.group(1), datos)
+    r = client.post(form.group(1), {**datos, "descargar": "1"})
     ud = UnidadDidactica.objects.get()
+    assert r["Location"] == reverse("unidad_docx", args=[ud.pk])          # «Descargar plan de clase en Word», como en la web
+    client.post(form.group(1), datos)
+    assert UnidadDidactica.objects.count() == 1                            # mismas preferencias: no se duplica
     assert ud.total_clases == 4 and ud.formato == "Cuento Motor" and ud.materiales == ["Conos", "Cuerdas"]

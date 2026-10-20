@@ -70,7 +70,7 @@ def test_flujo_completo_individual(cliente, catalogo, docente, tmp_path, django_
 
     detalle = cliente.get(reverse("evaluacion", args=[ev.pk]))
     html = detalle.content.decode()
-    assert detalle.status_code == 200 and "Estadio" in html and "Criterios evaluados" in html
+    assert detalle.status_code == 200 and "Estadio" in html and "Ver criterios evaluados" in html
     assert cliente.get(reverse("evaluacion_estado", args=[ev.pk])).json()["estado"] == "lista"
 
     img = cliente.get(reverse("fotograma", args=[ev.pk, 1, "esqueleto"]))
@@ -160,3 +160,37 @@ def test_salon_y_evaluacion_grupal(cliente, catalogo, docente, tmp_path, django_
     ud = UnidadDidactica.objects.get(evaluacion_grupal=grupal)
     assert r.status_code == 302 and ud.habilidad.codigo == "carrera" and ud.sesiones.count() == 6
     assert cliente.get(reverse("estudiante", args=[est.pk])).status_code == 200
+
+
+@pytest.mark.django_db
+def test_asistente_como_la_web(cliente, catalogo, docente, tmp_path, django_capture_on_commit_callbacks):
+    """El asistente envía solo habilidad, archivo y observaciones; grado y motor salen de «Configurar clase»."""
+    docente.configuracion_clase = {"grado": "9_11_anos", "motor": "gemini"}   # sin clave de Gemini → motor local
+    docente.save()
+    html = cliente.get(reverse("evaluar")).content.decode()
+    assert 'id="wizardStep1"' in html and 'id="uploadZone"' in html and 'class="engine-toggle"' in html
+    with django_capture_on_commit_callbacks(execute=True):
+        r = cliente.post(reverse("evaluar"), {"habilidad": "salto", "archivo": video_subida(tmp_path)},
+                         HTTP_X_REQUESTED_WITH="fetch")
+    ev = Evaluacion.objects.get()
+    assert r.json() == {"url": reverse("evaluacion", args=[ev.pk]), "estado_url": reverse("evaluacion_estado", args=[ev.pk])}
+    assert ev.grado == "9_11_anos" and ev.motor == "local"
+    r = cliente.post(reverse("evaluar"), {"habilidad": "salto"}, HTTP_X_REQUESTED_WITH="fetch")
+    assert r.status_code == 400 and r.json()["errores"]
+
+
+@pytest.mark.django_db
+def test_barra_del_modo_colectivo(cliente, catalogo, docente):
+    docente.configuracion_clase = {"modo": "colectivo", "grado": "8_anos"}
+    docente.save()
+    assert 'id="groupSetup"' in cliente.get(reverse("evaluar")).content.decode()
+    r = cliente.post(reverse("grupal_iniciar"), {"estudiantes_objetivo": 25})
+    grupal = EvaluacionGrupal.objects.get()
+    assert r["Location"] == f"{reverse('evaluar')}?grupal={grupal.pk}"
+    assert grupal.estudiantes_objetivo == 25 and grupal.grupo.grado == "8_anos"
+    html = cliente.get(reverse("evaluar")).content.decode()           # el registro sigue abierto sin el parámetro
+    assert "Estudiante actual: 1 de 25" in html and f'value="{grupal.pk}"' in html
+    cliente.post(reverse("grupal_reiniciar"))
+    assert 'id="groupSetup"' in cliente.get(reverse("evaluar")).content.decode()
+    cliente.post(reverse("grupal_iniciar"), {"estudiantes_objetivo": 10, "grupo": grupal.grupo.pk})
+    assert Grupo.objects.count() == 1 and EvaluacionGrupal.objects.count() == 2

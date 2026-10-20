@@ -85,7 +85,7 @@ STORAGES = {
 }
 
 LOGIN_URL = "ingresar"
-LOGIN_REDIRECT_URL = "panel"
+LOGIN_REDIRECT_URL = "evaluar"   # como la web: se entra directo al asistente
 LOGOUT_REDIRECT_URL = "inicio"
 
 # Videos y fotogramas de menores: almacenamiento privado, nunca bajo MEDIA_URL público.

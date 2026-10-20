@@ -2,10 +2,14 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db import transaction
+from django.db.models import Count
 from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
+from django.utils import timezone
 from django.views.decorators.http import require_POST
 
+from apps.cuentas.models import Institucion
 from apps.estudiantes.forms import EvaluacionGrupalForm
 from apps.estudiantes.models import Grupo
 from apps.planeacion.forms import PreferenciasForm
@@ -25,19 +29,77 @@ def _evaluacion(request, pk):
                                                                "habilidad_solicitada"), pk=pk, docente=request.user)
 
 
+def _grupal_activa(request):
+    """Registro colectivo en curso: el de la URL o el que quedó abierto en «Configurar clase»."""
+    pk = request.GET.get("grupal") or request.POST.get("evaluacion_grupal") or request.user.configuracion_clase.get("grupal_activa")
+    if not pk or not str(pk).isdigit():
+        return None
+    return EvaluacionGrupal.objects.filter(pk=pk, docente=request.user).select_related("grupo").first()
+
+
 @login_required
 def evaluar(request):
     inicial = {"grado": request.user.configuracion_clase["grado"]} if "grado" in request.user.configuracion_clase else {}
     if request.GET.get("estudiante"):
         inicial["estudiante"] = request.GET["estudiante"]
-    if request.GET.get("grupal"):
-        inicial["evaluacion_grupal"] = request.GET["grupal"]
+    modo_colectivo = request.user.configuracion_clase.get("modo") == "colectivo" or bool(request.GET.get("grupal"))
+    grupal = _grupal_activa(request) if modo_colectivo else None
+    if grupal:
+        inicial["evaluacion_grupal"] = grupal.pk
     form = EvaluarForm(request.POST or None, request.FILES or None, docente=request.user, initial=inicial)
-    if request.method == "POST" and form.is_valid():
-        ev = form.crear_evaluacion(request.user)
-        transaction.on_commit(lambda: procesar_evaluacion.delay(ev.pk))
-        return redirect("evaluacion", pk=ev.pk)
-    return render(request, "evaluaciones/evaluar.html", {"form": form})
+    por_fetch = request.headers.get("x-requested-with") == "fetch"
+    if request.method == "POST":
+        if form.is_valid():
+            ev = form.crear_evaluacion(request.user)
+            transaction.on_commit(lambda: procesar_evaluacion.delay(ev.pk))
+            if por_fetch:
+                return JsonResponse({"url": reverse("evaluacion", args=[ev.pk]),
+                                     "estado_url": reverse("evaluacion_estado", args=[ev.pk])})
+            return redirect("evaluacion", pk=ev.pk)
+        if por_fetch:
+            return JsonResponse({"errores": [str(e) for errores in form.errors.values() for e in errores]}, status=400)
+    contexto = {"form": form, "modo_colectivo": modo_colectivo, "grupal": grupal,
+                "grupos": Grupo.objects.filter(docente=request.user).annotate(n=Count("estudiantes"))}
+    if grupal:
+        contexto["consolidado"] = consolidar_grupo(grupal)
+    return render(request, "evaluaciones/evaluar.html", contexto)
+
+
+@login_required
+@require_POST
+def grupal_iniciar(request):
+    """«Iniciar registro» de la barra del modo colectivo (como en la web): número de estudiantes y salón."""
+    form = EvaluacionGrupalForm(request.POST)
+    if not form.is_valid():
+        messages.error(request, "Por favor ingresa un número válido de estudiantes (entre 1 y 60).")
+        return redirect("evaluar")
+    config = request.user.configuracion_clase
+    grupo = Grupo.objects.filter(pk=request.POST.get("grupo") or 0, docente=request.user).first()
+    if grupo is None:   # sin salón elegido: uno nuevo con el grado de «Configurar clase»
+        if request.user.institucion is None:
+            request.user.institucion = Institucion.objects.create(nombre=f"Institución de {request.user}")
+            request.user.save(update_fields=["institucion"])
+        hoy = timezone.localdate()
+        nombre = request.POST.get("nombre_grupo", "").strip()[:60] or f"Salón del {hoy:%d/%m/%Y}"
+        base, n = nombre, 2
+        while Grupo.objects.filter(institucion=request.user.institucion, nombre=nombre, anio=hoy.year).exists():
+            nombre, n = f"{base} ({n})", n + 1
+        grupo = Grupo.objects.create(institucion=request.user.institucion, docente=request.user, nombre=nombre,
+                                     grado=config.get("grado", "7_anos"), anio=hoy.year)
+    grupal = EvaluacionGrupal.objects.create(grupo=grupo, docente=request.user, **form.cleaned_data)
+    request.user.configuracion_clase = {**config, "modo": "colectivo", "grupal_activa": grupal.pk}
+    request.user.save(update_fields=["configuracion_clase"])
+    return redirect(f"{reverse('evaluar')}?grupal={grupal.pk}")
+
+
+@login_required
+@require_POST
+def grupal_reiniciar(request):
+    """«Reiniciar» del registro colectivo: cierra el registro en curso (las evaluaciones se conservan)."""
+    config = {k: v for k, v in request.user.configuracion_clase.items() if k != "grupal_activa"}
+    request.user.configuracion_clase = config
+    request.user.save(update_fields=["configuracion_clase"])
+    return redirect("evaluar")
 
 
 @login_required

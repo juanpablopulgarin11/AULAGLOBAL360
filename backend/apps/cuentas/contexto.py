@@ -12,6 +12,7 @@ def configuracion_clase(request):
     return {
         "form_config": ConfiguracionClaseForm(initial=config or None, auto_id="config_%s"),
         "motor_preferido": config.get("motor", "local"),
+        "modo_preferido": config.get("modo", "individual"),
         "ia_disponible": ia.disponible_para(docente),
         "ia_clave_servidor": bool(ia.settings.GEMINI_API_KEY),
     }

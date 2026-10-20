@@ -1,0 +1,32 @@
+{% load static %}
+<!-- MODAL DE GUÍA DE GRABACIÓN (igual que en la web) -->
+<div class="modal-overlay" id="recordingModal" data-modal>
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title" style="display: flex; align-items: center; gap: 8px;">
+                <img src="{% static 'img/logo-icon.svg' %}" width="22" height="22" style="border-radius: 5px;" alt="Aula Global 360">
+                Guía de grabación
+            </h2>
+            <button class="modal-close" type="button" data-cerrar-modal aria-label="Cerrar">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="step-container">
+                <div class="step-row"><div class="step-num">1</div><div class="step-content">
+                    <h4>Duración: 3 a 5 segundos</h4>
+                    <p>Inicia la grabación 1 segundo antes de la acción motriz y finaliza inmediatamente tras el aterrizaje o suelta.</p></div></div>
+                <div class="step-row"><div class="step-num">2</div><div class="step-content">
+                    <h4>Encuadre de cuerpo completo</h4>
+                    <p>Ubícate a 3-4 metros. El estudiante debe verse desde la cabeza hasta los pies durante toda la acción.</p></div></div>
+                <div class="step-row"><div class="step-num">3</div><div class="step-content">
+                    <h4>Cámara fija a la altura de la cadera</h4>
+                    <p>Sostén la cámara a la altura de la cadera del estudiante evitando movimientos bruscos.</p></div></div>
+            </div>
+            <div style="font-weight: 600; margin-bottom: 12px; font-size: 13px;">Planos de grabación por habilidad:</div>
+            <div class="angle-grid">
+                <div class="angle-card"><h5>Carrera y Salto</h5><p><strong>Plano de perfil:</strong> Permite medir el ángulo de rodilla, braceo y fase de vuelo.</p></div>
+                <div class="angle-card"><h5>Lanzar y Atrapar</h5><p><strong>Plano frontal/diagonal:</strong> Permite evaluar el paso contralateral y elevación de codo.</p></div>
+                <div class="angle-card"><h5>Equilibrio</h5><p><strong>Plano frontal:</strong> Permite evaluar oscilación del tronco y alineación postural.</p></div>
+            </div>
+        </div>
+    </div>
+</div>

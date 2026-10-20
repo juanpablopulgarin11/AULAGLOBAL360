@@ -1,55 +1,161 @@
-{% extends "base.html" %}{% load aula %}
-{% block titulo %}Evaluar{% endblock %}
-{% block contenido %}
-<div class="cabecera-pagina"><div><h1>Evaluación biomecánica</h1><p class="muted">Elige la habilidad, sube el video y obtén el diagnóstico y la planeación.</p></div>
-<button class="btn btn-secundario" type="button" data-abrir-dialogo="guia">Ver guía de grabación</button></div>
-<div class="pasos"><div class="paso activo"><span class="num">1</span>Habilidad</div><div class="paso activo"><span class="num">2</span>Video</div><div class="paso"><span class="num">3</span>Resultado</div></div>
-{% if form.errors %}<div class="aviso aviso-error">Revisa los campos marcados.</div>{% endif %}
-<form method="post" enctype="multipart/form-data" data-un-envio>
+{% extends "base.html" %}{% load static aula %}
+{% block titulo %}Evaluación de Habilidades Motrices{% endblock %}
+
+{% block barra %}
+{% if modo_colectivo %}
+<!-- PANEL DE ANÁLISIS GRUPAL (como en la web; aquí queda guardado en un salón) -->
+<div class="group-bar" id="groupPanel">
+    {% if grupal %}
+    <div class="group-progress" id="groupProgress">
+        <div class="group-progress-info">
+            <span class="group-text" id="groupCounterText">{{ grupal.grupo.nombre }} · Estudiante actual: {% if consolidado.evaluados < grupal.estudiantes_objetivo %}{{ consolidado.evaluados|add:1 }}{% else %}{{ grupal.estudiantes_objetivo }}{% endif %} de {{ grupal.estudiantes_objetivo }}</span>
+            <span class="group-pct" id="groupPctText">{{ consolidado.progreso_pct }}%</span>
+        </div>
+        <div class="progress-track"><div class="progress-fill" id="groupProgressFill" style="width: {{ consolidado.progreso_pct }}%;"></div></div>
+        <div class="group-actions">
+            {% if consolidado.evaluados %}<a class="btn-finish-group" id="btnFinishGroup" href="{% url 'grupal' grupal.pk %}" {% if consolidado.evaluados >= grupal.estudiantes_objetivo %}style="background:#059669"{% endif %}>{% if consolidado.evaluados >= grupal.estudiantes_objetivo %}🎉 Salón Completo - Generar Planeación Masiva{% else %}Generar plan consolidado{% endif %}</a>{% endif %}
+            <form method="post" action="{% url 'grupal_reiniciar' %}" data-confirmar="¿Deseas cerrar este registro grupal? Las evaluaciones del salón quedan guardadas.">{% csrf_token %}<button class="btn-reset-group" type="submit">Reiniciar</button></form>
+        </div>
+    </div>
+    {% else %}
+    <form class="group-setup-box" id="groupSetup" method="post" action="{% url 'grupal_iniciar' %}">{% csrf_token %}
+        <div class="group-setup-text">
+            <strong>Evaluación grupal</strong>
+            <span>Número de estudiantes:</span>
+        </div>
+        <div class="group-setup-controls">
+            {% if grupos %}<select name="grupo" class="group-select" aria-label="Salón">
+                <option value="">Salón nuevo</option>
+                {% for g in grupos %}<option value="{{ g.pk }}">{{ g.nombre }} ({{ g.n }})</option>{% endfor %}
+            </select>{% endif %}
+            <input type="number" id="totalStudents" name="estudiantes_objetivo" min="1" max="60" value="{{ request.user.configuracion_clase.estudiantes|default:30 }}" aria-label="Número de estudiantes">
+            <button class="btn-start-group" type="submit">Iniciar registro</button>
+        </div>
+    </form>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- STEPPER (indicador de progreso de 3 pasos) -->
+<nav class="stepper" id="stepper">
+    <button class="step-tab active" type="button" data-step="1">
+        <span class="step-num-badge" id="stepBadge1">1</span>
+        <span class="step-label">Elige la habilidad</span>
+    </button>
+    <div class="step-connector"></div>
+    <button class="step-tab" type="button" data-step="2" disabled>
+        <span class="step-num-badge" id="stepBadge2">2</span>
+        <span class="step-label">Sube el video</span>
+    </button>
+    <div class="step-connector"></div>
+    <button class="step-tab" type="button" data-step="3" disabled>
+        <span class="step-num-badge" id="stepBadge3">3</span>
+        <span class="step-label">Resultado</span>
+    </button>
+</nav>
+{% endblock %}
+
+{% block cuerpo %}
+<form id="formEvaluar" method="post" enctype="multipart/form-data" action="{% url 'evaluar' %}" data-asistente
+      data-paso-inicial="{% if form.errors %}2{% else %}1{% endif %}">
     {% csrf_token %}{{ form.evaluacion_grupal }}
-    <section class="tarjeta">
-        <h2>1. ¿Qué habilidad quieres evaluar?</h2>
-        <div class="habilidades">
-            <label class="habilidad habilidad-auto"><input type="radio" name="habilidad" value="auto" {% if form.habilidad.value == "auto" or not form.habilidad.value %}checked{% endif %}>
-                <span><span class="icono">🔍</span><span>Detección automática<br><small>El sistema identifica la habilidad en el video</small></span></span></label>
-            {% regroup form.habilidades by get_componente_display as grupos %}
-            {% for g in grupos %}<div class="grupo-habilidades">{{ g.grouper }}</div>
-                {% for h in g.list %}<label class="habilidad"><input type="radio" name="habilidad" value="{{ h.codigo }}" {% if form.habilidad.value == h.codigo %}checked{% endif %}>
-                    <span><span class="icono">{{ h.icono }}</span>{{ h.nombre }}</span></label>{% endfor %}
+    <input type="hidden" name="habilidad" id="skillSelect" value="{{ form.habilidad.value|default:'auto' }}">
+
+    <!-- ========== PASO 1: SELECCIÓN DE HABILIDAD ========== -->
+    <section class="wizard-step active" id="wizardStep1">
+        <div class="step-intro">
+            <h2 class="step-heading">¿Qué habilidad quieres evaluar?</h2>
+            <p class="step-desc">Selecciona la habilidad motriz o deja que el sistema la identifique automáticamente a partir del video.</p>
+        </div>
+        <div class="skill-grid">
+            <button type="button" class="skill-card skill-card--auto {% if form.habilidad.value == 'auto' or not form.habilidad.value %}active{% endif %}" data-skill="auto">
+                <span class="skill-icon">🔍</span>
+                <span class="skill-name">Detección automática</span>
+                <span class="skill-hint">El sistema identifica la habilidad</span>
+            </button>
+            {% regroup form.habilidades by componente as grupos %}
+            {% for g in grupos %}<div class="skill-group-label">{{ g.grouper|componente_corto }}</div>
+                {% for h in g.list %}<button type="button" class="skill-card {% if form.habilidad.value == h.codigo %}active{% endif %}" data-skill="{{ h.codigo }}">
+                    <span class="skill-icon">{{ h.icono }}</span>
+                    <span class="skill-name">{{ h|nombre_corto }}</span>
+                </button>{% endfor %}
             {% endfor %}
         </div>
-        {{ form.habilidad.errors }}
     </section>
-    <section class="tarjeta">
-        <h2>2. Sube el video del estudiante</h2>
-        <div class="zona-carga" data-zona-carga="previa">
-            <div style="font-size:34px">🎥</div>
-            <div class="titulo">Selecciona o arrastra el video o la foto</div>
-            <div class="subtle">MP4, MOV, WEBM, JPG o PNG · Recomendado: 3 a 5 segundos, cuerpo completo, cámara fija</div>
-            {{ form.archivo }}
+
+    <!-- ========== PASO 2: SUBIR VIDEO ========== -->
+    <section class="wizard-step" id="wizardStep2" style="display: none;">
+        <div class="step-intro">
+            <h2 class="step-heading">Sube el video del estudiante</h2>
+            <p class="step-desc">
+                Graba un video corto (3 a 5 segundos) con el celular y súbelo aquí.
+                <button class="link-btn" type="button" data-abrir-modal="recordingModal">Ver guía de grabación</button>
+            </p>
         </div>
-        {{ form.archivo.errors }}
-        <div class="vista-previa" id="previa"></div>
-        <div class="fila-campos" style="margin-top:16px">
-            {% include "parciales/campo.html" with campo=form.estudiante %}
-            {% include "parciales/campo.html" with campo=form.grado %}
+
+        <div class="selected-skill-bar" id="selectedSkillBar">
+            <span class="selected-skill-icon" id="selectedSkillIcon">🔍</span>
+            <span class="selected-skill-text" id="selectedSkillText">Detección automática</span>
+            <button class="change-skill-btn" type="button" data-ir-paso="1">Cambiar</button>
         </div>
-        <p class="ayuda" style="margin-top:-8px">Si eliges un estudiante se usa el grado de su salón.</p>
-        {% include "parciales/campo.html" with campo=form.observaciones %}
-        {% if form.motor.field.widget.input_type == "hidden" %}{{ form.motor }}{% else %}
-        <div class="campo"><span class="etiqueta">{{ form.motor.label }}</span><div class="checks">{% for r in form.motor %}{{ r }}{% endfor %}</div>
-            <div class="ayuda">Gemini envía los fotogramas a Google: requiere autorización de la institución y consentimiento del acudiente. Si no está permitido o falla, se usa el motor local.</div></div>{% endif %}
-        <button class="btn btn-grande" type="submit" data-enviando="Subiendo y analizando…">Analizar movimiento</button>
+
+        <!-- PREVIEW DEL VIDEO/IMAGEN (aparece al elegir el archivo) -->
+        <div class="upload-preview" id="uploadPreview" style="display: none;">
+            <div class="preview-media" id="studentPlayerArea">
+                <video id="studentVideoPlayer" style="display:none;" autoplay loop muted playsinline></video>
+                <img id="studentImgPreview" style="display:none;" alt="Evidencia estudiante">
+                <div class="scan-overlay" id="scanOverlay" style="display: none;"><div class="scan-line"></div></div>
+            </div>
+            <div class="preview-status" id="telemetryFooter">
+                <span id="fpsCounter">FPS: --</span>
+                <span id="frameDensity">Listo para analizar</span>
+            </div>
+        </div>
+
+        <!-- ZONA DE CARGA (elemento principal) -->
+        <div class="upload-zone-wrapper">
+            <div class="upload-zone" id="uploadZone" role="button" tabindex="0">
+                <div class="uz-icon" id="uzIcon">
+                    <img src="{% static 'img/logo-icon.svg' %}" class="uz-brand-icon" width="48" height="48" alt="Aula Global 360">
+                </div>
+                <div class="uz-title" id="uzTitle">Seleccionar o arrastrar video o fotografía</div>
+                <div class="uz-sub" id="uzSub">Formatos: MP4, MOV, WEBM, JPG, PNG · Recomendado: 3 a 5 segundos</div>
+            </div>
+            <input type="file" id="fileInput" name="archivo" accept="video/*,image/*" style="display:none">
+        </div>
+
+        {% if form.estudiante.field.queryset.exists %}
+        <!-- ESTUDIANTE (solo Django: el resultado queda en su historial) -->
+        <div class="obs-section">
+            <label class="obs-label" for="{{ form.estudiante.id_for_label }}">Estudiante (opcional)</label>
+            {{ form.estudiante }}
+        </div>
+        {% endif %}
+
+        <!-- OBSERVACIONES DEL DOCENTE -->
+        <div class="obs-section" id="obsSection">
+            <label class="obs-label" for="userInput">Observaciones del docente (opcional)</label>
+            <textarea id="userInput" name="observaciones" rows="2"
+                placeholder="{% if motor_preferido == 'gemini' %}Observaciones opcionales para la IA (ej: &quot;Aterriza con fuerza en talón&quot;, &quot;Presenta fatiga previa&quot;)...{% else %}Ej: 'Aterriza con fuerza en talón', 'Usa calzado plano', 'Muestra inseguridad al saltar'...{% endif %}">{{ form.observaciones.value|default:'' }}</textarea>
+        </div>
+
+        <!-- BOTÓN ANALIZAR -->
+        <button class="btn-analyze" id="sendBtn" type="submit">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+            </svg>
+            Analizar movimiento
+        </button>
+
+        <!-- INDICADOR DE PROCESAMIENTO -->
+        <div class="processing-bar" id="processingBar" style="display: none;">
+            <div class="processing-spinner"></div>
+            <span id="processingText">Analizando el movimiento...</span>
+        </div>
+        {% if form.errors %}<template id="erroresFormulario">{% for campo, errores in form.errors.items %}{% for e in errores %}<p>{{ e }}</p>{% endfor %}{% endfor %}</template>{% endif %}
     </section>
 </form>
-<dialog id="guia" class="tarjeta" style="max-width:640px">
-    <h2>Guía de grabación</h2>
-    <ol>
-        <li><strong>Duración: 3 a 5 segundos.</strong> Inicia 1 segundo antes de la acción y termina justo después del aterrizaje o la suelta.</li>
-        <li><strong>Cuerpo completo.</strong> Ubícate a 3–4 metros; el estudiante debe verse de la cabeza a los pies todo el tiempo.</li>
-        <li><strong>Cámara fija a la altura de la cadera</strong>, preferiblemente en horizontal y sin movimientos bruscos.</li>
-    </ol>
-    <p><strong>Plano por habilidad:</strong> carrera y salto de <em>perfil</em> (rodilla, braceo y vuelo); lanzar y atrapar en plano <em>frontal o diagonal</em>; equilibrio en plano <em>frontal</em>.</p>
-    <form method="dialog"><button class="btn">Entendido</button></form>
-</dialog>
 {% endblock %}
+
+{% block pie %}{% include "parciales/detalles_tecnicos.html" %}{% endblock %}
+{% block modales %}{% include "parciales/guia_grabacion.html" %}{% endblock %}

@@ -11,6 +11,24 @@ ICONOS = {"Carrera": "🏃", "Salto Horizontal": "🦘", "Marcha": "🚶", "Salt
           "Equilibrio Dinámico": "🧘", "Equilibrio Estático Unipodal": "🦩"}
 
 
+# Rótulos cortos de las tarjetas de habilidad de la web (index.html)
+NOMBRES_CORTOS = {"Salto Horizontal": "Salto horizontal", "Salto Unipodal": "Salto unipodal",
+                  "Lanzamiento Sobre Hombro": "Lanzamiento", "Recepción y Atrape": "Recepción",
+                  "Equilibrio Dinámico": "Equilibrio dinámico", "Equilibrio Estático Unipodal": "Equilibrio estático"}
+COMPONENTES_CORTOS = {"HMB-L": "Locomoción", "HMB-M": "Manipulación", "HMB-E": "Estabilidad"}
+
+
+@register.filter
+def nombre_corto(habilidad):
+    nombre = getattr(habilidad, "nombre", habilidad) or ""
+    return NOMBRES_CORTOS.get(nombre, nombre)
+
+
+@register.filter
+def componente_corto(codigo):
+    return COMPONENTES_CORTOS.get(codigo, codigo)
+
+
 @register.filter
 def negritas(texto):
     """Escapa el texto y convierte **así** en <strong> (el resumen del motor usa ese marcado)."""

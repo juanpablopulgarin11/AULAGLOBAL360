@@ -46,7 +46,8 @@ def configurar_clase(request):
     siguiente = _ruta_interna(request.POST.get("siguiente") or request.GET.get("siguiente", ""))
     if request.method == "POST":
         if form.is_valid():
-            request.user.configuracion_clase = {**request.user.configuracion_clase, **form.cleaned_data}
+            datos = {k: v for k, v in form.cleaned_data.items() if v not in ("", None) or k == "materiales"}
+            request.user.configuracion_clase = {**request.user.configuracion_clase, **datos}
             request.user.save(update_fields=["configuracion_clase"])
             if _quiere_json(request):
                 return JsonResponse({"ok": True})

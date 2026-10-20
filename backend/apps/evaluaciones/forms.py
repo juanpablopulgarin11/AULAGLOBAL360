@@ -13,18 +13,19 @@ class EvaluarForm(forms.Form):
                               widget=forms.ClearableFileInput(attrs={"accept": "video/*,image/*"}))
     estudiante = forms.ModelChoiceField(queryset=Estudiante.objects.none(), required=False,
                                         empty_label="— Sin asociar a un estudiante —")
-    grado = forms.ChoiceField(choices=GRADO_CHOICES, initial="7_anos", label="Edad / grado")
+    grado = forms.ChoiceField(choices=GRADO_CHOICES, initial="7_anos", label="Edad / grado", required=False)
     observaciones = forms.CharField(required=False, widget=forms.Textarea(attrs={"rows": 3}),
                                     label="Observaciones (opcional)",
                                     help_text='Ej.: "aterriza con fuerza en talón", "usa calzado plano". '
                                               'Si mencionas la habilidad ("patea", "salto largo") ayuda a la detección automática.')
     motor = forms.ChoiceField(choices=Motor.choices, initial=Motor.LOCAL, widget=forms.RadioSelect,
-                              label="Motor de análisis")
+                              label="Motor de análisis", required=False)
     evaluacion_grupal = forms.ModelChoiceField(queryset=EvaluacionGrupal.objects.none(), required=False,
                                                widget=forms.HiddenInput)
 
     def __init__(self, *args, docente=None, **kwargs):
         super().__init__(*args, **kwargs)
+        self.docente = docente
         self.fields["habilidad"].choices = [("auto", "Detección automática")] + [
             (h.codigo, h.nombre) for h in Habilidad.objects.order_by("orden")]
         self.habilidades = list(Habilidad.objects.order_by("orden"))
@@ -43,6 +44,13 @@ class EvaluarForm(forms.Form):
 
     def clean(self):
         datos = super().clean()
+        # Sin grado ni motor en el envío se usan los de «Configurar clase» (la web los tomaba del panel lateral)
+        from apps.ia.cliente import disponible_para
+
+        config = getattr(self.docente, "configuracion_clase", {}) or {}
+        datos["grado"] = datos.get("grado") or config.get("grado") or "7_anos"
+        motor = datos.get("motor") or config.get("motor") or Motor.LOCAL
+        datos["motor"] = motor if motor == Motor.LOCAL or disponible_para(self.docente) else Motor.LOCAL
         archivo = datos.get("archivo")
         if archivo and datos.get("habilidad") == "auto" and not archivo.content_type.startswith("video"):
             self.add_error("habilidad", "Con una foto la detección automática no es fiable: elige la habilidad que se evalúa.")

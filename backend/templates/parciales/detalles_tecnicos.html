@@ -1,0 +1,44 @@
+<!-- DETALLES TÉCNICOS (colapsado al pie de la pantalla, como en la web) -->
+<details class="tech-details" id="techDetails">
+    <summary class="tech-summary">Detalles técnicos</summary>
+    <div class="tech-body">
+        <div class="tech-grid">
+            <div class="tech-item">
+                <span class="tech-label">Motor de análisis</span>
+                <span class="tech-value only-local">Motor Local Autónomo (servidor)</span>
+                <span class="tech-value only-gemini">Gemini Vision IA (Nube Multimodal)</span>
+            </div>
+            <div class="tech-item">
+                <span class="tech-label">Tecnología</span>
+                <span class="tech-value">MediaPipe Pose · 33 landmarks</span>
+            </div>
+            <div class="tech-item">
+                <span class="tech-label">Instrumento</span>
+                <span class="tech-value">Batería HMB Validada (Dialnet 7925607)</span>
+            </div>
+            <div class="tech-item">
+                <span class="tech-label">Privacidad</span>
+                <span class="tech-value only-local">Videos privados del docente · borrado automático</span>
+                <span class="tech-value only-gemini">Envío a Google Gemini API (con consentimiento)</span>
+            </div>
+        </div>
+        {% if t %}
+        <div class="telemetry-box" style="margin-top:12px;">
+            <div class="telemetry-header">Telemetría Articular Medida (MediaPipe Pose · 33 Landmarks)</div>
+            <div class="telemetry-grid">
+                <div class="telemetry-item"><span class="telemetry-lbl">Flexión Mín. Rodilla:</span><span class="telemetry-val">{{ t.minKneeAngle }}°</span></div>
+                <div class="telemetry-item"><span class="telemetry-lbl">Ángulo Codo (Braceo):</span><span class="telemetry-val">{{ t.avgElbowAngle }}°</span></div>
+                <div class="telemetry-item"><span class="telemetry-lbl">Inclinación Tronco:</span><span class="telemetry-val">{{ t.avgTrunkAngle }}°</span></div>
+                <div class="telemetry-item"><span class="telemetry-lbl">Fase Aérea / Vuelo:</span><span class="telemetry-val" style="color:{% if t.flightDetected %}#16A34A{% else %}#DC2626{% endif %};">{% if t.flightDetected %}✓ Detectada{% else %}✗ No evidente{% endif %}</span></div>
+                <div class="telemetry-item"><span class="telemetry-lbl">Simetría Bilateral:</span><span class="telemetry-val">{{ t.symmetryScore }}%</span></div>
+                <div class="telemetry-item"><span class="telemetry-lbl">Apertura Cadera:</span><span class="telemetry-val">{{ t.maxHipAngle }}°</span></div>
+            </div>
+            {% if ev.fases_fsm or ev.meta_video.ventana_s %}<div class="telemetry-extra">
+                {% if ev.fases_fsm %}<span>Fases: {{ ev.fases_fsm|join:" ➔ " }}</span>{% endif %}
+                {% if ev.meta_video.ventana_s %}<span>Ventana {{ ev.meta_video.ventana_s.0 }}–{{ ev.meta_video.ventana_s.1 }} s de {{ ev.meta_video.duracion_s }} s · {{ ev.meta_video.ancho }}×{{ ev.meta_video.alto }} · {{ ev.meta_video.fps }} fps</span>{% endif %}
+                <span>Motor {{ ev.version_motor }}</span>
+            </div>{% endif %}
+        </div>
+        {% endif %}
+    </div>
+</details>
