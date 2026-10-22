@@ -115,17 +115,19 @@ def comprobar_word_con_fotos_3d(cliente, ud):
     s1 = escenas[0]
     datos = {f"montaje-1-{k}": foto(f"s1_{k}.jpg") for k in range(len(s1["escena"]["pasos"]) + 1)}
     datos["montaje-3-0"] = foto("s3_0.jpg")
+    datos["montaje-1-planta"] = foto("s1_planta.jpg")
     datos["montaje-99-0"] = foto("sesion_inexistente.jpg")                       # se ignora
     datos["montaje-1-50"] = foto("paso_inexistente.jpg")                         # se ignora
     datos["montaje-2-0"] = SimpleUploadedFile("no_es_imagen.jpg", b"<script>", content_type="image/jpeg")  # se ignora
     r = cliente.post(reverse("unidad_docx", args=[ud.pk]), datos)
     assert r.status_code == 200 and r["Content-Type"] == DOCX
     word = Document(io.BytesIO(r.content))
-    assert len(word.inline_shapes) == len(s1["escena"]["pasos"]) + 1 + 1            # sesión 1 completa + sesión 3
+    assert len(word.inline_shapes) == len(s1["escena"]["pasos"]) + 1 + 1 + 1        # sesión 1 (3D, planta, pasos) + sesión 3
     texto = "\n".join(c.text for t in word.tables for fila in t.rows for c in fila.cells)
     texto_u = texto.upper()
     assert "MONTAJE 3D · SESIÓN 1" in texto_u and "MONTAJE 3D · SESIÓN 3" in texto_u and "SESIÓN 2: CÓMO" not in texto_u
     assert f"Paso 1. {s1['escena']['pasos'][0]}" in texto
+    assert "Vista de planta" in texto
 
     # Filtrar solo sesiones 1 y 2 que el docente elija
     datos_filtro = {"sesiones_elegidas": "1,2", "montaje-1-0": foto("s1_0.jpg"), "montaje-2-0": foto("s2_0.jpg")}

@@ -173,13 +173,15 @@ def _foto(celda, imagen: bytes, ancho_cm: float, leyenda: Sequence[tuple]) -> No
         r.bold, r.font.size, r.font.color.rgb = negrita, Pt(8.5), RGBColor.from_string("334155")
 
 
-def _montaje_3d(doc: Document, numero: int, completo: Optional[bytes], pasos: Sequence[tuple]) -> None:
-    """Fotos del montaje 3D de una sesión: el montaje completo y/o la secuencia de armado paso a paso."""
-    if not completo and not pasos:
+def _montaje_3d(doc: Document, numero: int, completo: Optional[bytes], pasos: Sequence[tuple],
+                planta: Optional[bytes] = None) -> None:
+    """Fotos del montaje 3D de una sesión: el montaje completo (en 3D y en planta con medidas) y/o
+    la secuencia de armado paso a paso."""
+    if not completo and not pasos and not planta:
         return
     cols = 2
     filas_pasos = (len(pasos) + cols - 1) // cols if len(pasos) > 1 else len(pasos)
-    total_filas = 1 + (1 if completo else 0) + filas_pasos
+    total_filas = 1 + (1 if completo else 0) + (1 if planta else 0) + filas_pasos
     t = _tabla(doc, total_filas, cols, (8.9, 8.9))
     _encabezado(_fila_unida(t, 0), f"Montaje 3D · Sesión {numero}: cómo armar el espacio")
     _fila_unida(t, 0).paragraphs[0].paragraph_format.keep_with_next = True
@@ -188,7 +190,12 @@ def _montaje_3d(doc: Document, numero: int, completo: Optional[bytes], pasos: Se
         _fila_sin_cortes(t.rows[fila])
         celda = _fila_unida(t, fila)
         _sombrear(celda, GRIS_SUAVE)
-        _foto(celda, completo, 13.5, [("Montaje 3D completo ", True), ("(vista con medidas y distribución en metros)", False)])
+        _foto(celda, completo, 15.5, [("Montaje 3D completo ", True), ("(vista con medidas y distribución en metros)", False)])
+        fila += 1
+    if planta:
+        _fila_sin_cortes(t.rows[fila])
+        celda = _fila_unida(t, fila)
+        _foto(celda, planta, 15.5, [("Vista de planta ", True), ("(desde arriba: distancias y ubicación de cada elemento)", False)])
         fila += 1
     if len(pasos) == 1:
         _fila_sin_cortes(t.rows[fila])
@@ -419,7 +426,7 @@ def unidad_didactica(u: Mapping[str, Any], sesiones: Optional[Sequence[Mapping[s
         fotos = montajes.get(s["numero"])
         if fotos and (fotos.get("completo") or fotos.get("pasos")):
             _espacio(doc, 2)
-            _montaje_3d(doc, s["numero"], fotos.get("completo"), fotos.get("pasos") or [])
+            _montaje_3d(doc, s["numero"], fotos.get("completo"), fotos.get("pasos") or [], fotos.get("planta"))
         _espacio(doc, 4)
 
     # 4. Complementos

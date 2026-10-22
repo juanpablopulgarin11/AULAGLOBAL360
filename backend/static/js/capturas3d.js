@@ -1,12 +1,15 @@
 /* AULA GLOBAL 360 · Fotos del montaje 3D para el Word de la unidad.
  * Al pulsar «Descargar en Word», arma sin mostrarla la escena 3D de cada sesión, toma una foto del
- * montaje completo y una por cada paso, y las envía al servidor, que las inserta bajo su sesión.
+ * montaje completo en 3D, otra en planta (desde arriba, con las medidas) y una por cada paso, y las
+ * envía al servidor, que las inserta bajo su sesión. Las fotos usan la misma escena que el visor
+ * (montaje3d-escena.js), renderizada al doble de resolución y reducida: bordes limpios al imprimir.
  * Si el navegador no puede dibujar 3D, se descarga el Word sin fotos (como antes). */
 import * as THREE from 'three';
-import { crearEscena } from './montaje3d-escena.js';
+import { ACENTO, configurarRenderer, crearEscena } from './montaje3d-escena.js';
 
-const ANCHO = 1200, ALTO = 750;            // proporción 16:10, nítida al ancho de media página carta
-const CALIDAD_JPEG = 0.86;
+const ANCHO = 1600, ALTO = 1000;           // proporción 16:10, nítida a página completa carta
+const SUPERMUESTREO = 2;                   // se dibuja a 3200×2000 y se reduce (antialiasing de calidad)
+const CALIDAD_JPEG = 0.9;
 const ESCALA = ANCHO / 900;                // las etiquetas se ven como en el visor de ~900 px
 
 // Estilos de las etiquetas (los mismos de .et3d / .cota3d en aula.css)
@@ -89,13 +92,47 @@ function aBlob(lienzo) {
     return new Promise((ok, mal) => lienzo.toBlob((b) => (b ? ok(b) : mal(new Error('No se pudo crear la imagen'))), 'image/jpeg', CALIDAD_JPEG));
 }
 
-class Fotografo {
+/** Leyenda de colores en la esquina inferior: qué es cada cosa en la foto. */
+function pintarLeyenda(ctx, conPersonas) {
+    const items = [
+        ...(conPersonas ? [[`#${ACENTO.toString(16).padStart(6, '0')}`, 'Docente'], ['#2F6FDE', 'Estudiantes (color por grupo)']] : []),
+        ['#1E293B', 'Medidas en metros'],
+        ['#F8FAFC', 'Líneas de tiza o cinta'],
+    ];
+    const tam = 11 * ESCALA;
+    ctx.font = `600 ${tam}px Inter, "Segoe UI", system-ui, sans-serif`;
+    const anchoTexto = Math.max(...items.map(([, t]) => ctx.measureText(t).width));
+    const w = anchoTexto + 40 * ESCALA, filaH = tam + 8 * ESCALA, h = items.length * filaH + 12 * ESCALA;
+    const x = ANCHO - w - 14 * ESCALA, y = ALTO - h - 14 * ESCALA;
+    ctx.save();
+    ctx.shadowColor = 'rgba(15,23,42,.18)';
+    ctx.shadowBlur = 6 * ESCALA;
+    ctx.fillStyle = 'rgba(255,255,255,.93)';
+    rectRedondeado(ctx, x, y, w, h, 8 * ESCALA);
+    ctx.fill();
+    ctx.restore();
+    items.forEach(([hex, texto], i) => {
+        const cy = y + 6 * ESCALA + filaH * i + filaH / 2;
+        ctx.fillStyle = hex;
+        ctx.strokeStyle = 'rgba(15,23,42,.35)';
+        ctx.lineWidth = 1 * ESCALA;
+        ctx.beginPath();
+        ctx.arc(x + 16 * ESCALA, cy, 5.5 * ESCALA, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#0F172A';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(texto, x + 28 * ESCALA, cy + 0.5 * ESCALA);
+    });
+}
+
+export class Fotografo {
     constructor() {
         this.renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
-        this.renderer.setPixelRatio(1);
+        this.renderer.setPixelRatio(SUPERMUESTREO);
         this.renderer.setSize(ANCHO, ALTO, false);
-        this.renderer.shadowMap.enabled = true;
-        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        configurarRenderer(this.renderer);
         this.camara = new THREE.PerspectiveCamera(45, ANCHO / ALTO, 0.1, 400);
         this.lienzo = document.createElement('canvas');
         this.lienzo.width = ANCHO;
@@ -103,12 +140,23 @@ class Fotografo {
         this.ctx = this.lienzo.getContext('2d');
     }
 
-    async foto(montaje, rotulo) {
+    encuadrar(montaje, nombre) {
+        const { pos, obj } = montaje.vista(nombre, this.camara);
+        this.camara.position.copy(pos);
+        this.camara.up.set(0, nombre === 'planta' ? 0 : 1, nombre === 'planta' ? -1 : 0);
+        this.camara.lookAt(obj);
+        this.camara.updateMatrixWorld();
+    }
+
+    async foto(montaje, rotulo, { leyenda = true } = {}) {
         this.renderer.render(montaje.escena, this.camara);
         this.ctx.clearRect(0, 0, ANCHO, ALTO);
+        this.ctx.imageSmoothingEnabled = true;
+        this.ctx.imageSmoothingQuality = 'high';
         this.ctx.drawImage(this.renderer.domElement, 0, 0, ANCHO, ALTO);
         pintarEtiquetas(this.ctx, montaje.escena, this.camara);
         pintarRotulo(this.ctx, rotulo);
+        if (leyenda) pintarLeyenda(this.ctx, montaje.capaPersonas.visible);
         return aBlob(this.lienzo);
     }
 
@@ -116,19 +164,20 @@ class Fotografo {
      * Devuelve una lista de { k, blob } donde k=0 es el montaje completo y k>=1 es el paso k.
      */
     async sesion({ numero, escena: datos }, modo = 'ambas', onAvance = null) {
-        const montaje = crearEscena(datos);
+        const montaje = crearEscena(datos, { renderer: this.renderer });
         try {
-            const { pos, obj } = montaje.vista('3d', this.camara);
-            this.camara.position.copy(pos);
-            this.camara.lookAt(obj);
-            this.camara.updateMatrixWorld();
             const fotos = [];
+            this.encuadrar(montaje, '3d');
 
             if (modo === 'ambas' || modo === 'completo') {
                 if (onAvance) onAvance(`Sesión ${numero}: Foto del modelo 3D general`);
                 montaje.mostrarPaso(null);
-                const blob = await this.foto(montaje, `Sesión ${numero} · Montaje completo`);
-                fotos.push({ k: 0, blob });
+                fotos.push({ k: 0, blob: await this.foto(montaje, `Sesión ${numero} · Montaje completo`) });
+                await siguienteCuadro();
+                if (onAvance) onAvance(`Sesión ${numero}: Vista de planta con medidas`);
+                this.encuadrar(montaje, 'planta');
+                fotos.push({ k: 'planta', blob: await this.foto(montaje, `Sesión ${numero} · Planta con medidas`) });
+                this.encuadrar(montaje, '3d');
             }
 
             if (modo === 'ambas' || modo === 'pasos') {
@@ -136,7 +185,7 @@ class Fotografo {
                     await siguienteCuadro();      // deja respirar a la página entre fotos
                     if (onAvance) onAvance(`Sesión ${numero}: Foto del paso ${i + 1} de ${datos.pasos.length}`);
                     montaje.mostrarPaso(i);
-                    montaje.resaltar(i, 0.4);
+                    montaje.resaltar(i, 0.3);
                     const blob = await this.foto(montaje, `Sesión ${numero} · Paso ${i + 1} de ${datos.pasos.length}`);
                     fotos.push({ k: i + 1, blob });
                 }

@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CSS2DRenderer } from 'three/addons/renderers/CSS2DRenderer.js';
-import { crearEscena } from './montaje3d-escena.js';
+import { configurarRenderer, crearEscena } from './montaje3d-escena.js';
 
 const datos = JSON.parse(document.getElementById('escena-datos').textContent);
 const visor = document.getElementById('visor');
@@ -21,15 +21,14 @@ try {
     throw e;
 }
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+configurarRenderer(renderer);
 lienzo.appendChild(renderer.domElement);
 
 const etiquetas = new CSS2DRenderer();
 etiquetas.domElement.className = 'visor-etiquetas';
 lienzo.appendChild(etiquetas.domElement);
 
-const montaje = crearEscena(datos);
+const montaje = crearEscena(datos, { renderer });
 const { escena, capaCotas, capaPersonas, rejilla } = montaje;
 
 const camara = new THREE.PerspectiveCamera(45, 1, 0.1, 400);
@@ -79,7 +78,7 @@ let pasoActual = null;   // null = montaje completo
 
 function mostrarPaso(paso) {
     pasoActual = paso;
-    montaje.mostrarPaso(paso);
+    montaje.mostrarPaso(paso, { animar: !reducirMovimiento, ahora: performance.now() });
     botonesPaso.forEach((b, i) => {
         b.classList.toggle('activo', i === paso);
         b.classList.toggle('hecho', paso !== null && i < paso);
@@ -99,7 +98,45 @@ document.querySelectorAll('[data-paso-mover]').forEach((b) => b.addEventListener
     const siguiente = base + delta;
     mostrarPaso(siguiente < 0 || siguiente >= n ? null : siguiente);
 }));
-verTodo.addEventListener('click', () => mostrarPaso(null));
+verTodo.addEventListener('click', () => { detenerReproduccion(); mostrarPaso(null); });
+
+// ------------------------------------------------------------------ reproducir el montaje y girar la cámara
+
+const botonReproducir = document.querySelector('[data-reproducir]');
+const botonGirar = document.querySelector('[data-girar]');
+let reproduccion = null;
+const PAUSA_PASO_MS = 2600;
+
+function detenerReproduccion() {
+    clearTimeout(reproduccion);
+    reproduccion = null;
+    botonReproducir?.classList.remove('activo');
+    if (botonReproducir) botonReproducir.textContent = '▶ Reproducir montaje';
+}
+
+function reproducirDesde(i) {
+    if (i >= datos.pasos.length) {          // al terminar queda el montaje completo
+        mostrarPaso(null);
+        detenerReproduccion();
+        return;
+    }
+    mostrarPaso(i);
+    reproduccion = setTimeout(() => reproducirDesde(i + 1), PAUSA_PASO_MS);
+}
+
+botonReproducir?.addEventListener('click', () => {
+    if (reproduccion) { detenerReproduccion(); return; }
+    botonReproducir.classList.add('activo');
+    botonReproducir.textContent = '■ Detener';
+    reproducirDesde(0);
+});
+botonGirar?.addEventListener('click', () => {
+    controles.autoRotate = !controles.autoRotate;
+    controles.autoRotateSpeed = 0.8;
+    botonGirar.classList.toggle('activo', controles.autoRotate);
+});
+botonesPaso.forEach((b) => b.addEventListener('click', detenerReproduccion, { capture: true }));
+document.querySelectorAll('[data-paso-mover]').forEach((b) => b.addEventListener('click', detenerReproduccion, { capture: true }));
 
 // ------------------------------------------------------------------ tamaño y animación
 
@@ -124,8 +161,9 @@ renderer.setAnimationLoop((ahora) => {
         controles.target.lerpVectors(transicion.desdeObj, transicion.obj, k);
         if (t >= 1) transicion = null;
     }
+    montaje.actualizar(ahora, { movimiento: !reducirMovimiento });
     if (pasoActual !== null) {
-        montaje.resaltar(pasoActual, reducirMovimiento ? 0.35 : 0.25 + 0.2 * Math.sin(ahora / 260));
+        montaje.resaltar(pasoActual, reducirMovimiento ? 0.3 : 0.18 + 0.14 * Math.sin(ahora / 260));
     }
     controles.update();
     renderer.render(escena, camara);

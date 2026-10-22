@@ -264,6 +264,17 @@ table.tabla { width: 100%; border-collapse: collapse; font-size: 12.5px; }
 }
 .btn-icono:hover, .segmentado button:hover:not(.activo) { background: var(--border-soft); }
 .visor-recorrido { position: absolute; bottom: 34px; left: 50%; transform: translateX(-50%); padding: 4px 10px; font-size: 13px; font-weight: 600; white-space: nowrap; }
+.separador-recorrido { width: 1px; height: 18px; background: var(--border); margin: 0 4px; }
+.btn-reproducir {
+    border: none; background: var(--accent); color: #fff; font: inherit; font-size: 12.5px; font-weight: 700;
+    padding: 5px 12px; border-radius: var(--r-full); cursor: pointer; white-space: nowrap;
+}
+.btn-reproducir:hover { background: var(--accent-hover); }
+.btn-reproducir.activo { background: #B45309; }
+.btn-girar { background: var(--border-soft); color: var(--text-muted); }
+.btn-girar:hover { background: var(--border); color: var(--text); }
+.btn-girar.activo { background: var(--accent-soft); color: var(--accent); }
+@media (max-width: 520px) { .btn-girar, .separador-recorrido { display: none; } }
 .visor-ayuda { position: absolute; bottom: 8px; left: 0; right: 0; margin: 0; text-align: center; font-size: 11px; color: var(--text-subtle); pointer-events: none; }
 .visor-sin-3d { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; color: var(--text-muted); background: var(--card); }
 .visor-sin-3d[hidden] { display: none; }

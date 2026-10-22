@@ -20,7 +20,7 @@ DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 ESTUDIANTES_POR_DEFECTO = 24
 MAX_BYTES_FOTO = 3 * 1024 * 1024                 # una foto JPEG de 1200×750 pesa ~150 KB
 FIRMAS_IMAGEN = (b"\xff\xd8\xff", b"\x89PNG\r\n\x1a\n")
-CAMPO_FOTO = re.compile(r"montaje-(\d+)-(\d+)")
+CAMPO_FOTO = re.compile(r"montaje-(\d+)-(\d+|planta)")
 
 
 @login_required
@@ -111,19 +111,21 @@ def escenas(request, pk):
 
 
 def _fotos_de_montaje(request, ud: UnidadDidactica) -> Dict[int, Dict[str, Any]]:
-    """Fotos enviadas como ``montaje-<sesión>-<k>`` (k=0: montaje completo; k≥1: paso k).
+    """Fotos enviadas como ``montaje-<sesión>-<k>`` (k=0: montaje completo en 3D; ``planta``: vista
+    desde arriba con medidas; k≥1: paso k).
 
-    Devuelve ``{número: {"completo": bytes | None, "pasos": [(texto del paso, bytes), ...]}}``.
+    Devuelve ``{número: {"completo": bytes | None, "planta": bytes | None, "pasos": [(texto del paso, bytes), ...]}}``.
     Se ignora lo que no corresponda a una sesión o paso real, lo que pese demasiado o no sea JPEG/PNG.
     """
-    recibidas: Dict[int, Dict[int, bytes]] = {}
+    recibidas: Dict[int, Dict[Any, bytes]] = {}
     for campo, archivo in request.FILES.items():
         m = CAMPO_FOTO.fullmatch(campo)
         if not m or archivo.size > MAX_BYTES_FOTO:
             continue
         datos = archivo.read()
         if datos.startswith(FIRMAS_IMAGEN):
-            recibidas.setdefault(int(m.group(1)), {})[int(m.group(2))] = datos
+            k = m.group(2)
+            recibidas.setdefault(int(m.group(1)), {})[k if k == "planta" else int(k)] = datos
     if not recibidas:
         return {}
     estudiantes = _estudiantes_del_salon(ud)
@@ -133,6 +135,7 @@ def _fotos_de_montaje(request, ud: UnidadDidactica) -> Dict[int, Dict[str, Any]]
         pasos: List[str] = _escena_de(ud, sesion, estudiantes)["pasos"]
         montajes[sesion.numero] = {
             "completo": fotos.get(0),
+            "planta": fotos.get("planta"),
             "pasos": [(texto, fotos[k]) for k, texto in enumerate(pasos, start=1) if k in fotos],
         }
     return montajes
