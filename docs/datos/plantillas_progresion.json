@@ -1,5 +1,5 @@
 {
-  "_nota": "Extraído de script.js:getSkillProgressionTemplates. {materiales}, {formato} y {metodologia} son placeholders que el JS sustituye con las preferencias del docente. Habilidades sin plantilla propia usan las de Carrera.",
+  "_nota": "Banco de sesiones por habilidad. Carrera, Salto Horizontal y Lanzamiento vienen de script.js (getSkillProgressionTemplates); Marcha, Salto Unipodal, Equilibrio Dinámico, Equilibrio Estático, Atrape y Patear se redactaron a partir de los libros de la carpeta Data (campo «fuente»). «criterios» son los números de los criterios de la Batería HMB que trabaja cada sesión. {materiales}, {formato} y {metodologia} se sustituyen con las preferencias del docente.",
   "plantillas": {
     "Carrera": [
       {
@@ -12,7 +12,11 @@
         "actividad_central": "Recorridos rítmicos sobre colchonetas procurando dar 'pasos de pluma silenciosos'. El docente muestra cómo pisar con la parte delantera del pie (metatarso) para rebotar como resortes sin golpear fuerte los talones contra el suelo.",
         "actividad_final": "Estiramiento suave de pantorrillas (parte trasera baja de la pierna) sentados en el suelo. Conversatorio breve sobre cómo se sintió pisar suave como plumas.",
         "consigna": "¡Imagina que el piso es una nube y tus pies son plumas que no deben hacer ningún ruido al tocar el suelo!",
-        "criterio_eval": "Apoya predominantemente con el antepié durante el 80% del recorrido sin golpear el talón."
+        "criterio_eval": "Apoya predominantemente con el antepié durante el 80% del recorrido sin golpear el talón.",
+        "criterios": [
+          3
+        ],
+        "fuente": "Banco de progresión de AULA GLOBAL 360 (web) · criterios de la Batería HMB (González Palacio et al., 2021 · Dialnet 7925607)"
       },
       {
         "orden": 2,
@@ -24,7 +28,11 @@
         "actividad_central": "Carreras suaves en línea recta mirando tarjetas de colores pegadas al frente a la altura de los ojos. Se evita mirar hacia abajo al piso o doblar el cuello hacia el pecho al correr.",
         "actividad_final": "Juego de vuelta a la calma 'La sombra': estirarse hacia arriba con la espalda bien recta como intentando tocar el cielo y respirar despacio inflando la barriga.",
         "consigna": "¡Mirada de águila fija en el horizonte y cuerpo inclinado hacia adelante como una flecha lanzada!",
-        "criterio_eval": "Mantiene la mirada al frente sin desviar la cabeza hacia el suelo durante la carrera."
+        "criterio_eval": "Mantiene la mirada al frente sin desviar la cabeza hacia el suelo durante la carrera.",
+        "criterios": [
+          2
+        ],
+        "fuente": "Banco de progresión de AULA GLOBAL 360 (web) · criterios de la Batería HMB (González Palacio et al., 2021 · Dialnet 7925607)"
       },
       {
         "orden": 3,
@@ -36,7 +44,11 @@
         "actividad_central": "Ejercicios de balanceo de brazos con los codos doblados en ángulo recto (formando una 'L'): primero sentados en el piso, luego de rodillas y finalmente corriendo por pasillos estrechos de conos para mover los brazos en línea recta hacia adelante y atrás sin cruzarlos por el pecho.",
         "actividad_final": "Estirar suavemente los hombros, el pecho y la espalda. Conversar brevemente sobre cómo mover los brazos con fuerza nos ayuda a correr más rápido.",
         "consigna": "¡Codos en forma de L, impulsando directo desde la cadera hasta la barbilla sin cruzar los brazos por el pecho!",
-        "criterio_eval": "Ejecuta el braceo en oposición con codos flexionados sin oscilaciones laterales marcadas."
+        "criterio_eval": "Ejecuta el braceo en oposición con codos flexionados sin oscilaciones laterales marcadas.",
+        "criterios": [
+          1
+        ],
+        "fuente": "Banco de progresión de AULA GLOBAL 360 (web) · criterios de la Batería HMB (González Palacio et al., 2021 · Dialnet 7925607)"
       },
       {
         "orden": 4,
@@ -48,7 +60,11 @@
         "actividad_central": "Pasadas sobre mini-obstáculos suaves (conos pequeños o botellas de plástico) donde los niños deben doblar bien la rodilla hacia atrás y subir el talón para no derribar las marcas. Ajuste personalizado según la estatura del estudiante.",
         "actividad_final": "Estiramiento guiado de cuádriceps (parte delantera del muslo) e isquiotibiales (parte trasera del muslo). Respirar profundo llenando la barriga de aire.",
         "consigna": "¡Tus talones quieren saludar a tus bolsillos traseros en cada zancada para que tus piernas vuelen libres!",
-        "criterio_eval": "Logra una flexión de rodilla visible en la fase de recobro en la mayoría de sus ciclos de carrera."
+        "criterio_eval": "Logra una flexión de rodilla visible en la fase de recobro en la mayoría de sus ciclos de carrera.",
+        "criterios": [
+          4
+        ],
+        "fuente": "Banco de progresión de AULA GLOBAL 360 (web) · criterios de la Batería HMB (González Palacio et al., 2021 · Dialnet 7925607)"
       },
       {
         "orden": 5,
@@ -60,7 +76,12 @@
         "actividad_central": "Recorridos en zigzag esquivando conos. Al llegar a cada cono, los niños deben doblar un poco las rodillas para bajar la cadera y empujar el suelo con fuerza hacia la nueva dirección sin tropezar.",
         "actividad_final": "Caminata lenta sacudiendo suavemente brazos y piernas para soltar los músculos y descansar.",
         "consigna": "¡Baja un poco tu cadera al llegar a cada curva como un carro de carreras para doblar sin derrapar!",
-        "criterio_eval": "Desacelera con control y reorienta la trayectoria sin caídas ni pérdidas de balance."
+        "criterio_eval": "Desacelera con control y reorienta la trayectoria sin caídas ni pérdidas de balance.",
+        "criterios": [
+          3,
+          2
+        ],
+        "fuente": "Banco de progresión de AULA GLOBAL 360 (web) · criterios de la Batería HMB (González Palacio et al., 2021 · Dialnet 7925607)"
       },
       {
         "orden": 6,
@@ -72,7 +93,12 @@
         "actividad_central": "Pasadas por escalas dibujadas en el suelo o aros seguidos: dar 1 y 2 pasos rápidos en cada espacio aumentando poco a poco la velocidad sin desarmar la postura de los brazos ni la espalda.",
         "actividad_final": "Estiramiento en parejas apoyados hombro con hombro. Compartir qué parte del recorrido fue la más divertida.",
         "consigna": "¡Siente la música de tus pasos en el suelo: tac-tac-tac constante, parejito y con ritmo!",
-        "criterio_eval": "Completa la secuencia rítmica de apoyos manteniendo la fluidez y el control postural."
+        "criterio_eval": "Completa la secuencia rítmica de apoyos manteniendo la fluidez y el control postural.",
+        "criterios": [
+          5,
+          3
+        ],
+        "fuente": "Banco de progresión de AULA GLOBAL 360 (web) · criterios de la Batería HMB (González Palacio et al., 2021 · Dialnet 7925607)"
       },
       {
         "orden": 7,
@@ -84,7 +110,12 @@
         "actividad_central": "Juegos de carreras cortas saliendo desde distintas posiciones (sentados, de espaldas o acostados boca abajo). El reto es levantarse con rapidez y dar el primer paso empujando con energía el piso con la punta del pie.",
         "actividad_final": "Caminar despacio respirando profundo y estirar suavemente las piernas.",
         "consigna": "¡Despega en el primer paso con la fuerza de un cohete espacial empujando el suelo con la punta de tus pies!",
-        "criterio_eval": "Reacciona con rapidez y logra una inclinación propulsora en los primeros metros de aceleración."
+        "criterio_eval": "Reacciona con rapidez y logra una inclinación propulsora en los primeros metros de aceleración.",
+        "criterios": [
+          3,
+          5
+        ],
+        "fuente": "Banco de progresión de AULA GLOBAL 360 (web) · criterios de la Batería HMB (González Palacio et al., 2021 · Dialnet 7925607)"
       },
       {
         "orden": 8,
@@ -96,7 +127,12 @@
         "actividad_central": "Relevos cooperativos por equipos llevando una pañoleta o testigo en la mano. La regla es mantener los brazos en movimiento al correr y entregar el objeto con cuidado al compañero sin frenar en seco.",
         "actividad_final": "Conversar en ronda sobre el valor de ayudarse entre compañeros y estirar suavemente brazos y piernas sin rebotar.",
         "consigna": "¡Corre como el viento y entrega la pañoleta a tu compañero con una sonrisa y paso firme!",
-        "criterio_eval": "Mantiene la estabilidad y el patrón de carrera mientras sostiene y transfiere un móvil."
+        "criterio_eval": "Mantiene la estabilidad y el patrón de carrera mientras sostiene y transfiere un móvil.",
+        "criterios": [
+          1,
+          5
+        ],
+        "fuente": "Banco de progresión de AULA GLOBAL 360 (web) · criterios de la Batería HMB (González Palacio et al., 2021 · Dialnet 7925607)"
       },
       {
         "orden": 9,
@@ -108,7 +144,13 @@
         "actividad_central": "Rotar por 4 estaciones divertidas aplicando la metodología de {metodologia}. Se prioriza hacer los movimientos bien hechos, fluidos y coordinados antes que correr sin control.",
         "actividad_final": "Caminar despacio para normalizar los latidos del corazón y estirar las piernas y pantorrillas.",
         "consigna": "¡Lo más importante es hacerlo bien: movimientos limpios, seguros y con buena postura!",
-        "criterio_eval": "Ejecuta las transiciones entre estaciones manteniendo el control de los apoyos y el braceo."
+        "criterio_eval": "Ejecuta las transiciones entre estaciones manteniendo el control de los apoyos y el braceo.",
+        "criterios": [
+          1,
+          4,
+          5
+        ],
+        "fuente": "Banco de progresión de AULA GLOBAL 360 (web) · criterios de la Batería HMB (González Palacio et al., 2021 · Dialnet 7925607)"
       },
       {
         "orden": 10,
@@ -120,7 +162,12 @@
         "actividad_central": "Juego adaptado 'Cazadores y guardianes': los estudiantes usan cambios de ritmo y giros suaves para llegar a las zonas de refugio respetando siempre a los compañeros.",
         "actividad_final": "Círculo de descanso: sentarse a conversar sobre cómo buscaron los espacios libres y estirar los brazos y piernas.",
         "consigna": "¡Mira el espacio libre antes de arrancar y usa tus giros con astucia para esquivar sin tropezar!",
-        "criterio_eval": "Aplica cambios de ritmo y fintas espaciales en situaciones reales de juego."
+        "criterio_eval": "Aplica cambios de ritmo y fintas espaciales en situaciones reales de juego.",
+        "criterios": [
+          2,
+          3
+        ],
+        "fuente": "Banco de progresión de AULA GLOBAL 360 (web) · criterios de la Batería HMB (González Palacio et al., 2021 · Dialnet 7925607)"
       },
       {
         "orden": 11,
@@ -132,7 +179,12 @@
         "actividad_central": "Carrera continua a un ritmo cómodo donde los niños puedan hablar sin ahogarse, intercalando aceleraciones cortas. Cada niño aprende a regular su velocidad sin fatigarse en exceso.",
         "actividad_final": "Acostarse boca arriba en colchonetas, cerrar los ojos y respirar despacio llenando la barriga de aire.",
         "consigna": "¡Escucha el motor de tu corazón: corre a un ritmo donde puedas respirar con tranquilidad y disfrutar!",
-        "criterio_eval": "Autorregula el ritmo de carrera y describe sus sensaciones de fatiga y recuperación."
+        "criterio_eval": "Autorregula el ritmo de carrera y describe sus sensaciones de fatiga y recuperación.",
+        "criterios": [
+          1,
+          2
+        ],
+        "fuente": "Banco de progresión de AULA GLOBAL 360 (web) · criterios de la Batería HMB (González Palacio et al., 2021 · Dialnet 7925607)"
       },
       {
         "orden": 12,
@@ -144,7 +196,15 @@
         "actividad_central": "Recorrido de gala: los niños pasan por un circuito que reúne todo lo aprendido (pisar en punta, brazos doblados a 90 grados, mirada al frente y rodillas arriba). Los compañeros aplauden y felicitan con tarjetas de colores.",
         "actividad_final": "Celebración grupal por los avances logrados en el período y estiramiento colectivo suave.",
         "consigna": "¡Hoy celebramos todo lo que nuestro cuerpo aprendió: corre con orgullo, confianza y alegría!",
-        "criterio_eval": "Exhibe un patrón de carrera fluido en estadio maduro (vuelo claro, braceo sagital y antepié)."
+        "criterio_eval": "Exhibe un patrón de carrera fluido en estadio maduro (vuelo claro, braceo sagital y antepié).",
+        "criterios": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "fuente": "Banco de progresión de AULA GLOBAL 360 (web) · criterios de la Batería HMB (González Palacio et al., 2021 · Dialnet 7925607)"
       }
     ],
     "Salto Horizontal": [
@@ -158,7 +218,11 @@
         "actividad_central": "Práctica de la posición de despegue: pararse con los pies separados al ancho de los hombros, doblar las rodillas sin levantar los talones y llevar los dos brazos hacia atrás con la espalda derechita listos para saltar.",
         "actividad_final": "Estirar los cuádriceps (parte delantera del muslo) y glúteos sentados en el suelo. Conversar sobre cómo las piernas se cargan de fuerza como resortes.",
         "consigna": "¡Carga tus piernas como un resorte de acero bien firme listo para saltar hacia adelante!",
-        "criterio_eval": "Flexiona rodillas a un ángulo cercano a 90° con tronco inclinado sin perder el equilibrio antes del salto."
+        "criterio_eval": "Flexiona rodillas a un ángulo cercano a 90° con tronco inclinado sin perder el equilibrio antes del salto.",
+        "criterios": [
+          1
+        ],
+        "fuente": "Banco de progresión de AULA GLOBAL 360 (web) · criterios de la Batería HMB (González Palacio et al., 2021 · Dialnet 7925607)"
       },
       {
         "orden": 2,
@@ -170,7 +234,12 @@
         "actividad_central": "Saltos cortos hacia adelante cayendo sobre colchonetas. La clave principal es aterrizar con los dos pies a la vez y doblar de inmediato tobillos, rodillas y cadera ('caída de gato ninja') para no golpearse las articulaciones.",
         "actividad_final": "Mover los tobillos en círculos y respirar profundo inflando el abdomen.",
         "consigna": "¡Aterriza suave como un gato ninja: que nadie escuche tus pies al llegar al piso!",
-        "criterio_eval": "Realiza el aterrizaje simultáneo bipodal flexionando rodillas sin rigidez articular."
+        "criterio_eval": "Realiza el aterrizaje simultáneo bipodal flexionando rodillas sin rigidez articular.",
+        "criterios": [
+          4,
+          5
+        ],
+        "fuente": "Banco de progresión de AULA GLOBAL 360 (web) · criterios de la Batería HMB (González Palacio et al., 2021 · Dialnet 7925607)"
       },
       {
         "orden": 3,
@@ -182,7 +251,12 @@
         "actividad_central": "Saltar hacia adelante buscando tocar con las manos una cinta suspendida al frente. Los brazos empiezan atrás y se lanzan con energía hacia arriba y adelante en el momento exacto de despegar.",
         "actividad_final": "Estiramiento suave de hombros, pecho y espalda alta en círculo.",
         "consigna": "¡Lanza tus brazos hacia el cielo como si fueras a tocar las estrellas con la punta de tus dedos!",
-        "criterio_eval": "Proyecta ambos brazos hacia adelante y arriba de forma coordinada durante la fase de despegue y vuelo."
+        "criterio_eval": "Proyecta ambos brazos hacia adelante y arriba de forma coordinada durante la fase de despegue y vuelo.",
+        "criterios": [
+          1,
+          2
+        ],
+        "fuente": "Banco de progresión de AULA GLOBAL 360 (web) · criterios de la Batería HMB (González Palacio et al., 2021 · Dialnet 7925607)"
       },
       {
         "orden": 4,
@@ -194,7 +268,11 @@
         "actividad_central": "Saltar hacia adelante empujando con fuerza el suelo con la punta de los pies, estirando al mismo tiempo tobillos, rodillas y cadera para lograr un despegue potente.",
         "actividad_final": "Estirar suavemente pantorrillas (parte trasera baja de la pierna), muslos y espalda baja.",
         "consigna": "¡Empuja el piso con tanta fuerza como si fueras a dejar tu huella marcada en el suelo!",
-        "criterio_eval": "Demuestra una extensión visible y simultánea de tobillo, rodilla y cadera al abandonar el suelo."
+        "criterio_eval": "Demuestra una extensión visible y simultánea de tobillo, rodilla y cadera al abandonar el suelo.",
+        "criterios": [
+          2
+        ],
+        "fuente": "Banco de progresión de AULA GLOBAL 360 (web) · criterios de la Batería HMB (González Palacio et al., 2021 · Dialnet 7925607)"
       },
       {
         "orden": 5,
@@ -206,7 +284,11 @@
         "actividad_central": "Saltar por encima de obstáculos bajitos (aros o cuerdas en el piso que simulan 'ríos') que obligan a subir en el aire dibujando un arcoíris sin caerse hacia atrás al aterrizar.",
         "actividad_final": "Caminata lenta sacudiendo suavemente piernas y brazos para descansar.",
         "consigna": "¡Dibuja un arcoíris en el aire con tu cuerpo: vuela alto y aterriza lejos con pies juntos!",
-        "criterio_eval": "Alcanza una parábola de vuelo equilibrada sin caer hacia atrás en el aterrizaje."
+        "criterio_eval": "Alcanza una parábola de vuelo equilibrada sin caer hacia atrás en el aterrizaje.",
+        "criterios": [
+          3
+        ],
+        "fuente": "Banco de progresión de AULA GLOBAL 360 (web) · criterios de la Batería HMB (González Palacio et al., 2021 · Dialnet 7925607)"
       },
       {
         "orden": 6,
@@ -218,7 +300,12 @@
         "actividad_central": "Desafíos de saltar hacia arriba para tocar figuras o pelotas colgadas. El énfasis es despegar con los dos pies juntos y caer doblando las rodillas en el mismo sitio.",
         "actividad_final": "Estirarse hacia arriba alargando la espalda y estirar suavemente las piernas.",
         "consigna": "¡Crece en el aire como un gigante y aterriza suave como una pluma en tu castillo!",
-        "criterio_eval": "Realiza el salto vertical con despegue bipodal y caída amortiguada en el mismo cuadrante."
+        "criterio_eval": "Realiza el salto vertical con despegue bipodal y caída amortiguada en el mismo cuadrante.",
+        "criterios": [
+          2,
+          3
+        ],
+        "fuente": "Banco de progresión de AULA GLOBAL 360 (web) · criterios de la Batería HMB (González Palacio et al., 2021 · Dialnet 7925607)"
       },
       {
         "orden": 7,
@@ -230,7 +317,12 @@
         "actividad_central": "Pasar por una fila de aros dando saltos seguidos. La regla es doblar las rodillas al caer y aprovechar ese rebote elástico para salir al siguiente aro sin detenerse.",
         "actividad_final": "Sentarse en círculo, respirar despacio y estirar las piernas hacia adelante.",
         "consigna": "¡Sé como una pelota de goma que rebota sin parar con energía elástica en cada aro!",
-        "criterio_eval": "Ejecuta 4 o más saltos continuos sin perder el equilibrio ni interrumpir la secuencia."
+        "criterio_eval": "Ejecuta 4 o más saltos continuos sin perder el equilibrio ni interrumpir la secuencia.",
+        "criterios": [
+          4,
+          5
+        ],
+        "fuente": "Banco de progresión de AULA GLOBAL 360 (web) · criterios de la Batería HMB (González Palacio et al., 2021 · Dialnet 7925607)"
       },
       {
         "orden": 8,
@@ -242,7 +334,12 @@
         "actividad_central": "Circuito de 3 estaciones: Estación 1: saltar hacia adelante; Estación 2: saltar de lado sobre una línea; Estación 3: saltar en diagonal en una cruz de aros. En cada caída se debe controlar el aterrizaje antes del próximo salto.",
         "actividad_final": "Balancear suavemente los brazos y sacudir las piernas para soltar la tensión muscular.",
         "consigna": "¡Asegura tu aterrizaje en cada salto antes de lanzarte al siguiente reto!",
-        "criterio_eval": "Adapta la orientación corporal y estabiliza el aterrizaje en saltos laterales y diagonales."
+        "criterio_eval": "Adapta la orientación corporal y estabiliza el aterrizaje en saltos laterales y diagonales.",
+        "criterios": [
+          3,
+          4
+        ],
+        "fuente": "Banco de progresión de AULA GLOBAL 360 (web) · criterios de la Batería HMB (González Palacio et al., 2021 · Dialnet 7925607)"
       },
       {
         "orden": 9,
@@ -254,7 +351,12 @@
         "actividad_central": "Reto 'El puente colectivo': cada niño salta desde el lugar exacto donde aterrizó su compañero anterior para lograr cruzar juntos el patio. Se premia el salto bien amortiguado y el apoyo entre todos.",
         "actividad_final": "Comentar cómo se sintieron trabajando en equipo y estirar suavemente en parejas.",
         "consigna": "¡Cada salto suma para el equipo: salta con ganas, aterriza seguro y apoya a tu grupo!",
-        "criterio_eval": "Participa coordinadamente en los relevos aplicando la técnica aprendida sin apuros lesivos."
+        "criterio_eval": "Participa coordinadamente en los relevos aplicando la técnica aprendida sin apuros lesivos.",
+        "criterios": [
+          2,
+          5
+        ],
+        "fuente": "Banco de progresión de AULA GLOBAL 360 (web) · criterios de la Batería HMB (González Palacio et al., 2021 · Dialnet 7925607)"
       },
       {
         "orden": 10,
@@ -266,7 +368,12 @@
         "actividad_central": "Juego 'El rescate de las islas': saltar de colchoneta en colchoneta calculando la distancia exacta para no tocar el piso ('el agua'), quedándose 2 segundos en equilibrio al caer.",
         "actividad_final": "Conversar sobre cómo calcularon la fuerza de cada salto y respirar profundo con ojos cerrados.",
         "consigna": "¡Mide tu fuerza: ni muy corto ni muy largo, cae derechito en el centro de la isla!",
-        "criterio_eval": "Dosifica la potencia del salto y logra aterrizar con precisión y balance en la zona señalada."
+        "criterio_eval": "Dosifica la potencia del salto y logra aterrizar con precisión y balance en la zona señalada.",
+        "criterios": [
+          3,
+          5
+        ],
+        "fuente": "Banco de progresión de AULA GLOBAL 360 (web) · criterios de la Batería HMB (González Palacio et al., 2021 · Dialnet 7925607)"
       },
       {
         "orden": 11,
@@ -278,7 +385,12 @@
         "actividad_central": "Saltar sobre cuerdas que se mueven suavemente por el suelo ('la serpiente') sin pisarlas, calculando el momento exacto para saltar con los dos pies a la vez.",
         "actividad_final": "Estiramientos suaves de piernas y brazos acostados boca arriba en colchonetas.",
         "consigna": "¡Espera el momento exacto, salta con decisión y vuela sobre la serpiente con elegancia!",
-        "criterio_eval": "Sincroniza el despegue con el estímulo móvil y aterriza de forma equilibrada."
+        "criterio_eval": "Sincroniza el despegue con el estímulo móvil y aterriza de forma equilibrada.",
+        "criterios": [
+          1,
+          4
+        ],
+        "fuente": "Banco de progresión de AULA GLOBAL 360 (web) · criterios de la Batería HMB (González Palacio et al., 2021 · Dialnet 7925607)"
       },
       {
         "orden": 12,
@@ -290,7 +402,15 @@
         "actividad_central": "Circuito de exhibición: los niños muestran los 4 momentos del salto (flexionar rodillas con brazos atrás, extenderse con fuerza, volar alto y aterrizar suave doblando rodillas). Coevaluación con aplausos y fichas de felicitación.",
         "actividad_final": "Ceremonia de felicitación por los logros del período y estiramiento grupal alegre.",
         "consigna": "¡Muestra tu maestría motriz con saltos potentes, vuelos hermosos y aterrizajes suaves!",
-        "criterio_eval": "Demuestra los 4 criterios del estadio maduro de salto (sentadilla 90°, brazos coordinados, triple extensión y aterrizaje amortiguado)."
+        "criterio_eval": "Demuestra los 4 criterios del estadio maduro de salto (sentadilla 90°, brazos coordinados, triple extensión y aterrizaje amortiguado).",
+        "criterios": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "fuente": "Banco de progresión de AULA GLOBAL 360 (web) · criterios de la Batería HMB (González Palacio et al., 2021 · Dialnet 7925607)"
       }
     ],
     "Lanzamiento Sobre Hombro": [
@@ -304,7 +424,12 @@
         "actividad_central": "Aprender a pararse de lado (de perfil) a la pared o diana: el hombro que no lanza apunta al blanco, los pies están de lado y la pelota se sostiene con la yema de los dedos sin apretarla en exceso.",
         "actividad_final": "Estirar suavemente los brazos, el pecho y los hombros. Conversar sobre por qué pararse de lado ayuda a apuntar mejor.",
         "consigna": "¡Ponte de lado como un arquero medieval, apuntando al blanco con tu hombro delantero!",
-        "criterio_eval": "Adopta la postura corporal de perfil respecto a la diana antes de iniciar el armado."
+        "criterio_eval": "Adopta la postura corporal de perfil respecto a la diana antes de iniciar el armado.",
+        "criterios": [
+          4,
+          2
+        ],
+        "fuente": "Banco de progresión de AULA GLOBAL 360 (web) · criterios de la Batería HMB (González Palacio et al., 2021 · Dialnet 7925607)"
       },
       {
         "orden": 2,
@@ -316,7 +441,11 @@
         "actividad_central": "Lanzar pelotas de espuma suaves practicando dar un paso firme con el pie contrario al brazo que lanza (si lanzo con la derecha, adelanto el pie izquierdo) y pasar el peso del cuerpo desde el pie de atrás hacia el pie de adelante.",
         "actividad_final": "Estirar suavemente muslos, pantorrillas y espalda baja. Respirar inflando la barriga.",
         "consigna": "¡Paso firme con el pie contrario adelante para que toda la fuerza de tu cuerpo viaje a la pelota!",
-        "criterio_eval": "Adelanta consistentemente el pie contrario al brazo lanzador en la fase preparatoria."
+        "criterio_eval": "Adelanta consistentemente el pie contrario al brazo lanzador en la fase preparatoria.",
+        "criterios": [
+          3
+        ],
+        "fuente": "Banco de progresión de AULA GLOBAL 360 (web) · criterios de la Batería HMB (González Palacio et al., 2021 · Dialnet 7925607)"
       },
       {
         "orden": 3,
@@ -328,7 +457,11 @@
         "actividad_central": "Frente a una pared: colocar el codo arriba a la altura del hombro (cerca de la oreja) y lanzar hacia una marca alta en la pared, estirando la muñeca al final sin dejar caer el codo contra las costillas.",
         "actividad_final": "Estiramiento suave del hombro, el pecho y la parte trasera del brazo (tríceps).",
         "consigna": "¡Codo arriba a la altura de tu oreja, como si fueras a responder una llamada telefónica!",
-        "criterio_eval": "Eleva el codo a la altura del hombro sin dejarlo caer pegado a las costillas al armar."
+        "criterio_eval": "Eleva el codo a la altura del hombro sin dejarlo caer pegado a las costillas al armar.",
+        "criterios": [
+          1
+        ],
+        "fuente": "Banco de progresión de AULA GLOBAL 360 (web) · criterios de la Batería HMB (González Palacio et al., 2021 · Dialnet 7925607)"
       },
       {
         "orden": 4,
@@ -340,7 +473,11 @@
         "actividad_central": "Lanzamientos sintiendo el giro del cuerpo: primero gira la cadera, luego el pecho hacia el frente y finalmente sale el brazo disparado hacia el blanco como una catapulta.",
         "actividad_final": "Estirar la espalda y los costados de la cintura inclinándose suavemente de lado a lado.",
         "consigna": "¡Gira tu cintura como un tornado: la fuerza nace en tus pies y explota en tu mano!",
-        "criterio_eval": "Demuestra una rotación visible de tronco y hombros previa a la suelta del móvil."
+        "criterio_eval": "Demuestra una rotación visible de tronco y hombros previa a la suelta del móvil.",
+        "criterios": [
+          2
+        ],
+        "fuente": "Banco de progresión de AULA GLOBAL 360 (web) · criterios de la Batería HMB (González Palacio et al., 2021 · Dialnet 7925607)"
       },
       {
         "orden": 5,
@@ -352,7 +489,11 @@
         "actividad_central": "Estaciones de tiro al blanco: lanzar hacia aros colgados a distintas alturas, usando la técnica completa (de perfil, paso contrario, codo alto y giro de cintura).",
         "actividad_final": "Caminar despacio sacudiendo los brazos para relajarlos y respirar con calma.",
         "consigna": "¡Apunta al centro del aro y suelta la pelota en el punto más alto cuando tu brazo esté arriba!",
-        "criterio_eval": "Acierta en la zona objetivo manteniendo la estructura técnica del gesto en el 70% de los intentos."
+        "criterio_eval": "Acierta en la zona objetivo manteniendo la estructura técnica del gesto en el 70% de los intentos.",
+        "criterios": [
+          5
+        ],
+        "fuente": "Banco de progresión de AULA GLOBAL 360 (web) · criterios de la Batería HMB (González Palacio et al., 2021 · Dialnet 7925607)"
       },
       {
         "orden": 6,
@@ -364,7 +505,11 @@
         "actividad_central": "Lanzar los diferentes objetos hacia objetivos seguros, experimentando cómo usar más o menos fuerza según si el objeto es pesado o liviano.",
         "actividad_final": "Estirar suavemente los dedos y las muñecas hacia adelante y hacia atrás.",
         "consigna": "¡Siente el peso del objeto en tus manos y calcula la fuerza exacta para que vuele derechito!",
-        "criterio_eval": "Modula la fuerza de empuje adecuándose a las características físicas de cada móvil."
+        "criterio_eval": "Modula la fuerza de empuje adecuándose a las características físicas de cada móvil.",
+        "criterios": [
+          4
+        ],
+        "fuente": "Banco de progresión de AULA GLOBAL 360 (web) · criterios de la Batería HMB (González Palacio et al., 2021 · Dialnet 7925607)"
       },
       {
         "orden": 7,
@@ -376,7 +521,12 @@
         "actividad_central": "Dar dos pasitos de trote, frenar con el pie contrario adelante, girar el cuerpo y lanzar con fuerza hacia una zona abierta, aprovechando la velocidad de la carrera.",
         "actividad_final": "Caminar despacio y estirar los brazos y las piernas sin rebotar.",
         "consigna": "¡Corre con ritmo, frena con tu pie contrario adelante y lanza con poder hacia el horizonte!",
-        "criterio_eval": "Encadena la carrera previa con el bloqueo del pie sin perder el equilibrio tras soltar."
+        "criterio_eval": "Encadena la carrera previa con el bloqueo del pie sin perder el equilibrio tras soltar.",
+        "criterios": [
+          3,
+          2
+        ],
+        "fuente": "Banco de progresión de AULA GLOBAL 360 (web) · criterios de la Batería HMB (González Palacio et al., 2021 · Dialnet 7925607)"
       },
       {
         "orden": 8,
@@ -388,7 +538,12 @@
         "actividad_central": "Juego 'Los constructores y derribadores': carrerita corta y lanzamiento sobre hombro para derribar conos con puntos. Se premia tanto la buena técnica como el acierto.",
         "actividad_final": "Conversar sobre cómo mantener la calma para apuntar bien y respirar profundo.",
         "consigna": "¡Tómate un segundo para respirar, levanta bien tu codo y lanza con tranquilidad y confianza!",
-        "criterio_eval": "Mantiene la técnica madura de lanzamiento en situaciones competitivas lúdicas."
+        "criterio_eval": "Mantiene la técnica madura de lanzamiento en situaciones competitivas lúdicas.",
+        "criterios": [
+          5,
+          1
+        ],
+        "fuente": "Banco de progresión de AULA GLOBAL 360 (web) · criterios de la Batería HMB (González Palacio et al., 2021 · Dialnet 7925607)"
       },
       {
         "orden": 9,
@@ -400,7 +555,12 @@
         "actividad_central": "Juego 'Los 10 pases mágicos': dos equipos intentan completar 10 pases sobre hombro seguidos entre compañeros sin que la pelota toque el suelo.",
         "actividad_final": "Sentarse en círculo a dialogar sobre las jugadas y estirar hombros y brazos.",
         "consigna": "¡Comunícate con tu compañero, mira hacia dónde corre y pásale la pelota directo a sus manos!",
-        "criterio_eval": "Ajusta la trayectoria y fuerza del pase hacia un compañero en desplazamiento."
+        "criterio_eval": "Ajusta la trayectoria y fuerza del pase hacia un compañero en desplazamiento.",
+        "criterios": [
+          5,
+          4
+        ],
+        "fuente": "Banco de progresión de AULA GLOBAL 360 (web) · criterios de la Batería HMB (González Palacio et al., 2021 · Dialnet 7925607)"
       },
       {
         "orden": 10,
@@ -412,7 +572,11 @@
         "actividad_central": "Reto de 2 atacantes contra 1 defensor: el estudiante con la pelota decide si lanzar a la diana vacía o pasársela a su compañero libre por encima del hombro.",
         "actividad_final": "Reflexión sobre cómo mirar la cancha antes de lanzar y estirar piernas y brazos.",
         "consigna": "¡Mira toda la cancha, amaga con la vista y lanza hacia el espacio donde nadie te tape!",
-        "criterio_eval": "Selecciona la trayectoria óptima de lanzamiento evitando el bloqueo del defensor."
+        "criterio_eval": "Selecciona la trayectoria óptima de lanzamiento evitando el bloqueo del defensor.",
+        "criterios": [
+          5
+        ],
+        "fuente": "Banco de progresión de AULA GLOBAL 360 (web) · criterios de la Batería HMB (González Palacio et al., 2021 · Dialnet 7925607)"
       },
       {
         "orden": 11,
@@ -424,7 +588,12 @@
         "actividad_central": "Lanzar lo más lejos posible en campo abierto. El docente supervisa que los niños usen el impulso de las piernas y el giro del cuerpo, y no solo la fuerza bruta del brazo.",
         "actividad_final": "Cerrar los ojos, respirar despacio imaginando una brisa fresca que descansa los músculos, y estirar hombros y espalda.",
         "consigna": "¡Usa la fuerza de todo tu cuerpo, desde la punta de tus pies hasta la punta de tus dedos!",
-        "criterio_eval": "Ejecuta el lanzamiento de máxima distancia con una cadena cinética fluida y sin dolor."
+        "criterio_eval": "Ejecuta el lanzamiento de máxima distancia con una cadena cinética fluida y sin dolor.",
+        "criterios": [
+          1,
+          2
+        ],
+        "fuente": "Banco de progresión de AULA GLOBAL 360 (web) · criterios de la Batería HMB (González Palacio et al., 2021 · Dialnet 7925607)"
       },
       {
         "orden": 12,
@@ -436,7 +605,1271 @@
         "actividad_central": "Recorrido evaluativo: los estudiantes realizan lanzamientos en las diferentes estaciones mientras sus compañeros registran los logros técnicos en fichas lúdicas.",
         "actividad_final": "Premiación pedagógica de los logros de la unidad y estiramiento grupal alegre.",
         "consigna": "¡Lanza con la maestría de un campeón: técnica limpia, potencia controlada y alegría!",
-        "criterio_eval": "Evidencia el estadio maduro de lanzamiento cumpliendo los 4 criterios biomecánicos evaluados."
+        "criterio_eval": "Evidencia el estadio maduro de lanzamiento cumpliendo los 4 criterios biomecánicos evaluados.",
+        "criterios": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "fuente": "Banco de progresión de AULA GLOBAL 360 (web) · criterios de la Batería HMB (González Palacio et al., 2021 · Dialnet 7925607)"
+      }
+    ],
+    "Marcha": [
+      {
+        "orden": 1,
+        "titulo": "Huellas de Tiza: Explorando el Apoyo Talón-Punta",
+        "fase_pedagogica": "Fase 1: Iniciación y Esquema Corporal",
+        "objetivo": "Vivenciar la transferencia del peso del talón a la punta del pie al marchar por trayectorias rectas, curvas y en zigzag.",
+        "distribucion": "Sendero de líneas de tiza: uno recto, uno en curva y uno en zigzag de 9 metros, separados 3 metros.",
+        "actividad_inicial": "Saludo y conversatorio: ¿qué parte del pie toca primero el suelo al caminar? Juego 'Cambio de marcha': caminar libremente; con pito rápido, pasos cortos y veloces (sin correr); con pito lento, pasos largos de gigante; en silencio, quietos en un pie.",
+        "actividad_central": "Actividad 'Las huellas de tiza': cada grupo recorre su sendero (recto, curvo o zigzag) y rota al siguiente. 1.ª vuelta: apoyo talón-punta, sintiendo cómo el peso rueda del talón a los dedos. 2.ª vuelta: solo en puntas de pies. 3.ª vuelta: solo talones, con tronco erguido y braceo continuo. Al final de cada vuelta se compara cómo se siente cada forma de pisar y se vuelve al apoyo talón-punta.",
+        "actividad_final": "Respiración 'oler la flor y soplar la vela' sentados en círculo. Pregunta de cierre: ¿qué parte del pie se apoya primero al marchar?",
+        "consigna": "¡Tu pie es una mecedora: entra por el talón y se despide por la punta!",
+        "criterio_eval": "Apoya primero el talón y transfiere el peso hasta la punta en la mayoría de los pasos del sendero recto.",
+        "criterios": [
+          3,
+          5
+        ],
+        "fuente": "Unidad didáctica «Exploro y aprendo con mis movimientos: el arte de marchar» (carpeta Data), actividad 1 'Las huellas de tiza'"
+      },
+      {
+        "orden": 2,
+        "titulo": "Postura de Rey y Reina: Tronco Erguido con Objeto en la Cabeza",
+        "fase_pedagogica": "Fase 1: Iniciación y Esquema Corporal",
+        "objetivo": "Mantener el tronco erguido y la cabeza alineada al marchar transportando un objeto sobre la cabeza.",
+        "distribucion": "4 carriles de 9 metros con cono de salida y llegada; un platillo o un libro por estudiante para llevar sobre la cabeza.",
+        "actividad_inicial": "Juego 'Estatuas reales': caminar por el espacio y, a la señal, congelarse como rey o reina (cabeza alta, hombros relajados, mirada al frente). El compañero revisa que la espalda esté recta.",
+        "actividad_central": "Por carriles, marchar ida y vuelta llevando un platillo invertido o un libro sobre la cabeza sin tocarlo con las manos. Variantes: a) caminar sobre la línea del carril; b) agacharse y levantarse a la señal sin que se caiga; c) relevos por parejas entregando el objeto en la llegada. Quien deja caer el objeto se detiene, se alinea (orejas sobre los hombros) y continúa.",
+        "actividad_final": "Por parejas, uno camina con un libro abierto sobre la cabeza hasta el cono y vuelve; el otro observa si la cabeza va alta. Estiramiento de cuello y hombros.",
+        "consigna": "¡Eres un rey o una reina: la corona no se cae si la cabeza mira al horizonte!",
+        "criterio_eval": "Mantiene el tronco erguido y la cabeza alineada, sin mirar al suelo, durante los 9 metros con el objeto sobre la cabeza.",
+        "criterios": [
+          2
+        ],
+        "fuente": "Pérez Feito, J. M. Sesiones de Educación Física 6 a 7 años («Equilibrio estático y equilibrio en altura»: caminar con un libro sobre la cabeza) · Unidad didáctica «Exploro y aprendo con mis movimientos: el arte de marchar» (carpeta Data) (reto del platillo)"
+      },
+      {
+        "orden": 3,
+        "titulo": "El Péndulo de los Brazos: Braceo Sagital en Oposición",
+        "fase_pedagogica": "Fase 1: Iniciación y Esquema Corporal",
+        "objetivo": "Coordinar el balanceo libre de los brazos en el plano sagital y en oposición a las piernas.",
+        "distribucion": "Parejas enfrentadas a 6 y 9 metros: uno marcha hacia su pareja y el otro observa el braceo.",
+        "actividad_inicial": "Juego 'Los molinos': de pie, brazos como péndulos de reloj adelante-atrás sin cruzar el cuerpo; acelerar y frenar al ritmo del tambor. Luego marchar en el sitio sincronizando brazo derecho con pierna izquierda.",
+        "actividad_central": "Por parejas enfrentadas, uno marcha hacia su compañero desde la línea de 6 m y luego desde la de 9 m; el observador dice 'péndulo' si los brazos van adelante-atrás en oposición a las piernas o 'robot' si van rígidos o del mismo lado. Variantes: a) marchar con una pelotica en cada mano para sentir el péndulo; b) al ritmo del tambor lento y rápido; c) marchar hacia atrás manteniendo la oposición.",
+        "actividad_final": "Marcha lenta en círculo con brazos relajados. Pregunta: ¿para qué nos sirven los brazos al caminar?",
+        "consigna": "¡Brazo contrario a la pierna: si avanza el pie derecho, se adelanta la mano izquierda!",
+        "criterio_eval": "Balancea los brazos libremente en el plano sagital y en oposición a las piernas en el recorrido de ida y vuelta.",
+        "criterios": [
+          1
+        ],
+        "fuente": "Unidad didáctica «Exploro y aprendo con mis movimientos: el arte de marchar» (carpeta Data) (braceo sagital en oposición) · Castañer, M. y Camerino, O. Manifestaciones básicas de la motricidad (coordinación dinámica general)"
+      },
+      {
+        "orden": 4,
+        "titulo": "Rodillo del Pie: Talón, Planta y Punta",
+        "fase_pedagogica": "Fase 2: Coordinación y Ajuste Técnico",
+        "objetivo": "Afinar el rodillo del pie (talón, planta, punta) conservando la fase de doble apoyo en cada paso.",
+        "distribucion": "Huellas de pasos pintadas cada 50 cm en recorridos paralelos.",
+        "actividad_inicial": "Movilidad de tobillos (círculos y punta-talón sentados). Juego 'El tren de los pies': caminar en fila al pulso del tambor diciendo en voz alta 'talón-planta-punta'.",
+        "actividad_central": "Recorrer las huellas pisando exactamente cada una: talón en el borde trasero, rodar por la planta y despegar con la punta. Variantes: a) pausa de 2 segundos en el doble apoyo (ambos pies en el suelo); b) ritmo lento, normal y rápido sin correr; c) con los ojos en el cono final y no en las huellas. El compañero verifica que siempre haya un instante con los dos pies en el suelo.",
+        "actividad_final": "Masaje de la planta del pie rodando una pelota pequeña. Conversatorio: ¿en qué se diferencia caminar de correr? (al marchar siempre hay un pie en el suelo).",
+        "consigna": "¡Talón, planta, punta… y el otro pie ya está tocando el piso!",
+        "criterio_eval": "Pisa cada huella con el talón, despega con la punta y conserva un instante de doble apoyo en cada paso.",
+        "criterios": [
+          3,
+          4
+        ],
+        "fuente": "Batería HMB (González Palacio et al., 2021 · Dialnet 7925607), prueba 1 Marcha (apoyo talón-punta y doble apoyo) · Unidad didáctica «Exploro y aprendo con mis movimientos: el arte de marchar» (carpeta Data)"
+      },
+      {
+        "orden": 5,
+        "titulo": "Escaleras de Ritmo: Paso, Pulso y Doble Apoyo",
+        "fase_pedagogica": "Fase 2: Coordinación y Ajuste Técnico",
+        "objetivo": "Ajustar la marcha a un pulso externo conservando el doble apoyo y el braceo alterno.",
+        "distribucion": "Escaleras de ritmo de 10 peldaños cada 50 cm dibujadas con tiza en el suelo.",
+        "actividad_inicial": "Juego 'Sigue el tambor': marchar por todo el espacio adaptando el paso al pulso (lento, normal, rápido); al doble golpe, cambiar de dirección.",
+        "actividad_central": "Marchar por la escalera pisando un peldaño en cada golpe del tambor; luego dos golpes por peldaño (paso y pausa en doble apoyo). Variantes: a) aplaudir al apoyar el talón; b) marchar de lado y hacia atrás; c) por parejas de la mano, sincronizando los pasos.",
+        "actividad_final": "'El tren rítmico' lento en hileras de 4 tomados de los hombros. Respiración y estiramiento de gemelos.",
+        "consigna": "¡Cada golpe del tambor es un paso: escucha, pisa y balancea!",
+        "criterio_eval": "Ajusta la marcha al pulso sonoro sin perder el doble apoyo ni el braceo alterno.",
+        "criterios": [
+          4,
+          1
+        ],
+        "fuente": "Pérez Feito, J. M. Sesiones de Educación Física 6 a 7 años («Estructuración temporal y ritmos») · Unidad didáctica «Exploro y aprendo con mis movimientos: el arte de marchar» (carpeta Data) (juego 'Cambio de marcha')"
+      },
+      {
+        "orden": 6,
+        "titulo": "La Línea de 9 Metros: Marcha en Dirección al Cono",
+        "fase_pedagogica": "Fase 2: Coordinación y Ajuste Técnico",
+        "objetivo": "Marchar en línea recta hacia un objetivo, tal como lo pide la prueba 1 de la batería.",
+        "distribucion": "Cuatro líneas de 9 metros con un cono al final y una tarjeta de color a la altura de los ojos para fijar la mirada.",
+        "actividad_inicial": "Juego 'El faro': caminar hacia el compañero que levanta la mano (el faro) sin quitarle la vista; cambiar de faro a la señal.",
+        "actividad_central": "Protocolo de la batería: marchar 9 m sobre la línea hasta tocar el cono y volver al inicio (18 m). Variantes: a) mirando la tarjeta del fondo y no los pies; b) con un saquito en la cabeza; c) ida y vuelta sin salirse de la línea. Las parejas se observan con una lista de 3 puntos: pies en la línea, tronco recto y brazos alternos.",
+        "actividad_final": "Coevaluación: cada pareja comparte qué punto logró y cuál le falta. Estiramiento suave.",
+        "consigna": "¡Tus ojos son el GPS: miran el cono y los pies siguen el camino!",
+        "criterio_eval": "Recorre los 9 m de ida y vuelta con los pies sobre la línea y el tronco erguido.",
+        "criterios": [
+          5,
+          2
+        ],
+        "fuente": "Batería HMB (González Palacio et al., 2021 · Dialnet 7925607), prueba 1: caminar 9 m, tocar el cono y regresar"
+      },
+      {
+        "orden": 7,
+        "titulo": "Pasos Sobre las Cuerdas: Altura del Pie y Ritmo",
+        "fase_pedagogica": "Fase 3: Complejidad y Retos Dinámicos",
+        "objetivo": "Regular la longitud y la altura del paso sin perder el apoyo talón-punta al aumentar la velocidad.",
+        "distribucion": "6 cuerdas paralelas separadas 60 cm a ras de suelo para pasar caminando sin pisarlas.",
+        "actividad_inicial": "Movilidad de cadera y rodilla: 'la marcha del soldado' elevando suave las rodillas, alternando con 'pasos de pluma' silenciosos.",
+        "actividad_central": "Una fila por montaje pasa caminando sobre las cuerdas sin tocarlas. Variantes: a) paso normal; b) con circunducciones de brazos hacia adelante y hacia atrás; c) aumentando poco a poco la velocidad sin correr; d) en zigzag a derecha e izquierda. El docente varía la separación (60 a 80 cm) para alargar el paso.",
+        "actividad_final": "Caminata lenta descalzos (si el piso lo permite) sintiendo talón y punta. Estiramiento de cuádriceps con apoyo del compañero.",
+        "consigna": "¡Pies de gato: levantas lo justo, pasas la cuerda y apoyas el talón sin ruido!",
+        "criterio_eval": "Pasa las 6 cuerdas sin pisarlas, conservando el apoyo talón-punta y el doble apoyo al aumentar la velocidad.",
+        "criterios": [
+          4,
+          3
+        ],
+        "fuente": "Pérez Feito, J. M. Sesiones de Educación Física 6 a 7 años («Equilibrio dinámico»: pasar caminando sobre cuerdas paralelas)"
+      },
+      {
+        "orden": 8,
+        "titulo": "Laberinto Postal: Marcha en Zigzag por Parejas",
+        "fase_pedagogica": "Fase 3: Complejidad y Retos Dinámicos",
+        "objetivo": "Mantener la dirección y el braceo en oposición al esquivar obstáculos marchando en parejas.",
+        "distribucion": "Laberinto de 10x14 metros con 16 platillos y 8 conos repartidos al azar.",
+        "actividad_inicial": "Juego 'El cartero': caminar por el espacio entregando una 'carta' (tarjeta) a quien diga el docente, sin chocar y con postura erguida.",
+        "actividad_central": "En parejas, marchar por el laberinto esquivando platillos y conos sin tocarlos. Variantes: a) uno guía y el otro imita sus pasos; b) transportando un platillo invertido sobre la cabeza (separar el trabajo del tronco y de las piernas); c) a ritmo rápido sin correr. Gana la pareja que cruza sin tocar ningún objeto y con los brazos en oposición.",
+        "actividad_final": "'El tren rítmico': filas de 4 tomados de los hombros; al silbato, el último pasa adelante y cambia el sentido (atrás, laterales). Respiración profunda.",
+        "consigna": "¡Cartero veloz pero elegante: zigzag sin tocar, cabeza alta y brazos que acompañan!",
+        "criterio_eval": "Mantiene la dirección elegida y el braceo en oposición al esquivar obstáculos sin tocarlos.",
+        "criterios": [
+          5,
+          1
+        ],
+        "fuente": "Unidad didáctica «Exploro y aprendo con mis movimientos: el arte de marchar» (carpeta Data), actividad 2 'Laberinto postal' y juego de cierre 'El tren rítmico'"
+      },
+      {
+        "orden": 9,
+        "titulo": "Marcha Rápida en Zigzag: Cambios de Dirección sin Correr",
+        "fase_pedagogica": "Fase 3: Complejidad y Retos Dinámicos",
+        "objetivo": "Marchar rápido cambiando de dirección sin fase de vuelo, con braceo enérgico en oposición.",
+        "distribucion": "Recorrido en zigzag de 6 conos cada 2 metros para marcha rápida.",
+        "actividad_inicial": "Juego 'Marcha olímpica': imitar a los marchistas (un pie siempre en el suelo, brazos a 90°). Dos minutos de marcha suave y dos de marcha rápida.",
+        "actividad_central": "Relevos de marcha rápida rodeando los conos en zigzag; quien corre (los dos pies en el aire) vuelve al cono anterior. Variantes: a) braceo exagerado en oposición; b) cambio de ritmo cada 2 conos; c) llevando un testigo en la mano. El observador cuenta los pasos con doble apoyo visible.",
+        "actividad_final": "Caminata de recuperación con respiración nasal y estiramiento de gemelos contra la pared.",
+        "consigna": "¡Rápido como marchista: brazos que empujan y siempre un pie pegado al piso!",
+        "criterio_eval": "Realiza la marcha rápida en zigzag sin fase de vuelo, conservando el doble apoyo y el braceo alterno.",
+        "criterios": [
+          1,
+          4
+        ],
+        "fuente": "Unidad didáctica «Exploro y aprendo con mis movimientos: el arte de marchar» (carpeta Data) (marcha rápida en las actividades complementarias) · Batería HMB (González Palacio et al., 2021 · Dialnet 7925607), prueba 1"
+      },
+      {
+        "orden": 10,
+        "titulo": "Persecución en Marcha: Ritmo, Atención y Respeto",
+        "fase_pedagogica": "Fase 4: Consolidación y Aplicación en Juego",
+        "objetivo": "Aplicar el patrón de marcha en un juego de persecución controlada respetando el espacio de los compañeros.",
+        "distribucion": "Espacio de 20x15 metros con zonas de refugio para un juego de persecución caminando.",
+        "actividad_inicial": "Juego 'Semáforo de marcha': verde, marcha rápida; amarillo, marcha lenta; rojo, quietos en un pie.",
+        "actividad_central": "Persecución controlada: 3 cazadores con peto persiguen caminando; nadie puede correr (quien corre pasa a cazador). Los refugios salvan durante 5 segundos en postura de marcha congelada. Variantes: a) solo se marcha hacia atrás o de lado; b) cazadores en parejas de la mano; c) se libera a un compañero tocándole el hombro.",
+        "actividad_final": "Conversatorio sobre el respeto por el espacio de los compañeros. Estiramientos por parejas.",
+        "consigna": "¡Aquí gana quien marcha mejor, no quien corre más: un pie siempre en el suelo!",
+        "criterio_eval": "Marcha sin correr con braceo alterno durante el juego y respeta las reglas y el espacio de los demás.",
+        "criterios": [
+          1,
+          4
+        ],
+        "fuente": "Unidad didáctica «Exploro y aprendo con mis movimientos: el arte de marchar» (carpeta Data) (juego de persecución controlada) · Pérez Feito, J. M. Sesiones de Educación Física 6 a 7 años («Juegos de persecución»)"
+      },
+      {
+        "orden": 11,
+        "titulo": "Marcha Orientada por Cuadrantes de Colores",
+        "fase_pedagogica": "Fase 4: Consolidación y Aplicación en Juego",
+        "objetivo": "Desplazarse en línea recta hacia un destino elegido manteniendo la postura erguida.",
+        "distribucion": "Cancha de 15x10 metros dividida en cuadrantes de colores para marchar hacia el color que diga el docente.",
+        "actividad_inicial": "Juego 'Los colores': marchar libremente y, al oír un color, ir caminando al cuadrante de ese color por el camino más directo.",
+        "actividad_central": "Reto de orientación: el docente dice una secuencia (rojo-azul-verde) y cada grupo la recorre marchando en línea recta entre cuadrantes. Variantes: a) marcha hacia atrás o lateral entre dos colores; b) transportando un platillo en la palma; c) en tríos de la mano sin perder el paso. Se valora llegar en línea recta, no llegar primero.",
+        "actividad_final": "Cada grupo inventa una 'marcha de desfile' de 8 pasos y la muestra. Vuelta a la calma con respiración.",
+        "consigna": "¡Elige tu destino, míralo y ve derecho hacia él con paso firme!",
+        "criterio_eval": "Se desplaza en línea recta hacia el cuadrante indicado con el tronco erguido y sin desviarse.",
+        "criterios": [
+          5,
+          2
+        ],
+        "fuente": "Pérez Feito, J. M. Sesiones de Educación Física 6 a 7 años («Orientación espacial y nociones topológicas»)"
+      },
+      {
+        "orden": 12,
+        "titulo": "Festival de la Marcha y Coevaluación",
+        "fase_pedagogica": "Fase 4: Consolidación y Aplicación en Juego",
+        "objetivo": "Integrar los cinco criterios de la marcha madura y valorar el propio progreso y el de los compañeros.",
+        "distribucion": "Circuito de 4 estaciones: Estación 1: Huellas talón-punta; Estación 2: Línea de equilibrio con objeto en la cabeza; Estación 3: Zigzag entre conos; Estación 4: Aros de ritmo.",
+        "actividad_inicial": "Calentamiento dirigido por los estudiantes: cada grupo propone un juego de marcha de las sesiones anteriores.",
+        "actividad_central": "Rotación por las 4 estaciones (cambio al silbato). En cada una, un integrante ejecuta y los demás observan con la lista de la batería: braceo en oposición, tronco erguido, talón-punta, doble apoyo y dirección. Cierre: prueba de 9 m ida y vuelta con autoevaluación.",
+        "actividad_final": "Coevaluación en círculo: cada estudiante dice un logro propio y uno de un compañero. Respiración final.",
+        "consigna": "¡Hoy muestras todo lo que aprendiste: postura de rey, brazos péndulo y pies mecedora!",
+        "criterio_eval": "Integra los 5 criterios de la marcha madura en el recorrido de 9 m y participa en la coevaluación con respeto.",
+        "criterios": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "fuente": "Batería HMB (González Palacio et al., 2021 · Dialnet 7925607), prueba 1 · MEN, Documento 15: evaluación formativa y coevaluación"
+      }
+    ],
+    "Salto Unipodal": [
+      {
+        "orden": 1,
+        "titulo": "Mi Pie Más Fuerte: Equilibrio y Saltitos en el Aro",
+        "fase_pedagogica": "Fase 1: Iniciación y Esquema Corporal",
+        "objetivo": "Descubrir el pie de apoyo dominante y amortiguar saltitos en el sitio sobre un pie.",
+        "distribucion": "Aros dispersos por todo el espacio de 12x14 metros, uno por estudiante.",
+        "actividad_inicial": "Juego 'La pilla a la pata coja' suave: quien es tocado se queda en un pie como estatua hasta que lo liberen.",
+        "actividad_central": "Dentro de su aro, cada uno descubre su pie más fuerte: sostenerse 5 segundos en el derecho y en el izquierdo. Luego saltitos en el sitio sobre un pie: 3 seguidos, salir del aro y volver a entrar. Variantes: a) brazos adelante como alas de avión; b) alternando pie derecho e izquierdo; c) de aro en aro sin apoyar el otro pie (máximo 3 saltos).",
+        "actividad_final": "Estiramiento de tobillos y gemelos. Pregunta: ¿con cuál pie te sientes más seguro?",
+        "consigna": "¡Rodilla blandita al caer y brazos adelante para no perder el equilibrio!",
+        "criterio_eval": "Hace saltitos en el sitio sobre un pie cayendo con la rodilla flexionada y los brazos al frente, sin apoyar el otro pie.",
+        "criterios": [
+          4,
+          1
+        ],
+        "fuente": "Pérez Feito, J. M. Sesiones de Educación Física 6 a 7 años («Equilibrio y ajustes corporales»: avanzar a la pata coja con cada pierna)"
+      },
+      {
+        "orden": 2,
+        "titulo": "Pata Coja Sobre las Líneas",
+        "fase_pedagogica": "Fase 1: Iniciación y Esquema Corporal",
+        "objetivo": "Desplazarse a la pata coja siguiendo trayectorias con el tronco levemente adelantado.",
+        "distribucion": "Sendero de líneas de tiza: uno recto, uno en curva y uno en zigzag de 6 metros, separados 3 metros.",
+        "actividad_inicial": "Caminar por las líneas de puntillas, de talones y con brazos en cruz; a la señal, quedarse en un pie 3 segundos.",
+        "actividad_central": "Desplazarse a la pata coja por las líneas: a) con el pie que quieran; b) con el otro; c) pisando encima de la línea; d) a un lado y al otro de la línea; e) siempre con el derecho y luego siempre con el izquierdo. Cada 3 saltos, pausa en un pie para revisar la postura: tronco levemente adelante y mirada al final del sendero.",
+        "actividad_final": "Por parejas: uno mantiene una postura en equilibrio 5 segundos y el compañero la repite. Estiramiento.",
+        "consigna": "¡Cuerpo un poquito hacia adelante, como si fueras a ganar la carrera, y mirada al final del camino!",
+        "criterio_eval": "Avanza a la pata coja sobre la línea recta con el tronco levemente inclinado y cae con control.",
+        "criterios": [
+          2,
+          4
+        ],
+        "fuente": "Pérez Feito, J. M. Sesiones de Educación Física 6 a 7 años («Equilibrio estático y equilibrio en altura»: desplazarse saltando a la pata coja sobre líneas)"
+      },
+      {
+        "orden": 3,
+        "titulo": "Huellas de un Solo Pie: Tres Saltos y Pausa",
+        "fase_pedagogica": "Fase 1: Iniciación y Esquema Corporal",
+        "objetivo": "Encadenar tres saltos sobre el mismo pie impulsados por el péndulo de la pierna libre.",
+        "distribucion": "Huellas de un solo pie pintadas cada 60 cm en grupos de tres, en recorridos paralelos.",
+        "actividad_inicial": "Juego 'El canguro cojo': saltar en un pie al ritmo de palmas (1-2-3 y pausa).",
+        "actividad_central": "Recorrer las huellas en grupos de 3 saltos seguidos sobre el mismo pie, con pausa en equilibrio entre grupos. Variantes: a) con el pie no dominante; b) aumentando el ritmo de las palmas; c) contando en voz alta. El compañero vigila que la pierna libre se balancee adelante-atrás como un péndulo y no toque el suelo.",
+        "actividad_final": "Masaje de pantorrillas. Conversatorio: ¿qué hace tu pierna libre mientras saltas?",
+        "consigna": "¡Uno, dos, tres… y quieto como flamenco! La pierna libre es un columpio que te empuja.",
+        "criterio_eval": "Completa 3 saltos seguidos sobre el mismo pie con balanceo de la pierna libre y pausa sin apoyar el otro pie.",
+        "criterios": [
+          5,
+          3
+        ],
+        "fuente": "Batería HMB (González Palacio et al., 2021 · Dialnet 7925607), prueba 4: tres saltos consecutivos en un pie"
+      },
+      {
+        "orden": 4,
+        "titulo": "Hileras de Aros: Ritmo Unipodal",
+        "fase_pedagogica": "Fase 2: Coordinación y Ajuste Técnico",
+        "objetivo": "Mantener el ritmo y el control en series de tres saltos unipodales.",
+        "distribucion": "Hileras de 3 aros consecutivos con mini-vallas bajas a 80 cm al final.",
+        "actividad_inicial": "Movilidad de tobillos y rodillas; saltitos con los dos pies, suaves, dentro y fuera de un aro.",
+        "actividad_central": "Saltar a la pata coja los 3 aros seguidos (un apoyo por aro) y, tras el último, sostener el equilibrio 2 segundos; luego pasar las mini-vallas caminando. Variantes: a) 3 aros con el pie izquierdo y regreso con el derecho; b) aros más separados; c) solo pisar los aros rojos. Se registra cuántas series de 3 logra sin apoyar el otro pie.",
+        "actividad_final": "Relevos suaves caminando de puntillas. Estiramiento de cuádriceps.",
+        "consigna": "¡Un aro, un salto, un pie: cae suave y despega otra vez!",
+        "criterio_eval": "Encadena los 3 saltos en los aros con el mismo pie y mantiene el control al caer en cada uno.",
+        "criterios": [
+          5,
+          4
+        ],
+        "fuente": "Pérez Feito, J. M. Sesiones de Educación Física 8 a 9 años («Saltos») · Batería HMB (González Palacio et al., 2021 · Dialnet 7925607), prueba 4"
+      },
+      {
+        "orden": 5,
+        "titulo": "¿Hasta Dónde Llego en un Pie? Distancias Progresivas",
+        "fase_pedagogica": "Fase 2: Coordinación y Ajuste Técnico",
+        "objetivo": "Usar el balanceo de la pierna libre y de los brazos para ganar distancia en el salto unipodal.",
+        "distribucion": "Estaciones con marcas de despegue y dianas de distancia a 0.4, 0.8 y 1.2 metros para saltar en un pie.",
+        "actividad_inicial": "Juego 'Ranas y flamencos': las ranas saltan con dos pies y los flamencos en uno; a la señal se intercambian.",
+        "actividad_central": "Desde la marca, saltar en un pie y caer en el mismo pie sobre la diana más lejana posible, sosteniendo 2 segundos. Variantes: a) solo con impulso de la pierna libre; b) con brazos que ayudan hacia adelante; c) comparar la distancia con y sin brazos. Se pasa a la diana siguiente tras 3 caídas controladas.",
+        "actividad_final": "Registro en la tarjeta personal de la mejor diana con cada pie. Estiramiento.",
+        "consigna": "¡Columpia la pierna libre y lánzala hacia adelante como si pateara el aire!",
+        "criterio_eval": "Usa el balanceo de la pierna libre y los brazos para avanzar y cae sobre el mismo pie sin pasos de ajuste.",
+        "criterios": [
+          3,
+          1
+        ],
+        "fuente": "Castañer, M. y Camerino, O. Manifestaciones básicas de la motricidad (saltos: impulso, vuelo y caída)"
+      },
+      {
+        "orden": 6,
+        "titulo": "Rayuela o Cascayo Motriz",
+        "fase_pedagogica": "Fase 2: Coordinación y Ajuste Técnico",
+        "objetivo": "Controlar el aterrizaje unipodal en un juego tradicional con cambios de distancia y dirección.",
+        "distribucion": "Rayuela o cascayo de 9 islas con colchonetas y aros numerados.",
+        "actividad_inicial": "Recordar el juego tradicional de la rayuela: cada uno dibuja en el aire, con el dedo, su recorrido.",
+        "actividad_central": "Rayuela adaptada: lanzar el tejo (saquito) a la isla del número que toque y recorrer a la pata coja sin pisar esa isla, recogiendo el tejo en equilibrio al regresar. Variantes: a) solo con el pie no dominante; b) en las islas de colchoneta, 2 segundos de equilibrio; c) por parejas, uno dicta el número y el otro salta.",
+        "actividad_final": "Cada grupo dibuja con tiza su propia rayuela para el recreo. Estiramiento.",
+        "consigna": "¡Cada isla es un descanso: cae, quédate quieto y vuelve a despegar!",
+        "criterio_eval": "Recorre la rayuela a la pata coja manteniendo el control en cada isla sin apoyar el otro pie.",
+        "criterios": [
+          4,
+          5
+        ],
+        "fuente": "Pérez Feito, J. M. Sesiones de Educación Física 6 a 7 años y Pérez Feito, J. M. Sesiones de Educación Física 8 a 9 años (juegos populares: «Rayuela o cascayo»)"
+      },
+      {
+        "orden": 7,
+        "titulo": "Escaleras de Coordinación a la Pata Coja",
+        "fase_pedagogica": "Fase 3: Complejidad y Retos Dinámicos",
+        "objetivo": "Encadenar saltos unipodales de amplitud creciente con acción coordinada de los brazos.",
+        "distribucion": "Escaleras de 6 peldaños cada 60 cm dibujadas con tiza, con aros progresivos al final.",
+        "actividad_inicial": "Juego 'El espejo': por parejas, uno inventa saltos en un pie y el otro los copia.",
+        "actividad_central": "Saltar a la pata coja un peldaño por salto y, al final, los aros progresivos con el mismo pie. Variantes: a) dos saltos en cada peldaño; b) zigzag entre peldaños; c) cambiar de pie a mitad de la escalera sin apoyar las manos. El objetivo es encadenar sin detenerse y con los brazos activos.",
+        "actividad_final": "Juego tranquilo 'Flamenco dormido': equilibrio en un pie con los ojos cerrados 3 segundos.",
+        "consigna": "¡Brazos que empujan hacia adelante y arriba en cada salto, como si subieras una escalera!",
+        "criterio_eval": "Encadena los saltos de la escalera sobre el mismo pie con acción de brazos y sin pausas de apoyo.",
+        "criterios": [
+          5,
+          1
+        ],
+        "fuente": "Piñón y Pérez. Sesiones de Educación Física 10 a 11 años («Saltos») · Pérez Feito, J. M. Sesiones de Educación Física 8 a 9 años («Coordinación dinámica general»)"
+      },
+      {
+        "orden": 8,
+        "titulo": "Cruzando Ríos con un Solo Pie",
+        "fase_pedagogica": "Fase 3: Complejidad y Retos Dinámicos",
+        "objetivo": "Ajustar la fuerza del impulso unipodal a distancias crecientes y caer con control.",
+        "distribucion": "Pasillos con ríos de cuerdas cada vez más anchos y aros como piedras para cruzar en un pie.",
+        "actividad_inicial": "Cuento motor 'La isla del tesoro': marchar y saltar charcos con dos pies y con uno.",
+        "actividad_central": "En cada pasillo, cruzar los 3 ríos (60, 80 y 100 cm) saltando en un pie y pisando la 'piedra' (aro) con el mismo pie. Variantes: a) con el pie no dominante; b) llevando un saquito en la mano; c) ida con un pie y regreso con el otro. Si se 'moja' (apoya el otro pie), vuelve a la piedra anterior.",
+        "actividad_final": "Estiramiento de cadera y gemelos. Conversatorio: ¿qué río fue el más difícil y por qué?",
+        "consigna": "¡La pierna libre te lanza al otro lado: atrás, adelante y arriba!",
+        "criterio_eval": "Cruza los ríos con el mismo pie usando el péndulo de la pierna libre y aterriza sin perder el equilibrio.",
+        "criterios": [
+          3,
+          4
+        ],
+        "fuente": "Castañer, M. y Camerino, O. Manifestaciones básicas de la motricidad (saltos variados en situaciones de juego)"
+      },
+      {
+        "orden": 9,
+        "titulo": "La Serpiente: Saltos Reactivos en un Pie",
+        "fase_pedagogica": "Fase 3: Complejidad y Retos Dinámicos",
+        "objetivo": "Reaccionar a un estímulo en movimiento con saltos unipodales y recuperar el equilibrio al caer.",
+        "distribucion": "Cuerdas oscilantes a ras de suelo ('la serpiente') con pasillos de aros para saltar en un pie.",
+        "actividad_inicial": "Juego 'El cortacésped': dos alumnos arrastran una cuerda por el suelo caminando y los demás la evitan saltando en un pie.",
+        "actividad_central": "Saltar la serpiente (cuerda que se mueve a ras de suelo) a la pata coja sin tocarla y recorrer el pasillo de aros con el mismo pie. Variantes: a) cuerda más rápida; b) saltos laterales; c) contar cuántos saltos seguidos se logran sin apoyar el otro pie.",
+        "actividad_final": "Saltar a la comba suave, en el sitio, a la pata coja 5 veces con cada pie. Estiramiento.",
+        "consigna": "¡Ojos en la serpiente, pie listo y rodilla que amortigua!",
+        "criterio_eval": "Salta la cuerda en movimiento sobre un pie y recupera el equilibrio en cada aterrizaje.",
+        "criterios": [
+          4
+        ],
+        "fuente": "Pérez Feito, J. M. Sesiones de Educación Física 8 a 9 años (juego 'El cortacésped' y salto a la comba a la pata coja)"
+      },
+      {
+        "orden": 10,
+        "titulo": "Pilla a la Pata Coja",
+        "fase_pedagogica": "Fase 4: Consolidación y Aplicación en Juego",
+        "objetivo": "Aplicar el salto unipodal en un juego de persecución usando los brazos para equilibrarse.",
+        "distribucion": "Espacio de 18x14 metros con zonas de refugio donde se descansa en equilibrio sobre un pie.",
+        "actividad_inicial": "Movilidad articular y 'la pilla en alto': para salvarse hay que quedarse en un pie.",
+        "actividad_central": "'Pilla a la pata coja': un grupo de 3-4 cazadores con una pelota blanda toca a los demás; todos se desplazan a la pata coja y solo pueden cambiar de pie dentro de un refugio. Variantes: a) cazadores en pareja de la mano; b) los tocados se sientan y vuelven al ser tocados por un compañero; c) solo vale el pie no dominante.",
+        "actividad_final": "Por parejas, espalda con espalda a la pata coja: agacharse y levantarse a la vez sin caerse.",
+        "consigna": "¡Brazos que equilibran, tronco adelante y a escapar en un pie!",
+        "criterio_eval": "Se desplaza a la pata coja en el juego usando los brazos para equilibrarse y el tronco levemente adelantado.",
+        "criterios": [
+          1,
+          2
+        ],
+        "fuente": "Pérez Feito, J. M. Sesiones de Educación Física 6 a 7 años («Equilibrio estático y dinámico»: juego 'Pilla a la pata coja')"
+      },
+      {
+        "orden": 11,
+        "titulo": "Aterrizajes de Algodón en Colchoneta",
+        "fase_pedagogica": "Fase 4: Consolidación y Aplicación en Juego",
+        "objetivo": "Amortiguar el último aterrizaje de la serie flexionando tobillo, rodilla y cadera.",
+        "distribucion": "4 colchonetas de caída separadas 2,5 m con una línea de salto a 50 cm.",
+        "actividad_inicial": "Juego 'Gato y ratón' en un pie, suave. Movilidad de tobillos.",
+        "actividad_central": "Desde la línea, 3 saltos en un pie hasta la colchoneta y caída final sobre el mismo pie, sosteniendo 3 segundos con la rodilla flexionada. Variantes: a) caer y congelarse en 'avión'; b) con el pie no dominante; c) el compañero escucha: la caída debe ser silenciosa.",
+        "actividad_final": "Relajación tumbados en la colchoneta. Pregunta: ¿qué articulaciones se doblaron para caer suave?",
+        "consigna": "¡Cae como algodón: tobillo, rodilla y cadera se doblan juntos!",
+        "criterio_eval": "Amortigua el último aterrizaje flexionando tobillo, rodilla y cadera y mantiene el equilibrio 3 segundos.",
+        "criterios": [
+          4,
+          5
+        ],
+        "fuente": "Castañer, M. y Camerino, O. Manifestaciones básicas de la motricidad (caídas y recepciones en los saltos) · Batería HMB (González Palacio et al., 2021 · Dialnet 7925607), prueba 4"
+      },
+      {
+        "orden": 12,
+        "titulo": "Festival del Salto en un Pie y Coevaluación",
+        "fase_pedagogica": "Fase 4: Consolidación y Aplicación en Juego",
+        "objetivo": "Integrar los cinco criterios del salto unipodal y valorar el progreso propio y el de los compañeros.",
+        "distribucion": "Circuito de 4 estaciones: Estación 1: Huellas de un pie; Estación 2: Aros de tres saltos; Estación 3: Equilibrio en un pie sobre colchonetas; Estación 4: Cuerdas paralelas.",
+        "actividad_inicial": "Calentamiento dirigido por los estudiantes con su juego favorito de la unidad.",
+        "actividad_central": "Rotación por las 4 estaciones. En cada una, tríos: uno ejecuta, uno cuenta y uno observa con la lista de la batería (brazos, tronco, pierna libre, aterrizaje y 3 saltos seguidos). Cierre: prueba 4 de la batería con cada pie y registro en la tarjeta personal.",
+        "actividad_final": "Coevaluación en círculo y reconocimiento del progreso de cada uno. Estiramiento.",
+        "consigna": "¡Muestra tu mejor pie y también el otro: tres saltos, control y una sonrisa!",
+        "criterio_eval": "Realiza la prueba de 3 saltos seguidos en un pie integrando los 5 criterios y coevalúa con respeto.",
+        "criterios": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "fuente": "Batería HMB (González Palacio et al., 2021 · Dialnet 7925607), prueba 4 · MEN, Documento 15: evaluación formativa y coevaluación"
+      }
+    ],
+    "Equilibrio Dinámico": [
+      {
+        "orden": 1,
+        "titulo": "Caminos de Tiza: Pies Sobre la Línea",
+        "fase_pedagogica": "Fase 1: Iniciación y Esquema Corporal",
+        "objetivo": "Desplazarse sobre líneas rectas, curvas y en zigzag sin salirse, con el tronco erguido.",
+        "distribucion": "Sendero de líneas de tiza: uno recto, uno en curva y uno en zigzag de 8 metros, separados 3 metros.",
+        "actividad_inicial": "Desplazarse por las líneas del patio con pasos normales, de puntillas, de talones, con brazos en cruz y con manos en la nuca; a la señal, cambiar.",
+        "actividad_central": "Recorrer cada sendero sin salirse: a) pasos normales; b) pie delante de pie (talón con punta); c) de lado; d) hacia atrás en el recto. Al terminar cada recorrido, el compañero dice cuántas veces se salió el pie. Se rota entre recto, curva y zigzag.",
+        "actividad_final": "Caminar 3 pasos con los ojos cerrados sobre la línea recta y abrirlos para ver cuánto se desvió. Respiración.",
+        "consigna": "¡La línea es un puente angosto: pie delante de pie y cuerpo tranquilo!",
+        "criterio_eval": "Recorre el sendero recto pie delante de pie sin salirse de la línea y con el tronco erguido.",
+        "criterios": [
+          5,
+          2
+        ],
+        "fuente": "Pérez Feito, J. M. Sesiones de Educación Física 6 a 7 años («Equilibrio estático y equilibrio en altura»: caminar sobre líneas; con los ojos cerrados)"
+      },
+      {
+        "orden": 2,
+        "titulo": "La Mirada Manda: Línea de 9 Metros",
+        "fase_pedagogica": "Fase 1: Iniciación y Esquema Corporal",
+        "objetivo": "Reconocer el papel de la mirada al frente en el equilibrio al caminar sobre una línea.",
+        "distribucion": "Cinco líneas de 9 metros de 5 cm de ancho con una diana al final para mirar al frente.",
+        "actividad_inicial": "Juego 'El faro': caminar hacia un compañero que levanta la mano sin quitarle la vista; quien mira al suelo vuelve a empezar.",
+        "actividad_central": "Protocolo de la prueba 14: caminar los 9 m sobre la línea hasta el final. Variantes: a) mirando la diana; b) mirando al suelo (comparar qué tan estable se siente); c) con un compañero al final que muestra números con los dedos, que hay que leer en voz alta mientras se camina.",
+        "actividad_final": "Conversatorio: ¿por qué es más fácil equilibrarse mirando al frente? Estiramiento de cuello.",
+        "consigna": "¡Tus ojos en la diana: el cuerpo sigue a la mirada!",
+        "criterio_eval": "Mantiene la mirada al frente durante los 9 m sin tambalearse hacia los lados.",
+        "criterios": [
+          1,
+          4
+        ],
+        "fuente": "Batería HMB (González Palacio et al., 2021 · Dialnet 7925607), prueba 14 · Castañer, M. y Camerino, O. Manifestaciones básicas de la motricidad (información visual y vestibular en el equilibrio)"
+      },
+      {
+        "orden": 3,
+        "titulo": "Caminando Sobre los Bancos Suecos",
+        "fase_pedagogica": "Fase 1: Iniciación y Esquema Corporal",
+        "objetivo": "Desplazarse sobre una base elevada y estrecha sin tambalear, con los brazos cerca del cuerpo.",
+        "distribucion": "Bancos suecos en fila: 3 bancos uno tras otro con una colchoneta al final.",
+        "actividad_inicial": "Movilidad articular. Juego 'Equilibristas del circo': caminar por el espacio y a la señal quedarse en la postura que nombre el docente.",
+        "actividad_central": "En fila, avanzar sobre los bancos: a) caminando y mirando al frente; b) de lado; c) de espaldas con ayuda; d) en cuclillas; e) con los brazos a los lados, no en cruz. Al final, bajar con un salto a la colchoneta cayendo con dos pies. Los ayudantes dan la mano solo si se la piden.",
+        "actividad_final": "Por grupos de 5-6, transportar una colchoneta entre todos sin que se caiga. Recoger el material.",
+        "consigna": "¡Camina tranquilo como un gato sobre el muro: mirada lejos y pasos cortos!",
+        "criterio_eval": "Recorre los bancos sin bajarse ni tambalear, con el tronco erguido y los brazos cerca del cuerpo.",
+        "criterios": [
+          4,
+          2
+        ],
+        "fuente": "Pérez Feito, J. M. Sesiones de Educación Física 6 a 7 años («Equilibrio estático y equilibrio en altura» y «Equilibrio con y sin objetos»)"
+      },
+      {
+        "orden": 4,
+        "titulo": "El Cuadrado de los Bancos: Cuatro Formas de Avanzar",
+        "fase_pedagogica": "Fase 2: Coordinación y Ajuste Técnico",
+        "objetivo": "Adaptar el equilibrio a cuatro formas de desplazamiento coordinando brazos y pies.",
+        "distribucion": "Bancos suecos en cuadrado a 90 grados: adelante, atrás, en cuadrupedia y de lado.",
+        "actividad_inicial": "Juego 'Molinos de viento': brazos que giran adelante y atrás mientras se camina por las líneas, diciendo 'sí' o 'no' con la cabeza.",
+        "actividad_central": "Recorrer el circuito de 4 bancos: hacia adelante en el primero, hacia atrás en el segundo, en cuadrupedia en el tercero y de lado en el cuarto. Variantes: a) de puntillas en el 1.º y el 4.º; b) dos filas que se cruzan sin caerse; c) llevando un platillo en la mano. Se observa que los brazos acompañen el paso sin abrirse en cruz.",
+        "actividad_final": "Grupos de 6: uno al centro, rígido, se deja caer suavemente y los compañeros lo sostienen. Respiración.",
+        "consigna": "¡Brazos que acompañan, no que vuelan: si el brazo se abre, el cuerpo se asusta!",
+        "criterio_eval": "Completa las cuatro formas de avance sin caer y con los brazos coordinados con los pies, sin elevarlos en cruz.",
+        "criterios": [
+          3,
+          4
+        ],
+        "fuente": "Pérez Feito, J. M. Sesiones de Educación Física 6 a 7 años («Equilibrio dinámico»: cuatro bancos formando ángulos de 90°)"
+      },
+      {
+        "orden": 5,
+        "titulo": "Un Pie en Cada Banco: Bancos Paralelos",
+        "fase_pedagogica": "Fase 2: Coordinación y Ajuste Técnico",
+        "objetivo": "Repartir el peso entre dos apoyos separados sin oscilar lateralmente.",
+        "distribucion": "Bancos suecos paralelos separados medio metro para avanzar con un pie en cada banco.",
+        "actividad_inicial": "Caminar por las líneas con pasos largos y cortos; a la señal, inclinarse adelante y atrás lo más posible sin perder el equilibrio.",
+        "actividad_central": "Avanzar con un pie en cada banco: a) hacia adelante; b) hacia atrás; c) en cuadrupedia (mano y pie en cada banco); d) con las manos en un banco y los pies en el otro. Cierre: dos equipos en fila sobre los bancos pasan una pelota por debajo de las piernas hasta el último.",
+        "actividad_final": "Por parejas con una pelota grande: uno intenta subirse y equilibrarse ayudado por el compañero. Recoger el material.",
+        "consigna": "¡Abre la base como un puente y cruza sin que tu cuerpo se balancee!",
+        "criterio_eval": "Avanza sobre los bancos paralelos sin oscilar lateralmente y con el tronco alineado.",
+        "criterios": [
+          4,
+          2
+        ],
+        "fuente": "Pérez Feito, J. M. Sesiones de Educación Física 6 a 7 años («Equilibrio estático y dinámico»: bancos paralelos a medio metro) · Piñón y Pérez. Sesiones de Educación Física 10 a 11 años («Equilibrio dinámico»)"
+      },
+      {
+        "orden": 6,
+        "titulo": "Relevos de Camareros: Objeto en la Cabeza",
+        "fase_pedagogica": "Fase 2: Coordinación y Ajuste Técnico",
+        "objetivo": "Conservar la postura erguida y la mirada al frente transportando objetos en equilibrio.",
+        "distribucion": "Pistas de relevos de 12 metros con zona de entrega de 2 metros; un platillo por equipo para llevar sobre la cabeza.",
+        "actividad_inicial": "Movilidad articular. Caminar libremente con un bote de yogur o un platillo sobre la cabeza; agacharse y levantarse sin que se caiga.",
+        "actividad_central": "Relevos caminando con el platillo sobre la cabeza hasta el cono de giro y de vuelta, entregando en la zona amarilla. Variantes: a) sobre una línea recta; b) hacia atrás; c) bandeja de camarero (pelota de tenis sobre un disco). Si el objeto cae, se detiene, lo recoloca y sigue.",
+        "actividad_final": "Por parejas, transportar un plato de plástico sobre la cabeza, el dorso de la mano y entre las rodillas. Estiramiento.",
+        "consigna": "¡Camarero elegante: cabeza alta, mirada al frente y pasos suaves!",
+        "criterio_eval": "Transporta el objeto sin dejarlo caer manteniendo el tronco erguido y la mirada al frente.",
+        "criterios": [
+          2,
+          1
+        ],
+        "fuente": "Pérez Feito, J. M. Sesiones de Educación Física 6 a 7 años («Equilibrio dinámico»: relevos con un bote de yogur en la cabeza) · Pérez Feito, J. M. Sesiones de Educación Física 8 a 9 años (bandeja de camarero)"
+      },
+      {
+        "orden": 7,
+        "titulo": "La Estrella de Equilibrio: Ir y Volver por los Radios",
+        "fase_pedagogica": "Fase 3: Complejidad y Retos Dinámicos",
+        "objetivo": "Desplazarse sobre una línea hacia un centro y regresar de espaldas sin salirse.",
+        "distribucion": "Líneas en estrella: 6 radios de 4 metros desde un aro central con un cono en cada punta.",
+        "actividad_inicial": "Juego 'Las agujas del reloj': todos en las puntas; al número que diga el docente, el de esa punta camina al centro.",
+        "actividad_central": "Cada hilera camina por su radio pie delante de pie hasta el aro central y regresa de espaldas. Variantes: a) mirando la punta de enfrente; b) con un saquito en la cabeza; c) dos radios a la vez, cruzándose en el centro sin salirse. Se cambia de radio cada 2 minutos.",
+        "actividad_final": "Equilibrio en un pie en la punta de la estrella con los ojos cerrados 3 segundos. Respiración.",
+        "consigna": "¡Camina por el rayo de la estrella sin caerte al espacio!",
+        "criterio_eval": "Camina sobre el radio sin salirse, con la mirada al frente, de ida y de regreso.",
+        "criterios": [
+          5,
+          1
+        ],
+        "fuente": "Pérez Feito, J. M. Sesiones de Educación Física 6 a 7 años («Equilibrio y ajustes corporales») · Castañer, M. y Camerino, O. Manifestaciones básicas de la motricidad (equilibrio dinámico: salir de la base y volver a ella)"
+      },
+      {
+        "orden": 8,
+        "titulo": "Laberinto del Equilibrista",
+        "fase_pedagogica": "Fase 3: Complejidad y Retos Dinámicos",
+        "objetivo": "Mantener el equilibrio al cambiar de dirección sobre líneas y cuerdas sin compensar con los brazos.",
+        "distribucion": "Laberinto de 12x12 metros con 12 platillos y 10 conos; cuerdas en el suelo para caminar encima.",
+        "actividad_inicial": "Movilidad articular. Juego 'Sombras': copiar los movimientos del compañero caminando por las líneas.",
+        "actividad_central": "Recorrer el laberinto caminando solo sobre líneas y cuerdas, esquivando platillos y conos. Variantes: a) en pareja de la mano; b) uno guía con la voz y el otro con los ojos cerrados (pocos pasos); c) más rápido sin tambalear. Quien pisa fuera se congela 3 segundos en un pie.",
+        "actividad_final": "Conversatorio sobre la confianza en el compañero. Estiramiento.",
+        "consigna": "¡Brazos sueltos al lado del cuerpo y pasos de equilibrista!",
+        "criterio_eval": "Se desplaza por el laberinto sin perder el equilibrio y sin abrir los brazos en cruz.",
+        "criterios": [
+          4,
+          3
+        ],
+        "fuente": "Pérez Feito, J. M. Sesiones de Educación Física 6 a 7 años («Equilibrio dinámico») · Unidad didáctica «Exploro y aprendo con mis movimientos: el arte de marchar» (carpeta Data) ('Laberinto postal')"
+      },
+      {
+        "orden": 9,
+        "titulo": "El Escondite Inglés del Equilibrio",
+        "fase_pedagogica": "Fase 3: Complejidad y Retos Dinámicos",
+        "objetivo": "Pasar del desplazamiento a la quietud en equilibrio sin tambalear.",
+        "distribucion": "Juego del escondite inglés en un espacio de 12x16 metros.",
+        "actividad_inicial": "Movilidad articular y caminar adoptando posturas: brazos arriba, manos en la cintura, espalda recta, cabeza inclinada.",
+        "actividad_central": "'El escondite inglés': quien cuenta de espaldas dice 'un, dos, tres, escondite inglés' y se da vuelta; los demás avanzan y se congelan en equilibrio. Solo vale quedarse quieto apoyando: a) un pie y una mano; b) un solo pie; c) las dos manos y una rodilla. Quien se mueve vuelve a la franja anterior.",
+        "actividad_final": "Tomar conciencia del peso: apoyarse alternativamente sobre cada pierna, lentamente. Respiración.",
+        "consigna": "¡Congélate como estatua y no tiembles!",
+        "criterio_eval": "Pasa del desplazamiento a la quietud en equilibrio sin tambalear ni mover los apoyos.",
+        "criterios": [
+          4,
+          2
+        ],
+        "fuente": "Pérez Feito, J. M. Sesiones de Educación Física 6 a 7 años («Equilibrio y ajustes corporales»: juego 'El escondite inglés')"
+      },
+      {
+        "orden": 10,
+        "titulo": "Guía de Confianza: Línea con Ojos Cerrados",
+        "fase_pedagogica": "Fase 4: Consolidación y Aplicación en Juego",
+        "objetivo": "Reconocer el aporte de la vista al equilibrio y cuidar al compañero en retos de confianza.",
+        "distribucion": "Parejas enfrentadas a 6 metros: una camina por la línea hacia su pareja, que la guía con la voz.",
+        "actividad_inicial": "Juego 'Lazarillo': en parejas, uno con los ojos cerrados es guiado del brazo por el espacio.",
+        "actividad_central": "Cada pareja tiene una línea de 6 m entre ellos. Uno camina pie delante de pie hacia su pareja: a) con los ojos abiertos mirando a la pareja; b) con los ojos cerrados, guiado por la voz; c) con un saquito en la cabeza. Se comparan las desviaciones y se comenta por qué la vista ayuda.",
+        "actividad_final": "Reflexión sobre la confianza y el cuidado del compañero. Estiramiento por parejas.",
+        "consigna": "¡Escucha a tu guía y siente la línea con los pies!",
+        "criterio_eval": "Recorre la línea con los ojos abiertos sin salirse y mirando a la pareja; ensaya la versión con ojos cerrados con seguridad.",
+        "criterios": [
+          5,
+          1
+        ],
+        "fuente": "Pérez Feito, J. M. Sesiones de Educación Física 6 a 7 años (caminar con los ojos cerrados sobre la línea y comprobar la desviación)"
+      },
+      {
+        "orden": 11,
+        "titulo": "Circuito del Equilibrista",
+        "fase_pedagogica": "Fase 4: Consolidación y Aplicación en Juego",
+        "objetivo": "Aplicar los criterios del equilibrio dinámico en retos de dificultad elegida por cada estudiante.",
+        "distribucion": "Circuito de 4 estaciones: Estación 1: Banco sueco; Estación 2: Línea recta con saquito en la cabeza; Estación 3: Cuerdas onduladas; Estación 4: Colchonetas de equilibrio en un pie.",
+        "actividad_inicial": "Calentamiento dirigido por los estudiantes con 'Molinos de viento' y 'Equilibristas del circo'.",
+        "actividad_central": "Rotación por las 4 estaciones cada 5-6 minutos. En cada estación hay una tarjeta con 3 niveles (básico, medio y reto) para que cada uno elija su desafío. Los compañeros observan un criterio distinto en cada estación: mirada, tronco, brazos, balanceo y pies en la línea.",
+        "actividad_final": "Puesta en común: ¿en qué estación te sentiste más seguro? Recoger el material.",
+        "consigna": "¡Elige tu nivel, supéralo y ayuda a tu compañero a superar el suyo!",
+        "criterio_eval": "Completa el circuito eligiendo el nivel adecuado y aplicando los 5 criterios del equilibrio dinámico.",
+        "criterios": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "fuente": "Piñón y Pérez. Sesiones de Educación Física 10 a 11 años («Equilibrio» y «Equilibrio dinámico») · Batería HMB (González Palacio et al., 2021 · Dialnet 7925607), prueba 14"
+      },
+      {
+        "orden": 12,
+        "titulo": "Festival del Equilibrio y Coevaluación",
+        "fase_pedagogica": "Fase 4: Consolidación y Aplicación en Juego",
+        "objetivo": "Demostrar el equilibrio dinámico en la prueba de la batería y coevaluar con respeto.",
+        "distribucion": "Cancha de 16x12 metros dividida en cuadrantes: en cada cuadrante un reto de equilibrio de la unidad para la coevaluación.",
+        "actividad_inicial": "Juego libre elegido por el grupo entre los de la unidad.",
+        "actividad_central": "Cada cuadrante es un reto: A) línea recta con la mirada al frente; B) línea con objeto en la cabeza; C) estrella de radios; D) prueba 14 de la batería (9 m sobre una línea de 5 cm). Los grupos rotan y se coevalúan con la lista de 5 criterios; el docente registra la prueba D.",
+        "actividad_final": "Círculo de cierre: cada uno dice qué aprendió de su cuerpo al equilibrarse. Respiración.",
+        "consigna": "¡Muestra tu mejor equilibrio y celebra el de tus compañeros!",
+        "criterio_eval": "Realiza la prueba de 9 m sobre la línea integrando los 5 criterios y participa en la coevaluación.",
+        "criterios": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "fuente": "Batería HMB (González Palacio et al., 2021 · Dialnet 7925607), prueba 14 · MEN, Documento 15: evaluación formativa y coevaluación"
+      }
+    ],
+    "Equilibrio Estático Unipodal": [
+      {
+        "orden": 1,
+        "titulo": "Estatuas de Mi Cuerpo",
+        "fase_pedagogica": "Fase 1: Iniciación y Esquema Corporal",
+        "objetivo": "Explorar posturas de equilibrio con distintos apoyos hasta llegar a la postura de la prueba.",
+        "distribucion": "Aros dispersos por un espacio de 14x14 metros, uno por estudiante.",
+        "actividad_inicial": "Juego 'Estatuas musicales': moverse con la música y, al pararla, quedar como estatua; el docente nombra el apoyo (dos pies, un pie, un pie y una mano).",
+        "actividad_central": "Dentro del aro, explorar posturas sobre: los pies con el tronco vertical, el pie derecho, el izquierdo, las puntas, un solo talón. Luego la postura de la prueba: rodilla libre al frente y talón atrás, contando hasta 5. Variantes: a) brazos a los lados; b) mirada a un punto fijo; c) ojos cerrados 2 segundos.",
+        "actividad_final": "Encogerse como bola y estirarse al máximo de puntillas. Respiración lenta.",
+        "consigna": "¡Eres un flamenco: una pierna de árbol firme y la otra dobladita atrás!",
+        "criterio_eval": "Sostiene la postura sobre un pie con la rodilla libre adelante y el talón atrás durante 5 segundos.",
+        "criterios": [
+          5,
+          2
+        ],
+        "fuente": "Pérez Feito, J. M. Sesiones de Educación Física 6 a 7 años («Equilibrio y ajustes corporales»: equilibrarse en distintas posturas) · Batería HMB (González Palacio et al., 2021 · Dialnet 7925607), prueba 15"
+      },
+      {
+        "orden": 2,
+        "titulo": "El Escondite Inglés en un Pie",
+        "fase_pedagogica": "Fase 1: Iniciación y Esquema Corporal",
+        "objetivo": "Detenerse en equilibrio unipodal con los brazos relajados a partir del desplazamiento.",
+        "distribucion": "Juego del escondite inglés en un espacio de 10x14 metros.",
+        "actividad_inicial": "Caminar por el espacio y a la señal adoptar la postura indicada: sentados, de rodillas, en cuclillas, en un pie.",
+        "actividad_central": "'El escondite inglés' con regla de equilibrio: cuando quien cuenta se da vuelta, todos deben estar en un pie con los brazos a los lados. Variantes: a) postura de la prueba (rodilla al frente, talón atrás); b) pie no dominante; c) quien cuenta espera 5 segundos antes de revisar.",
+        "actividad_final": "Apoyarse alternativamente sobre cada pierna tres veces, lentamente, con balanceo lateral suave. Respiración.",
+        "consigna": "¡Brazos dormidos a los lados y cuerpo de piedra!",
+        "criterio_eval": "Se congela en un pie con los brazos relajados a los lados, sin aletear, durante el conteo.",
+        "criterios": [
+          5,
+          1
+        ],
+        "fuente": "Pérez Feito, J. M. Sesiones de Educación Física 6 a 7 años («Equilibrio y ajustes corporales»: juego 'El escondite inglés')"
+      },
+      {
+        "orden": 3,
+        "titulo": "Estaciones de la Prueba 15: Descalzo sobre Colchoneta",
+        "fase_pedagogica": "Fase 1: Iniciación y Esquema Corporal",
+        "objetivo": "Conocer y practicar el protocolo de la prueba de equilibrio estático unipodal.",
+        "distribucion": "Colchonetas en círculo alrededor del docente, una por cada trío.",
+        "actividad_inicial": "Movilidad de tobillos descalzos; masaje de la planta con una pelota.",
+        "actividad_central": "Protocolo de la batería: descalzo sobre la colchoneta, apoyo en un pie 5 segundos con la rodilla libre adelante y el talón atrás. En tríos: uno ejecuta, uno cuenta en voz alta y uno observa con la lista (brazos, adelante-atrás, lado a lado, rodilla de apoyo y pierna libre). Se prueba con cada pie y se cambian los roles.",
+        "actividad_final": "Registro en la tarjeta personal de los segundos logrados con cada pie. Estiramiento.",
+        "consigna": "¡Rodilla de apoyo estirada como un poste y la otra pierna dobladita!",
+        "criterio_eval": "Mantiene la pierna de apoyo extendida y la postura de la prueba durante 5 segundos con cada pie.",
+        "criterios": [
+          4,
+          5
+        ],
+        "fuente": "Batería HMB (González Palacio et al., 2021 · Dialnet 7925607), prueba 15: apoyo unipodal 5 s sobre colchoneta"
+      },
+      {
+        "orden": 4,
+        "titulo": "Espejos y Balanzas: Corregir la Postura por Parejas",
+        "fase_pedagogica": "Fase 2: Coordinación y Ajuste Técnico",
+        "objetivo": "Mantener el cuerpo erguido sin oscilar adelante-atrás ni de lado, con ayuda del compañero.",
+        "distribucion": "Parejas enfrentadas a 2 metros para imitar y corregir posturas de equilibrio.",
+        "actividad_inicial": "Juego 'El espejo': uno hace movimientos lentos y el compañero los copia como su reflejo.",
+        "actividad_central": "Por parejas: uno hace la balanza frontal sobre una pierna con los brazos en cruz y el compañero le coloca bien las partes del cuerpo; luego la postura de la prueba con los brazos a los lados. Variantes: a) mantener 10 segundos y que el compañero imite; b) espalda con espalda a la pata coja, agacharse y levantarse a la vez; c) el compañero mueve suavemente la pierna libre hacia arriba o a un lado.",
+        "actividad_final": "Cambio de roles y conversatorio: ¿qué corregiste en tu compañero? Estiramiento.",
+        "consigna": "¡Imagina un hilo que te jala de la cabeza hacia el cielo: ni adelante, ni atrás, ni de lado!",
+        "criterio_eval": "Mantiene el cuerpo erguido sin oscilar adelante-atrás ni inclinarse de lado durante 10 segundos.",
+        "criterios": [
+          2,
+          3
+        ],
+        "fuente": "Pérez Feito, J. M. Sesiones de Educación Física 6 a 7 años («Equilibrio con y sin objetos» y «Equilibrio estático y dinámico»: balanza frontal por parejas)"
+      },
+      {
+        "orden": 5,
+        "titulo": "Equilibrio Sobre los Bancos: Mover Brazos y Piernas",
+        "fase_pedagogica": "Fase 2: Coordinación y Ajuste Técnico",
+        "objetivo": "Conservar la base de apoyo firme mientras se mueven otros segmentos del cuerpo.",
+        "distribucion": "Bancos suecos en fila: 2 bancos uno tras otro para equilibrarse de pie sobre ellos en grupos de 4.",
+        "actividad_inicial": "Caminar por las líneas de puntillas y de talones; a la señal, quedarse en un pie.",
+        "actividad_central": "Grupos de 4 de pie sobre el banco adoptan una posición estable y mueven a la vez una pierna y un brazo del mismo lado sin caerse; luego del lado contrario y luego opuestos. Variantes: a) sobre un solo pie moviendo los dos brazos; b) el compañero mueve suavemente la pierna libre; c) ojos cerrados 2 segundos.",
+        "actividad_final": "Transportar un plato de plástico sobre la cabeza hasta un punto y regresar. Recoger el material.",
+        "consigna": "¡El pie de apoyo es una raíz: aunque se muevan las ramas, la raíz no se mueve!",
+        "criterio_eval": "Conserva el equilibrio sobre el banco, con la rodilla de apoyo firme, al mover los brazos y la pierna libre.",
+        "criterios": [
+          3,
+          4
+        ],
+        "fuente": "Pérez Feito, J. M. Sesiones de Educación Física 6 a 7 años («Equilibrio estático y equilibrio en altura»: grupos de 4 sobre un banco moviendo brazo y pierna)"
+      },
+      {
+        "orden": 6,
+        "titulo": "Islas de Equilibrio",
+        "fase_pedagogica": "Fase 2: Coordinación y Ajuste Técnico",
+        "objetivo": "Sostener la postura unipodal sobre superficies diferentes (piso y colchoneta).",
+        "distribucion": "Cuadrícula de 15 islas con colchonetas y aros numerados para sostenerse en un pie en cada isla.",
+        "actividad_inicial": "Juego 'El náufrago': moverse por el 'mar' y, al grito de '¡tiburón!', subir a una isla en un pie.",
+        "actividad_central": "Saltar con dos pies de isla en isla y, en cada una, sostener 5 segundos la postura de la prueba con el pie que indique el número (par: derecho; impar: izquierdo). Variantes: a) en las islas de colchoneta (superficie blanda, más difícil); b) ojos cerrados en la última isla; c) por parejas en la misma isla.",
+        "actividad_final": "Juego de respiración: inhalar al subir la rodilla y exhalar al bajarla.",
+        "consigna": "¡En la isla no se toca el agua: quédate en tu pie hasta contar cinco!",
+        "criterio_eval": "Sostiene 5 segundos en un pie en cada isla, incluidas las de superficie blanda.",
+        "criterios": [
+          5,
+          4
+        ],
+        "fuente": "Castañer, M. y Camerino, O. Manifestaciones básicas de la motricidad (equilibrio estático: ajuste postural sin desplazamiento) · Pérez Feito, J. M. Sesiones de Educación Física 6 a 7 años («Rayuela o cascayo»)"
+      },
+      {
+        "orden": 7,
+        "titulo": "Corros de Equilibrio: La Pelota que Visita",
+        "fase_pedagogica": "Fase 3: Complejidad y Retos Dinámicos",
+        "objetivo": "Mantener el apoyo unipodal ante perturbaciones (recibir y devolver una pelota).",
+        "distribucion": "Corros de 6 estudiantes con uno en el centro en equilibrio sobre un pie y una pelota blanda.",
+        "actividad_inicial": "Juego 'Pilla en alto' adaptado: para salvarse hay que quedarse en un pie agarrándose el otro pie con la mano.",
+        "actividad_central": "En corros: el del centro se sostiene en un pie mientras los de afuera le pasan una pelota blanda que debe recibir y devolver sin apoyar el otro pie. Variantes: a) pases más altos o a los lados; b) recibir con una mano; c) por parejas frente a frente, uno pone la pelota en su mano y el otro intenta quitársela sin mover los pies. Cambio de centro cada 30 segundos.",
+        "actividad_final": "Grupos de 6: uno al centro, rígido, se deja caer suavemente y los compañeros lo sostienen. Respiración.",
+        "consigna": "¡Recibe la pelota sin que tu cuerpo se vaya de lado!",
+        "criterio_eval": "Mantiene el apoyo en un pie sin inclinarse de lado al recibir y devolver la pelota.",
+        "criterios": [
+          1,
+          3
+        ],
+        "fuente": "Pérez Feito, J. M. Sesiones de Educación Física 6 a 7 años («Equilibrio con y sin objetos»: quitar la pelota a la pata coja; caer rígido en el corro)"
+      },
+      {
+        "orden": 8,
+        "titulo": "Superficies Blandas: de Colchoneta en Colchoneta",
+        "fase_pedagogica": "Fase 3: Complejidad y Retos Dinámicos",
+        "objetivo": "Ajustar el equilibrio unipodal sobre superficies blandas e inestables.",
+        "distribucion": "5 colchonetas separadas 1 m en línea para pasar de una a otra y sostenerse en un pie.",
+        "actividad_inicial": "Caminar descalzos sobre diferentes superficies (piso, césped, colchoneta) y comentar cuál es más difícil.",
+        "actividad_central": "Pasar de colchoneta en colchoneta y sostener 5 segundos en un pie en cada una: a) con los ojos abiertos; b) mirando un punto fijo; c) sobre la colchoneta doblada (más blanda); d) mientras el compañero cuenta en voz alta. Comparar con el piso duro.",
+        "actividad_final": "Relajación tumbados y respiración con el abdomen.",
+        "consigna": "¡En lo blando el pie trabaja más: siente cómo se acomodan los deditos!",
+        "criterio_eval": "Mantiene la rodilla de apoyo extendida y el tronco quieto 5 segundos sobre superficie blanda.",
+        "criterios": [
+          4,
+          2
+        ],
+        "fuente": "Castañer, M. y Camerino, O. Manifestaciones básicas de la motricidad (factores propioceptivos y vestibulares del equilibrio) · Batería HMB (González Palacio et al., 2021 · Dialnet 7925607), prueba 15 (sobre colchoneta)"
+      },
+      {
+        "orden": 9,
+        "titulo": "Relevos de Estatuas",
+        "fase_pedagogica": "Fase 3: Complejidad y Retos Dinámicos",
+        "objetivo": "Pasar del desplazamiento a la postura unipodal y sostenerla 5 segundos bajo presión de juego.",
+        "distribucion": "4 carriles de 8 metros con conos de meta a 4 y 8 metros.",
+        "actividad_inicial": "Movilidad articular y trote suave.",
+        "actividad_central": "Relevos: caminar rápido hasta el primer cono, quedarse 5 segundos en la postura de la prueba (el equipo cuenta), seguir al segundo cono y repetir con el otro pie; volver y dar el relevo. Si se apoya el pie antes de 5, se reinicia el conteo. Variantes: a) brazos cruzados en el pecho; b) mirando al equipo; c) postura libre creada por el equipo.",
+        "actividad_final": "Estiramiento de cuádriceps en un pie, apoyados en el compañero.",
+        "consigna": "¡Llega, frena y conviértete en estatua: cinco segundos sin temblar!",
+        "criterio_eval": "Pasa del desplazamiento a la postura en un pie y la sostiene 5 segundos sin inclinarse de lado.",
+        "criterios": [
+          5,
+          3
+        ],
+        "fuente": "Pérez Feito, J. M. Sesiones de Educación Física 6 a 7 años («Juegos de relevos») · Batería HMB (González Palacio et al., 2021 · Dialnet 7925607), prueba 15"
+      },
+      {
+        "orden": 10,
+        "titulo": "Pilla en Alto: Salvarse en Equilibrio",
+        "fase_pedagogica": "Fase 4: Consolidación y Aplicación en Juego",
+        "objetivo": "Aplicar el equilibrio unipodal en un juego de persecución con los brazos relajados.",
+        "distribucion": "Espacio de 16x12 metros con zonas de refugio donde solo se está a salvo en equilibrio sobre un pie.",
+        "actividad_inicial": "Movilidad articular. Desplazamientos variados: cuadrupedia, de lado, hacia atrás.",
+        "actividad_central": "'La pilla en alto': un alumno con una pelota blanda trata de tocar a los demás, que se salvan en un refugio quedándose en un pie con los brazos a los lados. Variantes: a) solo 5 segundos de salvación por refugio; b) todos se agarran un pie con la mano; c) dos cazadores.",
+        "actividad_final": "Por parejas: uno mantiene una postura 5 segundos y el otro la repite. Respiración.",
+        "consigna": "¡En el refugio eres un flamenco tranquilo: brazos abajo y cuerpo derecho!",
+        "criterio_eval": "Se sostiene en un pie en los refugios con los brazos relajados y sin inclinarse de lado.",
+        "criterios": [
+          3,
+          1
+        ],
+        "fuente": "Pérez Feito, J. M. Sesiones de Educación Física 6 a 7 años («Equilibrio con y sin objetos»: juego 'La pilla en alto' a la pata coja)"
+      },
+      {
+        "orden": 11,
+        "titulo": "Circuito de Equilibrio Estático",
+        "fase_pedagogica": "Fase 4: Consolidación y Aplicación en Juego",
+        "objetivo": "Integrar los criterios del equilibrio estático en retos de dificultad elegida.",
+        "distribucion": "Circuito de 4 estaciones: Estación 1: Estatua en un pie; Estación 2: Banco sueco; Estación 3: Colchoneta con ojos cerrados; Estación 4: Equilibrio con pelota en la mano.",
+        "actividad_inicial": "Calentamiento dirigido por los estudiantes.",
+        "actividad_central": "Rotación por estaciones cada 5 minutos con tarjetas de tres niveles: 1) estatua de la prueba con cada pie; 2) postura en un pie sobre el banco; 3) colchoneta con los ojos cerrados 3 segundos; 4) sostener una pelota en la palma mientras se está en un pie. Un compañero observa un criterio distinto en cada estación.",
+        "actividad_final": "Puesta en común y registro de avances. Recoger el material.",
+        "consigna": "¡Cada estación es un reto: elige tu nivel y respira tranquilo!",
+        "criterio_eval": "Mantiene el equilibrio en un pie en las 4 estaciones aplicando los criterios de brazos, tronco y pierna de apoyo.",
+        "criterios": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "fuente": "Piñón y Pérez. Sesiones de Educación Física 10 a 11 años («Equilibrio») · Pérez Feito, J. M. Sesiones de Educación Física 8 a 9 años («Equilibrio estático y dinámico»)"
+      },
+      {
+        "orden": 12,
+        "titulo": "Festival del Flamenco y Coevaluación",
+        "fase_pedagogica": "Fase 4: Consolidación y Aplicación en Juego",
+        "objetivo": "Demostrar el equilibrio estático unipodal en la prueba de la batería y coevaluar con respeto.",
+        "distribucion": "Cancha de 12x12 metros dividida en cuadrantes: un reto de equilibrio estático por cuadrante para la coevaluación.",
+        "actividad_inicial": "Juego favorito de la unidad elegido por votación.",
+        "actividad_central": "Cuadrante A: prueba 15 con el pie derecho; B: con el izquierdo; C: postura creada por el grupo; D: equilibrio en parejas. Los grupos rotan y se coevalúan con la lista de 5 criterios; el docente registra la prueba en A y B.",
+        "actividad_final": "Círculo de cierre: ¿qué hace tu cuerpo para no caerse? Respiración.",
+        "consigna": "¡Cinco segundos de flamenco perfecto: brazos abajo, cuerpo derecho y rodilla al frente!",
+        "criterio_eval": "Sostiene 5 segundos la postura de la prueba con cada pie integrando los 5 criterios y coevalúa con respeto.",
+        "criterios": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "fuente": "Batería HMB (González Palacio et al., 2021 · Dialnet 7925607), prueba 15 · MEN, Documento 15: evaluación formativa y coevaluación"
+      }
+    ],
+    "Recepción y Atrape": [
+      {
+        "orden": 1,
+        "titulo": "Autolanzamientos: Mi Pelota y Yo",
+        "fase_pedagogica": "Fase 1: Iniciación y Esquema Corporal",
+        "objetivo": "Seguir la pelota con la vista y atraparla con las dos manos en autolanzamientos.",
+        "distribucion": "Aros dispersos en un espacio de 12x12 metros, uno por estudiante, cada uno con una pelota blanda.",
+        "actividad_inicial": "Juego 'Bomba': en grupos se pasan la pelota y, al silbato, quien la tiene se sienta un turno.",
+        "actividad_central": "Dentro del aro: lanzar la pelota hacia arriba y atraparla con las dos manos. Variantes: a) a la altura de los ojos y luego más alto; b) dar una palmada antes de atrapar; c) dejarla botar una vez; d) atrapar con las manos en copa y llevarla al pecho. Contar cuántas atrapadas seguidas se logran sin que caiga.",
+        "actividad_final": "Rodar la pelota por el cuerpo del compañero tumbado. Recoger el material.",
+        "consigna": "¡Ojos de búho: miran la pelota desde que sale de tus manos hasta que vuelve!",
+        "criterio_eval": "Sigue la pelota con la vista y la atrapa con las dos manos, sin rebote, en 5 autolanzamientos seguidos.",
+        "criterios": [
+          1,
+          5
+        ],
+        "fuente": "Pérez Feito, J. M. Sesiones de Educación Física 6 a 7 años («Lanzamientos y recepciones») · Pérez Feito, J. M. Sesiones de Educación Física 8 a 9 años («Coordinación óculo-manual»)"
+      },
+      {
+        "orden": 2,
+        "titulo": "Parejas a 2, 3 y 4 Metros: Manos en Copa",
+        "fase_pedagogica": "Fase 1: Iniciación y Esquema Corporal",
+        "objetivo": "Adoptar la postura de espera y la forma de copa de las manos al recibir pases en parábola.",
+        "distribucion": "Parejas enfrentadas a 2, 3 y 4 metros con una pelota blanda por pareja.",
+        "actividad_inicial": "Movilidad de muñecas y dedos: 'mano de araña' (abrir y cerrar los dedos) y formar la copa con las manos.",
+        "actividad_central": "Pases suaves en parábola desde 2 m: el receptor espera con los brazos semiflexionados al frente y las manos en copa (pulgares y meñiques cerca). Tras 5 recepciones limpias, pasar a la línea de 3 m (la distancia de la prueba) y luego a la de 4 m. Variantes: a) pelotas de distinto tamaño; b) pase bombeado y pase directo; c) atrapar y llevar la pelota al pecho.",
+        "actividad_final": "Coloquio: ¿cómo pones las manos para que la pelota no se escape? Estiramiento de antebrazos.",
+        "consigna": "¡Brazos de canasta: un poco doblados, manos abiertas en copa y listos!",
+        "criterio_eval": "Espera con los brazos semiflexionados y recibe con las manos en forma de copa desde 3 metros.",
+        "criterios": [
+          2,
+          3
+        ],
+        "fuente": "Batería HMB (González Palacio et al., 2021 · Dialnet 7925607), prueba 9: atrape bimanual a 3 m · Pérez Feito, J. M. Sesiones de Educación Física 8 a 9 años («Juegos de lanzamientos y recepciones»)"
+      },
+      {
+        "orden": 3,
+        "titulo": "Rebote en la Pared: Atrapar sin que se Escape",
+        "fase_pedagogica": "Fase 2: Coordinación y Ajuste Técnico",
+        "objetivo": "Amortiguar la recepción flexionando los brazos hacia el cuerpo.",
+        "distribucion": "Pared de rebote con puestos a 3 metros para lanzar y atrapar.",
+        "actividad_inicial": "Lanzar la pelota contra la pared y atraparla tras un bote; luego sin bote.",
+        "actividad_central": "Lanzar dentro del recuadro de la pared y atrapar el rebote amortiguando: los brazos 'ceden' hacia el pecho en el contacto. Variantes: a) atrapar tras un bote; b) sin bote; c) el compañero lanza contra la pared y uno recibe; d) aumentar la distancia a 4 m. Quien suelta la pelota vuelve a contar desde cero.",
+        "actividad_final": "Juego 'A, e, i, o, u' en grupos: pasar la pelota diciendo las vocales; quien la atrapa en la 'u' gana un punto.",
+        "consigna": "¡Brazos de resorte: cuando llega la pelota, se doblan y la abrazan!",
+        "criterio_eval": "Amortigua la recepción flexionando los brazos y retiene la pelota sin rebote en 4 de 5 intentos.",
+        "criterios": [
+          1,
+          4
+        ],
+        "fuente": "Pérez Feito, J. M. Sesiones de Educación Física 8 a 9 años («Anticipación de trayectorias»: lanzar contra la pared y parar el rebote; juego 'A, e, i, o, u')"
+      },
+      {
+        "orden": 4,
+        "titulo": "Corros: El del Medio Intercepta",
+        "fase_pedagogica": "Fase 2: Coordinación y Ajuste Técnico",
+        "objetivo": "Mantener el seguimiento visual y retener la pelota en pases rápidos.",
+        "distribucion": "Corros de 6 estudiantes con una pelota: cinco se la pasan y uno en el centro intenta atraparla.",
+        "actividad_inicial": "Juego 'Pelota caliente': pasar la pelota rápido en círculo sin que caiga.",
+        "actividad_central": "Cinco se pasan la pelota y uno en el centro trata de atraparla o tocarla. Variantes: a) solo un bote permitido; b) sin botes; c) el del centro pasa y los de afuera atrapan con las dos manos. Quien deja escapar la pelota pasa al centro.",
+        "actividad_final": "Juego tranquilo 'Bomba' sentados. Estiramiento.",
+        "consigna": "¡Sigue la pelota con los ojos todo el tiempo, aunque vaya para otro compañero!",
+        "criterio_eval": "Mantiene el seguimiento visual y retiene la pelota al recibir pases en el corro.",
+        "criterios": [
+          1,
+          5
+        ],
+        "fuente": "Pérez Feito, J. M. Sesiones de Educación Física 8 a 9 años («Anticipación de trayectorias»: grupos de seis, cinco pasan y uno al centro)"
+      },
+      {
+        "orden": 5,
+        "titulo": "Bote y Atrape en Pasillos",
+        "fase_pedagogica": "Fase 2: Coordinación y Ajuste Técnico",
+        "objetivo": "Anticipar la trayectoria de la pelota y atraparla en desplazamiento.",
+        "distribucion": "4 pasillos de 8 metros para lanzar al frente, dejar botar y atrapar en movimiento.",
+        "actividad_inicial": "Botar la pelota caminando con la mano derecha, con la izquierda y alternando.",
+        "actividad_central": "Lanzar la pelota hacia adelante, dejarla botar una vez y atraparla antes del segundo bote, avanzando por el pasillo. Variantes: a) bote más alto o más bajo; b) caminando y luego trotando; c) el compañero lanza desde el final y el receptor avanza a su encuentro.",
+        "actividad_final": "Relevos suaves botando la pelota. Recoger el material.",
+        "consigna": "¡Calcula dónde va a caer la pelota y llega antes que ella!",
+        "criterio_eval": "Anticipa la trayectoria y atrapa la pelota en movimiento amortiguando con los brazos.",
+        "criterios": [
+          1,
+          4
+        ],
+        "fuente": "Pérez Feito, J. M. Sesiones de Educación Física 8 a 9 años («Trayectorias y velocidades de móviles» y «Anticipación de trayectorias»)"
+      },
+      {
+        "orden": 6,
+        "titulo": "Campo de Distancias: Recepción Lejana",
+        "fase_pedagogica": "Fase 2: Coordinación y Ajuste Técnico",
+        "objetivo": "Ajustar la postura de espera y la amortiguación a pases cada vez más largos.",
+        "distribucion": "Campo abierto con zonas métricas marcadas cada 1 m hasta los 8 metros para pases y atrapes a distancia creciente.",
+        "actividad_inicial": "Movilidad articular; pases cortos por parejas.",
+        "actividad_central": "Por parejas, desde la línea de pase: el lanzador se aleja una marca tras cada atrape limpio (máximo 8 m). Variantes: a) pase bombeado; b) pase directo al pecho; c) el receptor da un paso adelante para amortiguar. Se registra la distancia máxima con atrape limpio.",
+        "actividad_final": "Estiramiento de hombros y muñecas. Registro de la marca en la tarjeta.",
+        "consigna": "¡Mientras más lejos, más suave deben ceder tus brazos!",
+        "criterio_eval": "Recibe pases de distancia creciente con los brazos en espera y amortiguación hacia el cuerpo.",
+        "criterios": [
+          2,
+          4
+        ],
+        "fuente": "Castañer, M. y Camerino, O. Manifestaciones básicas de la motricidad (manipulación: ajuste, economía y amortiguación de las recepciones)"
+      },
+      {
+        "orden": 7,
+        "titulo": "Aros como Blanco: Pase con Bote Preciso",
+        "fase_pedagogica": "Fase 3: Complejidad y Retos Dinámicos",
+        "objetivo": "Atrapar después de un bote anticipando la altura y la dirección de la pelota.",
+        "distribucion": "5 aros separados 2 m en línea para pasar con un bote dentro del aro y atrapar.",
+        "actividad_inicial": "Juego 'Pilla en stop' con una pelota blanda.",
+        "actividad_central": "Por parejas, con un aro entre ellos: pasar la pelota haciéndola botar dentro del aro para que el compañero la atrape. Tras cada acierto, alejarse un paso. Variantes: a) atrapar con las dos manos; b) con la mano dominante y con la no dominante; c) atrapar y pasar sin detenerse.",
+        "actividad_final": "Conversatorio: ¿qué es más fácil, atrapar en el aire o después del bote? Recoger el material.",
+        "consigna": "¡Mira el aro, haz botar la pelota y prepara tus manos en copa!",
+        "criterio_eval": "Atrapa la pelota tras el bote con las dos manos, sin que escape, en 4 de 5 intentos.",
+        "criterios": [
+          1,
+          5
+        ],
+        "fuente": "Pérez Feito, J. M. Sesiones de Educación Física 8 a 9 años («Juegos de lanzamientos y recepciones»: botar en el aro entre la pareja)"
+      },
+      {
+        "orden": 8,
+        "titulo": "Estrella de Pases desde el Centro",
+        "fase_pedagogica": "Fase 3: Complejidad y Retos Dinámicos",
+        "objetivo": "Prepararse antes de la llegada de la pelota con los brazos en actitud de espera.",
+        "distribucion": "Líneas en estrella: 5 radios de 3 metros desde un aro central, con una pelota para pases.",
+        "actividad_inicial": "Juego 'Los números': el docente dice un número y esa punta recibe la pelota.",
+        "actividad_central": "Quien está en el centro pasa a la primera persona de cada punta en orden; cada una atrapa, devuelve y se va al final de su hilera. Variantes: a) el del centro dice el nombre antes de pasar; b) pases bombeados; c) dos pelotas a la vez. Cambio de centro en cada vuelta.",
+        "actividad_final": "Respiración y estiramiento en círculo.",
+        "consigna": "¡Prepárate antes de que llegue: brazos adelante y ojos en la pelota!",
+        "criterio_eval": "Se anticipa con los brazos semiflexionados y sigue la pelota con la vista hasta atraparla.",
+        "criterios": [
+          1,
+          2
+        ],
+        "fuente": "Pérez Feito, J. M. Sesiones de Educación Física 8 a 9 años («Juegos de lanzamientos y recepciones» y «Coordinación óculo-manual»)"
+      },
+      {
+        "orden": 9,
+        "titulo": "Interceptar sin Chocar: Zonas de Ataque y Defensa",
+        "fase_pedagogica": "Fase 3: Complejidad y Retos Dinámicos",
+        "objetivo": "Anticipar trayectorias y atrapar en situación de oposición.",
+        "distribucion": "Zonas de ataque y defensa: dos pasadores intentan pasar y un defensor intenta atrapar.",
+        "actividad_inicial": "Movilidad y desplazamientos laterales sin cruzar los pies.",
+        "actividad_central": "Tríos en mini-canchas: dos atacantes se pasan la pelota y un defensor intenta interceptarla atrapándola con las dos manos; si lo logra, cambia con quien pasó. Variantes: a) pases solo bombeados; b) solo pases con bote; c) los atacantes deben tocar la diana del fondo con la pelota.",
+        "actividad_final": "Coloquio sobre juego limpio. Estiramiento.",
+        "consigna": "¡Lee la pelota antes de que salga: tus ojos te dicen a dónde ir!",
+        "criterio_eval": "Anticipa la trayectoria y atrapa la pelota en situación de juego sin dejarla escapar.",
+        "criterios": [
+          1,
+          5
+        ],
+        "fuente": "Pérez Feito, J. M. Sesiones de Educación Física 8 a 9 años («Juegos de cooperación y oposición»)"
+      },
+      {
+        "orden": 10,
+        "titulo": "Los 10 Pases por Cuadrantes",
+        "fase_pedagogica": "Fase 4: Consolidación y Aplicación en Juego",
+        "objetivo": "Retener la pelota al recibir en un juego cooperativo con oposición.",
+        "distribucion": "Cancha de 14x10 metros dividida en cuadrantes para el juego de los 10 pases con pelota.",
+        "actividad_inicial": "Pases libres por el espacio diciendo el nombre del receptor.",
+        "actividad_central": "En cada cuadrante, 3 contra 3: un equipo intenta hacer 10 pases seguidos sin que el otro atrape la pelota; no se puede caminar con la pelota. Variantes: a) todos deben tocar la pelota; b) solo pases bombeados; c) se cambia de cuadrante tras cada punto.",
+        "actividad_final": "Conversatorio sobre la cooperación. Estiramiento.",
+        "consigna": "¡Recibe seguro y pasa rápido: la pelota que se escapa es del otro equipo!",
+        "criterio_eval": "Retiene la pelota al recibir en situación de juego y colabora con su equipo.",
+        "criterios": [
+          5,
+          4
+        ],
+        "fuente": "Pérez Feito, J. M. Sesiones de Educación Física 8 a 9 años («Juegos de lanzamientos y recepciones»: equipos de pases e intercepción) · Juegos deportivos cooperativos con pelotona"
+      },
+      {
+        "orden": 11,
+        "titulo": "Pilla en Stop con Pelota",
+        "fase_pedagogica": "Fase 4: Consolidación y Aplicación en Juego",
+        "objetivo": "Aplicar la recepción con manos en copa en un juego de persecución.",
+        "distribucion": "Espacio de 16x16 metros con zonas de refugio donde se salva quien atrapa un pase.",
+        "actividad_inicial": "Movilidad articular.",
+        "actividad_central": "'Pilla en stop': un alumno con una pelota blanda pilla tocando; los demás se salvan diciendo 'stop' (brazos en cruz, piernas abiertas) hasta que alguien les pase la pelota y la atrapen con las manos en copa. Variantes: a) dos pilladores; b) solo vale atrapar sin bote; c) en los refugios se recibe un pase del docente.",
+        "actividad_final": "Juego tranquilo de pases sentados en círculo. Recoger el material.",
+        "consigna": "¡Para salvarte, atrapa como canasta: manos en copa y pelota al pecho!",
+        "criterio_eval": "Atrapa los pases de rescate con las manos en copa siguiendo la pelota con la vista.",
+        "criterios": [
+          1,
+          3
+        ],
+        "fuente": "Pérez Feito, J. M. Sesiones de Educación Física 8 a 9 años («Juegos de lanzamientos y recepciones»: 'Pilla en stop')"
+      },
+      {
+        "orden": 12,
+        "titulo": "Festival del Atrape y Coevaluación",
+        "fase_pedagogica": "Fase 4: Consolidación y Aplicación en Juego",
+        "objetivo": "Integrar los cinco criterios del atrape y valorar el progreso propio y el de los compañeros.",
+        "distribucion": "Circuito de 4 estaciones: Estación 1: Parejas a 3 metros; Estación 2: Rebote con pelota; Estación 3: Autolanzamientos dentro del aro; Estación 4: Recepción en movimiento.",
+        "actividad_inicial": "Calentamiento dirigido por los estudiantes.",
+        "actividad_central": "Rotación por estaciones con tarjetas de tres niveles. En cada una, tríos: lanzador, receptor y observador con la lista de la batería (mirada, brazos en espera, manos en copa, amortiguación y retención). Cierre: prueba 9 de la batería a 3 m registrada por el docente.",
+        "actividad_final": "Coevaluación en círculo. Estiramiento.",
+        "consigna": "¡Ojos, canasta y resorte: así atrapa un campeón!",
+        "criterio_eval": "Realiza la prueba de atrape a 3 m integrando los 5 criterios y coevalúa con respeto.",
+        "criterios": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "fuente": "Batería HMB (González Palacio et al., 2021 · Dialnet 7925607), prueba 9 · MEN, Documento 15: evaluación formativa y coevaluación"
+      }
+    ],
+    "Patear": [
+      {
+        "orden": 1,
+        "titulo": "Mi Balón y Yo: Toques y Conducción Libre",
+        "fase_pedagogica": "Fase 1: Iniciación y Esquema Corporal",
+        "objetivo": "Explorar el contacto del pie con el balón y golpearlo hacia un objetivo cercano.",
+        "distribucion": "Aros dispersos en un espacio de 16x12 metros con un balón por estudiante.",
+        "actividad_inicial": "Cada alumno con un globo o balón: toques con los pies libremente, con el derecho, con el izquierdo y alternando.",
+        "actividad_central": "Conducir el balón por el espacio y, a la señal, detenerlo pisándolo y patearlo suave hacia su aro. Variantes: a) conducir con el interior, el exterior y la puntera; b) elevar el balón sin manos con el pie; c) patear desde 3 m para que el balón se detenga dentro del aro.",
+        "actividad_final": "Por parejas, uno tumbado y el otro rueda el balón por su cuerpo. Recoger el material.",
+        "consigna": "¡El balón es tu mascota: lo llevas cerquita y lo golpeas con cariño!",
+        "criterio_eval": "Golpea el balón con el empeine o el interior y lo envía al aro desde 3 m.",
+        "criterios": [
+          5,
+          3
+        ],
+        "fuente": "Piñón y Pérez. Sesiones de Educación Física 10 a 11 años («Iniciación al fútbol, conducción del balón») · Pérez Feito, J. M. Sesiones de Educación Física 8 a 9 años («Juegos de iniciación al fútbol»)"
+      },
+      {
+        "orden": 2,
+        "titulo": "El Pie de Apoyo: al Lado del Balón",
+        "fase_pedagogica": "Fase 1: Iniciación y Esquema Corporal",
+        "objetivo": "Ubicar el pie de apoyo junto al balón y adelantar el brazo contrario al patear.",
+        "distribucion": "Puestos con la huella del pie de apoyo junto al balón y una puerta de conos a 4 metros.",
+        "actividad_inicial": "Movilidad de cadera: balanceos de pierna adelante-atrás apoyados en el compañero.",
+        "actividad_central": "Colocar el pie de apoyo sobre su huella (a un palmo del balón), adelantar el brazo contrario y patear hacia la puerta. Variantes: a) sin balón, solo el gesto; b) con el balón quieto; c) con un paso previo de aproximación; d) con el otro pie (huella al otro lado). El compañero observa el brazo contrario y el tronco levemente adelante.",
+        "actividad_final": "Estiramiento de isquiotibiales y cuádriceps. Pregunta: ¿qué hace tu brazo cuando pateas?",
+        "consigna": "¡Pie amigo al lado del balón, brazo contrario adelante y mirada a la puerta!",
+        "criterio_eval": "Ubica el pie de apoyo al lado del balón y adelanta el brazo contrario al patear, con el tronco levemente adelantado.",
+        "criterios": [
+          1,
+          2
+        ],
+        "fuente": "Batería HMB (González Palacio et al., 2021 · Dialnet 7925607), prueba 10 · Piñón y Pérez. Sesiones de Educación Física 10 a 11 años («Iniciación al fútbol, conducción, control y golpeo del balón»)"
+      },
+      {
+        "orden": 3,
+        "titulo": "El Péndulo de la Pierna: Pateo Contra la Pared",
+        "fase_pedagogica": "Fase 1: Iniciación y Esquema Corporal",
+        "objetivo": "Golpear con un balanceo amplio de toda la pierna desde la cadera y continuar el movimiento.",
+        "distribucion": "Pared de rebote con puestos a 4 metros para patear con el pie.",
+        "actividad_inicial": "Balanceos de pierna desde la cadera como un péndulo de reloj: 10 con cada pierna.",
+        "actividad_central": "Patear el balón contra el rectángulo pintado en la pared y controlar el rebote. Variantes: a) péndulo largo desde la cadera, no solo desde la rodilla; b) dejar que la pierna siga hacia el objetivo después del golpe; c) alternar pie derecho e izquierdo; d) parar el rebote con la planta.",
+        "actividad_final": "Pases suaves contra la pared por parejas. Estiramiento.",
+        "consigna": "¡Tu pierna es un péndulo gigante: empieza en la cadera y termina mirando la pared!",
+        "criterio_eval": "Hace un balanceo amplio de toda la pierna desde la cadera y continúa el movimiento después del golpe.",
+        "criterios": [
+          3,
+          4
+        ],
+        "fuente": "Pérez Feito, J. M. Sesiones de Educación Física 8 a 9 años («Anticipación de trayectorias»: lanzar contra la pared y parar el rebote) · Castañer, M. y Camerino, O. Manifestaciones básicas de la motricidad (golpeos)"
+      },
+      {
+        "orden": 4,
+        "titulo": "Mini-Porterías a 5 Metros: la Prueba de la Batería",
+        "fase_pedagogica": "Fase 2: Coordinación y Ajuste Técnico",
+        "objetivo": "Golpear el balón quieto con precisión hacia una meta a 5 metros.",
+        "distribucion": "Mini-porterías a 5 metros con el balón quieto a un paso de distancia.",
+        "actividad_inicial": "Conducción libre y, a la señal, pisar el balón y cambiar de dirección.",
+        "actividad_central": "Protocolo de la prueba 10: a un paso del balón quieto, patear hacia la portería a 5 m. Variantes: a) apuntar a la izquierda o a la derecha de la portería; b) con el pie no dominante; c) por parejas, uno patea y el otro es portero suave. Puntos por gol limpio.",
+        "actividad_final": "Registro de los goles en la tarjeta. Estiramiento.",
+        "consigna": "¡Un paso, apoyo al lado, péndulo y… gol limpio!",
+        "criterio_eval": "Golpea el balón de forma limpia y lo envía hacia la portería a 5 m.",
+        "criterios": [
+          5,
+          1
+        ],
+        "fuente": "Batería HMB (González Palacio et al., 2021 · Dialnet 7925607), prueba 10: patear a una meta a 5 m"
+      },
+      {
+        "orden": 5,
+        "titulo": "Bolos con el Pie",
+        "fase_pedagogica": "Fase 2: Coordinación y Ajuste Técnico",
+        "objetivo": "Ajustar la dirección del golpeo con el tronco acompañando el gesto.",
+        "distribucion": "Pasillos con bolos en triángulo a 4 metros de la línea de pateo.",
+        "actividad_inicial": "Juego 'Conduce y para': conducir libremente y detenerse con la planta a la señal.",
+        "actividad_central": "Patear el balón para derribar los bolos. Variantes: a) con el interior, para más precisión; b) con el empeine, para más fuerza; c) desde más lejos; d) por equipos, sumar bolos derribados en 3 intentos. Se observa el tronco que acompaña el golpe.",
+        "actividad_final": "Recolocar los bolos por equipos. Estiramiento.",
+        "consigna": "¡Mira el bolo del centro, inclina un poco el cuerpo y golpea con decisión!",
+        "criterio_eval": "Derriba bolos golpeando el balón con el tronco levemente adelantado y el pie de apoyo junto al balón.",
+        "criterios": [
+          5,
+          2
+        ],
+        "fuente": "Pérez Feito, J. M. Sesiones de Educación Física 8 a 9 años («Juegos de iniciación al fútbol»: lanzar la pelota con el pie para derribar conos)"
+      },
+      {
+        "orden": 6,
+        "titulo": "Conducción en Zigzag y Remate",
+        "fase_pedagogica": "Fase 2: Coordinación y Ajuste Técnico",
+        "objetivo": "Conducir el balón en zigzag y rematar con seguimiento de la pierna.",
+        "distribucion": "Recorridos de slalom de 6 conos cada 1,5 metros para conducir el balón y rematar al final.",
+        "actividad_inicial": "Conducir el balón con el interior del pie derecho, luego con el izquierdo y luego alternando.",
+        "actividad_central": "Conducir en zigzag entre los conos y, al salir, patear a un cono-meta. Variantes: a) solo con el pie no dominante; b) pisar el balón en cada cono; c) relevos por equipos. Se pide que el pie que patea continúe hacia la meta y vuelva al suelo con control.",
+        "actividad_final": "Por parejas, pases rasos a 3 m. Estiramiento.",
+        "consigna": "¡Balón pegado al pie en el zigzag y golpe que termina apuntando a la meta!",
+        "criterio_eval": "Conduce sin perder el balón y remata con seguimiento de la pierna y retorno controlado.",
+        "criterios": [
+          2,
+          4
+        ],
+        "fuente": "Piñón y Pérez. Sesiones de Educación Física 10 a 11 años («Iniciación al fútbol, conducción del balón») · Pérez Feito, J. M. Sesiones de Educación Física 8 a 9 años (conducir en zigzag)"
+      },
+      {
+        "orden": 7,
+        "titulo": "Pases con el Pie por Parejas",
+        "fase_pedagogica": "Fase 3: Complejidad y Retos Dinámicos",
+        "objetivo": "Pasar con el interior del pie equilibrando con el brazo contrario.",
+        "distribucion": "Parejas enfrentadas a 4 y 6 metros para pases con el pie.",
+        "actividad_inicial": "Toques con un globo con ambos pies, las rodillas y la cabeza.",
+        "actividad_central": "Pases rasos con el interior del pie y control con la planta. Variantes: a) a 4 m y luego a 6 m; b) primer toque para controlar y segundo para pasar; c) pase a un toque; d) con el pie no dominante. El receptor observa el brazo contrario de quien patea.",
+        "actividad_final": "Conversatorio: ¿cómo se frena el balón? Estiramiento.",
+        "consigna": "¡Pasa con el interior como si empujaras una puerta y deja que la pierna te acompañe!",
+        "criterio_eval": "Pasa con el brazo contrario equilibrando y la pierna sigue hacia el compañero tras el golpe.",
+        "criterios": [
+          1,
+          4
+        ],
+        "fuente": "Piñón y Pérez. Sesiones de Educación Física 10 a 11 años («Iniciación al fútbol, control del balón y pases»)"
+      },
+      {
+        "orden": 8,
+        "titulo": "El Rondo: Pases Rodeando al del Medio",
+        "fase_pedagogica": "Fase 3: Complejidad y Retos Dinámicos",
+        "objetivo": "Golpear con precisión hacia un compañero en situación de oposición.",
+        "distribucion": "Rondos de 5 jugadores con un balón: cuatro se pasan con el pie y uno en el medio intenta quitarlo.",
+        "actividad_inicial": "Conducción libre con cambios de ritmo.",
+        "actividad_central": "Cuatro hacen un rondo pasándose el balón con el pie; el del medio intenta quitarlo y cambia con quien lo pierda. Variantes: a) dos toques por jugador; b) un solo toque; c) pases solo con el pie no dominante.",
+        "actividad_final": "Toques en grupo para que el balón no toque el suelo (se permite un bote). Estiramiento.",
+        "consigna": "¡Pase limpio y al pie del compañero: que el del medio solo mire!",
+        "criterio_eval": "Golpea el balón con precisión hacia el compañero en el rondo sin perderlo.",
+        "criterios": [
+          5
+        ],
+        "fuente": "Pérez Feito, J. M. Sesiones de Educación Física 8 a 9 años («Juegos de iniciación al fútbol»: rondo de cinco)"
+      },
+      {
+        "orden": 9,
+        "titulo": "¿Hasta Dónde Llega mi Balón? Campo de Distancias",
+        "fase_pedagogica": "Fase 3: Complejidad y Retos Dinámicos",
+        "objetivo": "Aplicar el péndulo amplio desde la cadera y el seguimiento completo para ganar distancia.",
+        "distribucion": "Campo abierto con zonas métricas marcadas cada 2 metros hasta los 16 metros para patear lejos.",
+        "actividad_inicial": "Balanceos de pierna y saltos suaves.",
+        "actividad_central": "Patear el balón quieto lo más lejos posible con el empeine. Variantes: a) con un paso de aproximación; b) con una carrera corta de 3 pasos; c) comparar el pie dominante y el no dominante. Se registra la mejor zona alcanzada.",
+        "actividad_final": "Recoger los balones al silbato. Registro y estiramiento.",
+        "consigna": "¡Golpe con el empeine, pierna larga como un látigo, y sigue hacia arriba!",
+        "criterio_eval": "Patea con un péndulo amplio desde la cadera y seguimiento completo de la pierna.",
+        "criterios": [
+          3,
+          4
+        ],
+        "fuente": "Castañer, M. y Camerino, O. Manifestaciones básicas de la motricidad (potencia: impulso de objetos y golpeos)"
+      },
+      {
+        "orden": 10,
+        "titulo": "Mini-Partidos en Cuadrantes",
+        "fase_pedagogica": "Fase 4: Consolidación y Aplicación en Juego",
+        "objetivo": "Aplicar el gesto de pateo en situación de juego reducido.",
+        "distribucion": "Cancha de 16x12 metros dividida en cuadrantes para mini-partidos con balón y dos conos de portería.",
+        "actividad_inicial": "Conducción por parejas: uno conduce y el otro estorba suavemente.",
+        "actividad_central": "Mini-partidos 3 contra 3 por cuadrante con porterías de conos; el gol solo vale con un pateo desde fuera del área marcada. Variantes: a) todos tocan antes del gol; b) el gol con el pie no dominante vale doble; c) torneo de rotación entre cuadrantes.",
+        "actividad_final": "Conversatorio sobre el juego limpio. Estiramiento.",
+        "consigna": "¡Mira, apoya y golpea: en el juego también se patea bien!",
+        "criterio_eval": "Aplica el gesto de pateo (pie de apoyo, brazo contrario y golpe limpio) en situación de juego.",
+        "criterios": [
+          5,
+          1
+        ],
+        "fuente": "Piñón y Pérez. Sesiones de Educación Física 10 a 11 años («Iniciación al fútbol, pases, desmarques y golpeos» y «conducción, control y juego real»)"
+      },
+      {
+        "orden": 11,
+        "titulo": "Relevos de Conducción y Tiro",
+        "fase_pedagogica": "Fase 4: Consolidación y Aplicación en Juego",
+        "objetivo": "Dosificar la fuerza del golpeo para que el balón llegue a la zona de entrega.",
+        "distribucion": "Pistas de relevos de 18 metros con zona de entrega de 2 metros: conducir, rodear el cono y patear al regreso.",
+        "actividad_inicial": "Movilidad articular. Conducción libre.",
+        "actividad_central": "Por equipos: conducir el balón hasta el cono de giro, rodearlo y patear hacia el compañero que espera en la zona de entrega, que controla y sale. Variantes: a) solo con el pie no dominante; b) pase largo desde la mitad; c) el balón debe detenerse dentro de la zona.",
+        "actividad_final": "Coloquio. Estiramiento.",
+        "consigna": "¡Pase al compañero con la fuerza justa: que llegue a su pie y no lo pase de largo!",
+        "criterio_eval": "Golpea con precisión hacia la zona de entrega usando un péndulo de pierna adecuado a la distancia.",
+        "criterios": [
+          5,
+          3
+        ],
+        "fuente": "Pérez Feito, J. M. Sesiones de Educación Física 8 a 9 años («Juegos de iniciación al fútbol»: relevos conduciendo)"
+      },
+      {
+        "orden": 12,
+        "titulo": "Festival del Pateo y Coevaluación",
+        "fase_pedagogica": "Fase 4: Consolidación y Aplicación en Juego",
+        "objetivo": "Integrar los cinco criterios del pateo y valorar el progreso propio y el de los compañeros.",
+        "distribucion": "Circuito de 4 estaciones: Estación 1: Huellas del pie de apoyo; Estación 2: Bolos; Estación 3: Mini-portería a 5 metros; Estación 4: Zigzag de conducción.",
+        "actividad_inicial": "Calentamiento dirigido por los estudiantes.",
+        "actividad_central": "Rotación por estaciones con tarjetas de tres niveles. Tríos: quien patea, quien recoge y quien observa con la lista de la batería (brazo contrario, tronco, péndulo desde la cadera, seguimiento y golpe hacia el objetivo). Cierre: prueba 10 de la batería registrada por el docente.",
+        "actividad_final": "Coevaluación en círculo. Estiramiento.",
+        "consigna": "¡Apoyo, brazo, péndulo y seguimiento: así patea un campeón!",
+        "criterio_eval": "Realiza la prueba de pateo a 5 m integrando los 5 criterios y coevalúa con respeto.",
+        "criterios": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "fuente": "Batería HMB (González Palacio et al., 2021 · Dialnet 7925607), prueba 10 · MEN, Documento 15: evaluación formativa y coevaluación"
       }
     ]
   }

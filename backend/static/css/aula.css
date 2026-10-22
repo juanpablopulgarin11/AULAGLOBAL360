@@ -197,6 +197,13 @@ table.tabla { width: 100%; border-collapse: collapse; font-size: 12.5px; }
     font-size: 10px; font-weight: 600; font-family: var(--font-mono);
 }
 .chip-refuerzo { background: var(--info-soft); color: var(--info); }
+.criterios-sesion { display: flex; flex-wrap: wrap; gap: 4px; }
+/* Punto de partida de la unidad: logrado / por mejorar / por confirmar */
+.partida { border: 1px solid var(--border); border-left-width: 3px; border-radius: var(--r-sm); padding: 8px 10px; font-size: 12.5px; }
+.partida ul { margin: 4px 0 0; padding-left: 18px; }
+.partida-logrado { background: var(--success-soft); border-left-color: #16A34A; }
+.partida-mejorar { background: var(--danger-soft); border-left-color: #DC2626; }
+.partida-confirmar { background: var(--warning-soft); border-left-color: #D97706; }
 .barra { height: 6px; background: #E2E8F0; border-radius: 3px; overflow: hidden; margin-top: 6px; }
 .barra > div { height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.5s var(--ease); }
 .consignas { background: var(--accent-soft); border: 1px solid var(--accent-subtle); border-radius: var(--r-md); padding: 12px 14px; margin: 12px 0; font-size: 12.5px; }

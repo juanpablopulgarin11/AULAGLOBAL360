@@ -26,7 +26,9 @@ SEPARACION_FILA = 0.8
 # Elemento de la escena → material que el docente debe alistar (unidades por elemento)
 MATERIAL_DE = {"cono": ("Conos", 1), "castillo": ("Conos", 6), "aro": ("Aros", 1), "cuerda": ("Cuerdas", 1),
                "balon": ("Balones", 1), "colchoneta": ("Colchonetas", 1), "valla": ("Mini-vallas u obstáculos bajos", 1),
-               "poste": ("Postes o conos altos", 1), "diana": ("Dianas", 1), "cinta": ("Cinta elástica o lana", 1)}
+               "poste": ("Postes o conos altos", 1), "diana": ("Dianas", 1), "cinta": ("Cinta elástica o lana", 1),
+               "banco": ("Bancos suecos o tablones", 1), "porteria": ("Mini-porterías", 1),
+               "platillo": ("Platillos (conos planos)", 1), "bolo": ("Bolos", 1)}
 SUSTITUTOS = {
     "Conos": "botellas plásticas con un poco de arena",
     "Aros": "círculos dibujados con tiza",
@@ -37,6 +39,10 @@ SUSTITUTOS = {
     "Postes o conos altos": "sillas o palos de escoba sobre un cono",
     "Dianas": "círculos de papel de colores pegados con cinta",
     "Cinta elástica o lana": "una cuerda o lana amarrada entre dos postes",
+    "Bancos suecos o tablones": "una línea doble de tiza de 20 cm de ancho o un tablón firme sobre el piso",
+    "Mini-porterías": "dos conos o dos maletas separados 1,5 m",
+    "Platillos (conos planos)": "tapas de cartón o círculos de tiza",
+    "Bolos": "botellas plásticas con un poco de agua o arena",
 }
 
 
@@ -136,6 +142,7 @@ class Escena:
         self.pasos: List[str] = []
         self.filas: List[Dict[str, Any]] = []
         self.disperso = False
+        self.puestos: List[Dict[str, Any]] = []
         self.organizar = "hileras"
         self.docente: Optional[Dict[str, Any]] = None
         self.resumen = ""
@@ -180,6 +187,11 @@ class Escena:
         """Punto donde arranca una hilera y hacia dónde crece (se espera mirando en sentido contrario)."""
         self.filas.append({"x": x, "z": z, "dx": dx, "dz": dz, "columnas": columnas})
 
+    def puesto(self, x: float, z: float, mira: Tuple[float, float], grupo: int = 0) -> None:
+        """Lugar exacto de un estudiante (parejas, corros, estrellas…) mirando hacia ``mira``."""
+        self.puestos.append({"x": x, "z": z, "rot": math.atan2(mira[0] - x, mira[1] - z),
+                             "color": COLORES_FILA[grupo % len(COLORES_FILA)]})
+
     def delimitar(self, p: int, color: str = "blanco") -> None:
         a, l = self.ancho / 2, self.largo / 2
         self.linea(p, [(-a, -l), (a, -l), (a, l), (-a, l), (-a, -l)], color=color, grosor=0.08)
@@ -191,6 +203,8 @@ class Escena:
     # -- ubicación de estudiantes y docente
     def _ubicar_estudiantes(self) -> List[Dict[str, Any]]:
         n = self.estudiantes
+        if self.puestos:
+            return self.puestos[:n] + self._dispersos(n)[len(self.puestos):]
         if self.disperso or not self.filas:
             return self._dispersos(n)
         k = len(self.filas)
@@ -225,7 +239,9 @@ class Escena:
 
     def como_dict(self, materiales_elegidos: Iterable[str], minutos_central: Optional[int]) -> Dict[str, Any]:
         n = self.estudiantes
-        if self.disperso or not self.filas:
+        if self.puestos:
+            p_est = self.paso(f"Ubica a los {n} estudiantes: {self.organizar}.")
+        elif self.disperso or not self.filas:
             p_est = self.paso(f"Distribuye a los {n} estudiantes por todo el espacio{self.organizar_extra()}.")
         else:
             k = len(self.filas)
@@ -630,7 +646,29 @@ def _estacion(esc: Escena, p: int, cx: float, cz: float, nombre: str, i: int, s:
     esc.etiqueta(p, cx, cz - 2.0 * s, titulo, y=0.6)
     z = lambda d: cz + d * s  # noqa: E731
     x = lambda d: cx + d * s  # noqa: E731
-    if re.search(r"cruz|diagonal", n):
+    if re.search(r"banco", n):
+        esc.add("banco", p, x=cx, z=z(0.1), largo=2.6 * s, rot=0.0)
+    elif re.search(r"porteri|\bgol\b|remate", n):
+        esc.add("porteria", p, x=cx, z=z(-1.3), ancho=1.2, alto=0.8)
+        esc.add("balon", p, x=cx, z=z(1.0), color="blanco")
+    elif re.search(r"\bbolos?\b", n):
+        for k, dx in enumerate((-0.3, 0, 0.3, -0.15, 0.15, 0)):
+            esc.add("bolo", p, x=x(dx), z=z(-1.1 - (0 if k < 3 else 0.25 if k < 5 else 0.5)))
+        esc.add("balon", p, x=cx, z=z(1.1), color="blanco")
+    elif re.search(r"huella|talon|pie de apoyo", n):
+        for k in range(6):
+            esc.add("huella", p, x=cx + (0.1 if k % 2 else -0.1), z=z(1.2 - k * 0.45), lado="der" if k % 2 else "izq", rot=0.0)
+    elif re.search(r"linea|sendero|cuerda floja", n):
+        esc.linea(p, [(cx, z(1.4)), (cx, z(-1.4))], "blanco", 0.05)
+        esc.cono(p, cx, z(-1.6), "naranja")
+    elif re.search(r"pareja|recepcion|atrape", n):
+        esc.linea(p, [(x(-1), z(1.1)), (x(1), z(1.1))], "blanco", 0.06)
+        esc.linea(p, [(x(-1), z(-1.1)), (x(1), z(-1.1))], "blanco", 0.06)
+        esc.add("balon", p, x=cx, z=z(1.3), color="amarillo")
+    elif re.search(r"estatua|un pie|unipodal|equilibrio", n):
+        for dx, dz in ((-0.8, -0.8), (0.8, -0.8), (-0.8, 0.8), (0.8, 0.8)):
+            esc.add("colchoneta", p, x=x(dx), z=z(dz), ancho=0.9 * s, largo=0.9 * s)
+    elif re.search(r"cruz|diagonal", n):
         for dx, dz in ((0, 0), (-0.75, -0.75), (0.75, -0.75), (-0.75, 0.75), (0.75, 0.75)):
             esc.aro(p, x(dx), z(dz), "verde")
     elif re.search(r"aro|zancada|hilera", n):
@@ -810,56 +848,68 @@ def _cintas(esc: Escena, t: str, o: str, ctx: Dict[str, Any]) -> None:
 
 
 def _rayuela(esc: Escena, t: str, o: str, ctx: Dict[str, Any]) -> None:
-    cols, filas = 3, 4
-    p = esc.paso("Arma una cuadrícula de 3 × 4 «islas» alternando colchonetas y aros numerados del 1 al 12; "
-                 "deja entre 1 y 1,5 m de «agua» entre islas.")
-    esc.ajustar(10.0, 14.0)
+    islas = max(6, min(18, _cantidad(t, "islas") or 12))
+    cols = 3
+    filas = math.ceil(islas / cols)
+    p = esc.paso(f"Arma una cuadrícula de {cols} × {filas} «islas» alternando colchonetas y aros numerados del 1 al "
+                 f"{islas}; deja entre 1 y 1,5 m de «agua» entre islas.")
+    alto = filas * 2.6
+    esc.ajustar(10.0, alto + 3.6)
+    arriba = alto / 2 - 1.2
     k = 0
     for r in range(filas):
         for c in range(cols):
+            if k >= islas:
+                break
             x = (c - 1) * 2.6
-            z = 4.0 - r * 2.6 - (0.3 if c == 1 else 0)
+            z = arriba - r * 2.6 - (0.3 if c == 1 else 0)
             k += 1
             if (r + c) % 2 == 0:
                 esc.add("colchoneta", p, x=x, z=z, ancho=1.2, largo=1.2)
                 esc.etiqueta(p, x, z, str(k), y=0.3)
             else:
                 esc.aro(p, x, z, "amarillo", str(k))
-    esc.cota(p, (-2.6 + 0.6, 0.1, 4.0), (-0.6, 0.1, 3.7), None)
-    esc.cota(p, (-2.6, 0.1, 4.0 - 0.6), (-2.6, 0.1, 4.0 - 2.6 + 0.6))
+    esc.cota(p, (-2.6 + 0.6, 0.1, arriba), (-0.6, 0.1, arriba - 0.3), None)
+    esc.cota(p, (-2.6, 0.1, arriba - 0.6), (-2.6, 0.1, arriba - 2.6 + 0.6))
     pa = esc.paso("Pinta de azul el «agua» y marca la orilla de salida con una línea; la isla final con conos verdes.")
-    esc.zona(pa, 0, -0.3, 8.0, 10.6, "celeste", None)
-    esc.linea(pa, [(-4, 6.2), (4, 6.2)], "blanco", 0.1)
-    esc.etiqueta(pa, -4.6, 6.2, "Orilla")
+    esc.zona(pa, 0, arriba - (filas - 1) * 1.3 - 0.4, 8.0, alto + 0.2, "celeste", None)
+    esc.linea(pa, [(-4, arriba + 2.2), (4, arriba + 2.2)], "blanco", 0.1)
+    esc.etiqueta(pa, -4.6, arriba + 2.2, "Orilla")
     for x in (-1, 1):
-        esc.cono(pa, x * 1.2, -5.9, "verde")
+        esc.cono(pa, x * 1.2, arriba - (filas - 1) * 2.6 - 2.1, "verde")
     for x in (-2.6, 0, 2.6):
-        esc.fila(x, 6.8)
-    esc.resumen = "Rayuela de 12 islas"
+        esc.fila(x, arriba + 2.8)
+    esc.resumen = f"Rayuela de {islas} islas"
     _docente_costado(esc, 0, "Ubícate a un costado de la cuadrícula, a la mitad: ves cada salto y cuentas los "
                              "2 segundos de equilibrio en la isla.")
 
 
 def _escalera(esc: Escena, t: str, o: str, ctx: Dict[str, Any]) -> None:
     n = _carriles_por_grupo(esc, 3, 5, 7)
-    p = esc.paso(f"Dibuja con tiza {n} escaleras de 8 peldaños (70 cm de ancho, 45 cm entre peldaños), separadas 2,5 m.")
-    centros, z0, z1 = _pistas(esc, p, n, 2.5, 9.0, lineas=False)
+    peldanos = _cantidad(t, "peldanos") or 8
+    sep = _metros_tras(t, "cada") or 0.45
+    aros = "aro" in t
+    tramo = (peldanos - 1) * sep
+    p = esc.paso(f"Dibuja con tiza {n} escaleras de {peldanos} peldaños (70 cm de ancho, {_m(sep)} entre peldaños), "
+                 "separadas 2,5 m.")
+    centros, z0, z1 = _pistas(esc, p, n, 2.5, tramo + (5.85 if aros else 1.5), lineas=False)
     for cx in centros:
-        esc.linea(p, [(cx - 0.35, z0), (cx - 0.35, z0 - 7 * 0.45)], "amarillo", 0.05)
-        esc.linea(p, [(cx + 0.35, z0), (cx + 0.35, z0 - 7 * 0.45)], "amarillo", 0.05)
-        for k in range(8):
-            esc.linea(p, [(cx - 0.35, z0 - k * 0.45), (cx + 0.35, z0 - k * 0.45)], "amarillo", 0.05)
-    esc.cota(p, (centros[0] - 0.6, 0, z0), (centros[0] - 0.6, 0, z0 - 0.45))
+        esc.linea(p, [(cx - 0.35, z0), (cx - 0.35, z0 - tramo)], "amarillo", 0.05)
+        esc.linea(p, [(cx + 0.35, z0), (cx + 0.35, z0 - tramo)], "amarillo", 0.05)
+        for k in range(peldanos):
+            esc.linea(p, [(cx - 0.35, z0 - k * sep), (cx + 0.35, z0 - k * sep)], "amarillo", 0.05)
+    esc.cota(p, (centros[0] - 0.6, 0, z0), (centros[0] - 0.6, 0, z0 - sep))
     esc.cota(p, (centros[0] - 0.35, 0, z0 + 0.35), (centros[0] + 0.35, 0, z0 + 0.35))
-    pa = esc.paso("Después de cada escalera pon 4 aros con separación progresiva: 60, 80, 100 y 120 cm.")
-    for cx in centros:
-        z = z0 - 7 * 0.45 - 1.0
-        for k, sep in enumerate((0, 0.6, 0.8, 1.0)):
-            z -= sep + (0.6 if k else 0)
-            esc.aro(pa, cx, z)
-    z = z0 - 7 * 0.45 - 1.0
-    esc.cota(pa, (centros[-1] + 0.6, 0, z - 0.3), (centros[-1] + 0.6, 0, z - 0.9))
-    esc.resumen = f"{n} escaleras + aros progresivos"
+    if aros:
+        pa = esc.paso("Después de cada escalera pon 4 aros con separación progresiva: 60, 80, 100 y 120 cm.")
+        for cx in centros:
+            z = z0 - tramo - 1.0
+            for k, s_aro in enumerate((0, 0.6, 0.8, 1.0)):
+                z -= s_aro + (0.6 if k else 0)
+                esc.aro(pa, cx, z)
+        z = z0 - tramo - 1.0
+        esc.cota(pa, (centros[-1] + 0.6, 0, z - 0.3), (centros[-1] + 0.6, 0, z - 0.9))
+    esc.resumen = f"{n} escaleras" + ("" if peldanos == 8 else f" de {peldanos} peldaños") + (" + aros progresivos" if aros else "")
     _docente_costado(esc, z0 - 3, "Ubícate al costado, al final de las escaleras: ahí se ve si mantienen la postura "
                                   "al aumentar la velocidad.")
 
@@ -978,11 +1028,12 @@ def _campo_metrico(esc: Escena, t: str, o: str, ctx: Dict[str, Any]) -> None:
     cada = _metros_tras(t, "cada") or 2.0
     hasta = _metros_tras(t, r"hasta(?:\s+los)?") or 20.0
     ancho = 10.0
+    accion = "pateo" if re.search(r"pate|golpe", t) else "pase" if re.search(r"atrap|pase", t) else "lanzamiento"
     esc.ajustar(ancho + 2, hasta + 6)
     z0 = esc.largo / 2 - 4
-    p = esc.paso(f"Traza la línea de lanzamiento de {_m(ancho)} y marca líneas cada {_m(cada)} hasta los {_m(hasta)}.")
+    p = esc.paso(f"Traza la línea de {accion} de {_m(ancho)} y marca líneas cada {_m(cada)} hasta los {_m(hasta)}.")
     esc.linea(p, [(-ancho / 2, z0), (ancho / 2, z0)], "blanco", 0.12)
-    esc.etiqueta(p, -ancho / 2 - 1.2, z0, "Lanzamiento")
+    esc.etiqueta(p, -ancho / 2 - 1.2, z0, accion.capitalize())
     d = cada
     colores = ["amarillo", "naranja", "rojo", "morado", "azul"]
     while d <= hasta + 1e-6:
@@ -993,15 +1044,16 @@ def _campo_metrico(esc: Escena, t: str, o: str, ctx: Dict[str, Any]) -> None:
         d += cada
     esc.cota(p, (-ancho / 2 - 0.6, 0, z0), (-ancho / 2 - 0.6, 0, z0 - cada))
     esc.cota(p, (-ancho / 2 - 1.4, 0, z0), (-ancho / 2 - 1.4, 0, z0 - hasta))
-    ps = esc.paso("Zona de seguridad: nadie pasa la línea de lanzamiento hasta la señal «¡a recoger!».")
+    ps = esc.paso(f"Zona de seguridad: nadie pasa la línea de {accion} hasta la señal «¡a recoger!».")
     esc.zona(ps, 0, z0 - hasta / 2, ancho, hasta, "rojo")
     xs = [-3.75, -1.25, 1.25, 3.75]
     for x in xs:
         esc.add("balon", ps, x=x, z=z0 + 0.3, color="rojo")
         esc.fila(x, z0 + 0.8)
     esc.resumen = f"Campo de {_m(hasta)} con marcas cada {_m(cada)}"
-    _docente_costado(esc, z0 - 1, "Párate al costado de la línea de lanzamiento, nunca en el campo: das la señal "
-                                  "de lanzar y de recoger.")
+    verbo = {"lanzamiento": "lanzar", "pateo": "patear", "pase": "pasar"}[accion]
+    _docente_costado(esc, z0 - 1, f"Párate al costado de la línea de {accion}, nunca en el campo: das la señal "
+                                  f"de {verbo} y de recoger.")
 
 
 def _refugios(esc: Escena, t: str, o: str, ctx: Dict[str, Any]) -> None:
@@ -1026,12 +1078,13 @@ def _cuadrantes(esc: Escena, t: str, o: str, ctx: Dict[str, Any]) -> None:
     esc.ajustar(ancho, largo)
     p = esc.paso(f"Delimita la cancha de {_m(ancho)} × {_m(largo)}.")
     esc.delimitar(p)
-    pc = esc.paso("Divídela en 4 cuadrantes con dos líneas por el centro; un equipo de pase en cada cuadrante.")
+    pc = esc.paso("Divídela en 4 cuadrantes con dos líneas por el centro; un grupo en cada cuadrante.")
     esc.linea(pc, [(0, -largo / 2), (0, largo / 2)], "amarillo", 0.08)
     esc.linea(pc, [(-ancho / 2, 0), (ancho / 2, 0)], "amarillo", 0.08)
     for i, (x, z) in enumerate(((-1, -1), (1, -1), (-1, 1), (1, 1))):
         esc.zona(pc, x * ancho / 4, z * largo / 4, ancho / 2 - 0.2, largo / 2 - 0.2, COLORES_FILA[i], "ABCD"[i])
-        esc.add("balon", pc, x=x * ancho / 4, z=z * largo / 4, color="amarillo")
+        if not re.search(r"march|camin|equilibr|estatua|pata coja", t):
+            esc.add("balon", pc, x=x * ancho / 4, z=z * largo / 4, color="amarillo")
     esc.disperso = True
     esc.organizar = "dos equipos repartidos en los cuadrantes"
     esc.resumen = f"Cancha de {_m(ancho)} × {_m(largo)} en cuadrantes"
@@ -1061,6 +1114,441 @@ def _ataque(esc: Escena, t: str, o: str, ctx: Dict[str, Any]) -> None:
     esc.resumen = f"{n} mini-canchas de ataque y defensa"
     esc.docente = {"x": 0.0, "z": 0.0, "consejo": "Párate en el cruce entre las 4 mini-canchas: ves todas las "
                                                   "decisiones de pase o lanzamiento.", "mira": [0.0, 1.0]}
+
+
+# ---------------------------------------------------------------- recetas por habilidad (marcha, equilibrio,
+# salto unipodal, atrape y pateo). Cada una sale de una tarea de los libros de la carpeta Data.
+
+def _con_pelota(t: str) -> bool:
+    return bool(re.search(r"pelota|balon|pase|patea|atrap", t))
+
+
+def _senderos(esc: Escena, t: str, o: str, ctx: Dict[str, Any]) -> None:
+    """Huellas de tiza (Unidad «El arte de marchar»): una recta, una curva y una en zigzag."""
+    largo = _metros_tras(t, r"\bde") or 9.0
+    sep = 3.0
+    p = esc.paso(f"Dibuja con tiza 3 senderos de {_m(largo)}: uno recto, uno en curva y uno en zigzag, separados {_m(sep)}.")
+    centros, z0, z1 = _pistas(esc, p, 3, sep, largo, lineas=False)
+    pasos = 12
+    for k, cx in enumerate(centros):
+        if k == 0:
+            puntos = [(cx, z0), (cx, z1)]
+        elif k == 1:
+            puntos = [(cx + 0.8 * math.sin(i / pasos * 2 * math.pi), z0 - largo * i / pasos) for i in range(pasos + 1)]
+        else:
+            puntos = [(cx + (0.6 if i % 2 else -0.6) * (0 < i < 8), z0 - largo * i / 8) for i in range(9)]
+        esc.linea(p, puntos, ["blanco", "amarillo", "celeste"][k], 0.07)
+        esc.cono(p, cx, z0 + 0.3, "verde")
+        esc.cono(p, cx, z1 - 0.3, "rojo")
+        esc.etiqueta(p, cx, z1 - 0.9, ["Recto", "Curva", "Zigzag"][k])
+    esc.cota(p, (centros[0] - 1.0, 0, z0), (centros[0] - 1.0, 0, z1))
+    esc.cota(p, (centros[0], 0, z0 + 0.8), (centros[1], 0, z0 + 0.8))
+    esc.resumen = f"3 senderos de tiza de {_m(largo)} (recto, curvo y zigzag)"
+    _docente_costado(esc, (z0 + z1) / 2, "Ubícate al costado, a mitad de los senderos: de perfil ves el apoyo del pie, "
+                                         "el tronco y el braceo de los tres grupos.")
+
+
+def _linea_9m(esc: Escena, t: str, o: str, ctx: Dict[str, Any]) -> None:
+    """Prueba 1 y 14 de la batería: línea recta de 9 m (5 cm de ancho) con un cono al final."""
+    n = _cantidad(t, "lineas") or _carriles_por_grupo(esc, 3, 5, 6)
+    largo = _metros_tras(t, r"\bde") or 9.0
+    sep = 2.0
+    p = esc.paso(f"Pega {n} líneas rectas de cinta (5 cm de ancho) de {_m(largo)}, separadas {_m(sep)}, con un cono al final.")
+    centros, z0, z1 = _pistas(esc, p, n, sep, largo, lineas=False, atras=4.0, frente=2.5)
+    for cx in centros:
+        esc.linea(p, [(cx, z0), (cx, z1)], "blanco", 0.05)
+        esc.cono(p, cx, z1 - 0.3, "naranja")
+        esc.linea(p, [(cx - 0.4, z0), (cx + 0.4, z0)], "verde", 0.08)
+    esc.cota(p, (centros[0] - 0.7, 0, z0), (centros[0] - 0.7, 0, z1))
+    esc.cota(p, (centros[0], 0, z0 + 0.5), (centros[1], 0, z0 + 0.5))
+    if re.search(r"diana|mirada|tarjeta", t):
+        pd = esc.paso("Al final de cada línea pon una tarjeta de color o diana a la altura de los ojos (1,2 m): "
+                      "es el punto que se mira todo el recorrido.")
+        for cx in centros:
+            esc.add("diana", pd, x=cx, y=1.2, z=z1 - 0.9, radio=0.2)
+        esc.cota(pd, (centros[-1] + 0.5, 0, z1 - 0.9), (centros[-1] + 0.5, 1.2, z1 - 0.9))
+    esc.resumen = f"{n} líneas de {_m(largo)} (prueba de la batería)"
+    _docente_costado(esc, z1 + 1.5, "Párate al final de las líneas, de frente a los niños: ves si los pies se salen "
+                                    "de la línea y si la mirada va al cono y no al suelo.")
+
+
+def _banco(esc: Escena, p: int, x: float, z: float, largo: float = 3.0, rot: float = 0.0) -> None:
+    esc.add("banco", p, x=x, z=z, largo=largo, rot=rot)
+
+
+def _bancos(esc: Escena, t: str, o: str, ctx: Dict[str, Any]) -> None:
+    """Pérez Feito (6-7 años, «Equilibrio estático y en altura»): bancos suecos en fila, uno detrás de otro."""
+    bancos = _cantidad(t, "bancos") or 3
+    n = 2 if esc.estudiantes > 12 else 1
+    largo = bancos * 3.0
+    p = esc.paso(f"Arma {n} recorrido{'s' if n > 1 else ''} de {bancos} bancos suecos uno tras otro "
+                 f"({_m(largo)}), separados 3 m.")
+    centros, z0, z1 = _pistas(esc, p, n, 3.5, largo + 1.0, lineas=False, atras=4.0, frente=3.0)
+    for cx in centros:
+        for k in range(bancos):
+            _banco(esc, p, cx, z0 - 0.5 - 1.5 - k * 3.0)
+        esc.linea(p, [(cx - 0.6, z0), (cx + 0.6, z0)], "blanco", 0.1)
+    esc.cota(p, (centros[0] - 0.8, 0.3, z0 - 0.5), (centros[0] - 0.8, 0.3, z0 - 0.5 - largo))
+    if "colchoneta" in t:
+        pc = esc.paso("Al final de cada recorrido pon una colchoneta para bajar con un salto controlado.")
+        for cx in centros:
+            esc.add("colchoneta", pc, x=cx, z=z0 - 0.5 - largo - 1.1, ancho=1.2, largo=1.6)
+    pa = esc.paso("Pon un ayudante a cada lado del primer banco (dar la mano solo si alguien la pide).")
+    for cx in centros:
+        esc.cono(pa, cx - 0.7, z0 - 1.0, "azul")
+        esc.cono(pa, cx + 0.7, z0 - 1.0, "azul")
+    esc.resumen = f"{n} recorrido{'s' if n > 1 else ''} de {bancos} bancos suecos"
+    _docente_costado(esc, z0 - 0.5 - largo / 2, "Ubícate al costado, a mitad de los bancos y a un paso de ellos: "
+                                                "puedes dar apoyo y ver si la mirada va al frente.")
+
+
+def _bancos_cuadro(esc: Escena, t: str, o: str, ctx: Dict[str, Any]) -> None:
+    """Pérez Feito («Equilibrio dinámico»): cuatro bancos en ángulo de 90°; en cada lado se avanza distinto."""
+    lado = 3.0
+    n = 2 if esc.estudiantes > 14 else 1
+    esc.ajustar(n * (lado + 4) + 2, lado + 7)
+    p = esc.paso(f"Arma {n} cuadrado{'s' if n > 1 else ''} de 4 bancos suecos ({_m(lado)} por lado) unidos en "
+                 "ángulo de 90°.")
+    formas = ["Adelante", "Atrás", "Cuadrupedia", "De lado"]
+    for i in range(n):
+        cx = (i - (n - 1) / 2) * (lado + 4)
+        a = lado / 2
+        lados = [((cx - a, 0.0), 0.0), ((cx, -a), math.pi / 2), ((cx + a, 0.0), 0.0), ((cx, a), math.pi / 2)]
+        for k, ((x, z), rot) in enumerate(lados):
+            _banco(esc, p, x, z, lado, rot)
+            dx, dz = x - cx, z
+            d = math.hypot(dx, dz) or 1
+            esc.etiqueta(p, cx + dx / d * (a + 0.8), dz / d * (a + 0.8), f"{k + 1} · {formas[k]}")
+        esc.fila(cx - a, a + 1.2)
+        esc.add("flecha", p, puntos=[[cx - a + 0.6, a - 0.4], [cx - a + 0.6, -a + 0.6]], color="azul")
+    x0 = -(n - 1) / 2 * (lado + 4)
+    esc.cota(p, (x0 - lado / 2, 0.3, -lado / 2 - 1.6), (x0 + lado / 2, 0.3, -lado / 2 - 1.6))
+    esc.resumen = f"{n} cuadrado{'s' if n > 1 else ''} de 4 bancos a 90°"
+    esc.docente = {"x": 0.0, "z": -lado / 2 - 2.5, "consejo": "Párate frente a la esquina de los bancos 2 y 3: ahí "
+                   "cambian de forma de avanzar y es donde más se desequilibran.", "mira": [0.0, 0.0]}
+
+
+def _bancos_paralelos(esc: Escena, t: str, o: str, ctx: Dict[str, Any]) -> None:
+    """Pérez Feito («Equilibrio estático y dinámico»): dos bancos paralelos a medio metro, un pie en cada uno."""
+    n = _carriles_por_grupo(esc, 2, 3, 9)
+    sep = 0.5
+    p = esc.paso(f"Arma {n} pasillos de 2 bancos suecos paralelos separados {_m(sep)} (se avanza con un pie en cada banco).")
+    centros, z0, z1 = _pistas(esc, p, n, 3.5, 4.0, lineas=False)
+    for cx in centros:
+        _banco(esc, p, cx - sep / 2 - 0.12, z0 - 2.0)
+        _banco(esc, p, cx + sep / 2 + 0.12, z0 - 2.0)
+        esc.linea(p, [(cx - 0.8, z0), (cx + 0.8, z0)], "blanco", 0.1)
+    esc.cota(p, (centros[0] - sep / 2, 0.35, z0 - 0.7), (centros[0] + sep / 2, 0.35, z0 - 0.7))
+    esc.resumen = f"{n} pasillos de bancos paralelos a {_m(sep)}"
+    _docente_costado(esc, z0 - 2, "Ubícate al costado de los pasillos: ves si el tronco se mantiene erguido al "
+                                  "repartir el peso entre los dos bancos.")
+
+
+def _parejas(esc: Escena, t: str, o: str, ctx: Dict[str, Any]) -> None:
+    """Parejas enfrentadas a una o varias distancias (Pérez Feito, «Juegos de lanzamientos y recepciones»)."""
+    distancias = next((lst for lst in _listas_tras_a(t) if all(v >= 1 for v in lst)), None) or [3.0]
+    d = distancias[0]
+    pares = math.ceil(esc.estudiantes / 2)
+    cols = min(pares, 8)
+    filas_par = math.ceil(pares / cols)
+    sep, fondo = 1.6, max(distancias) + 3.0
+    esc.ajustar(cols * sep + 3, filas_par * fondo + 2)
+    p = esc.paso(f"Traza dos líneas enfrentadas a {_m(d)} por cada fila de parejas (una pareja cada {_m(sep)}).")
+    colores = ["amarillo", "naranja", "rojo", "morado"]
+    for r in range(filas_par):
+        zc = (r - (filas_par - 1) / 2) * fondo
+        x0, x1 = -cols * sep / 2, cols * sep / 2
+        for k, dk in enumerate(distancias):
+            for lado in (-1, 1):
+                esc.linea(p, [(x0, zc + lado * dk / 2), (x1, zc + lado * dk / 2)], colores[k % 4] if k else "blanco", 0.07)
+        for c in range(cols):
+            if r * cols + c >= pares:
+                break
+            x = x0 + sep * (c + 0.5)
+            esc.puesto(x, zc + d / 2 + 0.25, (x, zc), r * cols + c)
+            esc.puesto(x, zc - d / 2 - 0.25, (x, zc), r * cols + c)
+            if _con_pelota(t):
+                esc.add("balon", p, x=x + 0.3, z=zc + d / 2 + 0.3, color="amarillo")
+        for k, dk in enumerate(distancias):
+            esc.cota(p, (x1 + 0.6 + 1.1 * k, 0, zc + dk / 2), (x1 + 0.6 + 1.1 * k, 0, zc - dk / 2))
+    if len(distancias) > 1:
+        esc.pasos[p] += " Líneas de color a " + ", ".join(_m(v) for v in distancias[1:]) + ": se pasa a la siguiente tras 5 aciertos."
+    esc.organizar = f"{pares} parejas, una frente a la otra"
+    esc.resumen = f"{pares} parejas enfrentadas a " + ", ".join(_m(v) for v in distancias)
+    _docente_costado(esc, 0, "Recorre el costado de las parejas: de perfil ves la postura de espera y cómo ceden "
+                             "los brazos al recibir.")
+
+
+def _corro(esc: Escena, t: str, o: str, ctx: Dict[str, Any]) -> None:
+    """Corros de 6 con uno en el centro (Pérez Feito, 8-9 años, «Anticipación de trayectorias»; rondo de fútbol)."""
+    por = _cantidad(t, "estudiantes", "alumnos", "ninos", "jugadores") or 6
+    g = max(1, math.ceil(esc.estudiantes / por))
+    radio = _metros_tras(t, r"radio(?:\s+de)?") or 2.5
+    cols = min(g, 3)
+    filas = math.ceil(g / cols)
+    paso = 2 * radio + 3
+    esc.ajustar(cols * paso + 1, filas * paso + 1)
+    p = esc.paso(f"Dibuja {g} círculos de tiza de {_m(radio)} de radio separados 3 m (uno por corro) y un aro en el centro.")
+    for i in range(g):
+        cx = (i % cols - (cols - 1) / 2) * paso
+        cz = (i // cols - (filas - 1) / 2) * paso
+        puntos = [(cx + radio * math.cos(a * math.pi / 16), cz + radio * math.sin(a * math.pi / 16)) for a in range(33)]
+        esc.linea(p, puntos, "blanco", 0.06)
+        esc.aro(p, cx, cz, "rojo")
+        esc.puesto(cx, cz, (cx, cz + 1), i)
+        for k in range(por - 1):
+            a = 2 * math.pi * k / (por - 1)
+            esc.puesto(cx + radio * math.cos(a), cz + radio * math.sin(a), (cx, cz), i)
+        if _con_pelota(t):
+            esc.add("balon", p, x=cx + radio - 0.3, z=cz, color="amarillo")
+    esc.cota(p, (-(cols - 1) / 2 * paso, 0, -(filas - 1) / 2 * paso), (-(cols - 1) / 2 * paso + radio, 0, -(filas - 1) / 2 * paso))
+    esc.organizar = f"{g} corros de {por} (uno en el centro dentro del aro)"
+    esc.resumen = f"{g} corros de {por} con uno al centro"
+    esc.docente = {"x": 0.0, "z": filas * paso / 2 + 1.0, "consejo": "Ubícate por fuera, en el borde del espacio: ves "
+                   "todos los corros y cambias al del centro cada minuto.", "mira": [0.0, 0.0]}
+
+
+def _porterias(esc: Escena, t: str, o: str, ctx: Dict[str, Any]) -> None:
+    """Prueba 10 de la batería: patear a una meta a 5 m desde un paso de distancia del balón."""
+    d = next((lst[0] for lst in _listas_tras_a(t) if lst[0] >= 2), 5.0)
+    n = _carriles_por_grupo(esc, 3, 5, 6)
+    p = esc.paso(f"Pon {n} mini-porterías de 1,5 m en línea, separadas 3 m.")
+    centros, z0, z1 = _pistas(esc, p, n, 3.0, d + 1.0, lineas=False, frente=1.5)
+    for cx in centros:
+        esc.add("porteria", p, x=cx, z=z1 + 0.5, ancho=1.5, alto=0.9)
+    pm = esc.paso(f"Frente a cada portería, a {_m(d)}, marca con tiza el punto del balón y una línea un paso atrás.")
+    for cx in centros:
+        zb = z1 + 0.5 + d
+        esc.add("balon", pm, x=cx, z=zb, color="blanco")
+        esc.linea(pm, [(cx - 0.5, zb + 0.6), (cx + 0.5, zb + 0.6)], "amarillo", 0.08)
+        esc.fila(cx, zb + 1.3)
+    esc.cota(pm, (centros[0] - 1.1, 0, z1 + 0.5), (centros[0] - 1.1, 0, z1 + 0.5 + d))
+    esc.cota(pm, (centros[0] - 0.75, 0, z1 + 0.1), (centros[0] + 0.75, 0, z1 + 0.1))
+    esc.resumen = f"{n} mini-porterías a {_m(d)}"
+    _docente_costado(esc, z1 + 0.5 + d, "Ubícate al costado, a la altura de los balones: de perfil ves el péndulo de "
+                                        "la pierna desde la cadera y el brazo contrario.")
+
+
+def _bolos(esc: Escena, t: str, o: str, ctx: Dict[str, Any]) -> None:
+    """Pérez Feito (8-9 años, «Juegos de iniciación al fútbol»): derribar conos o bolos con el pie."""
+    d = next((lst[0] for lst in _listas_tras_a(t) if lst[0] >= 2), 4.0)
+    n = _carriles_por_grupo(esc, 3, 5, 6)
+    p = esc.paso(f"Traza {n} pasillos de 2,5 m de ancho y pon 6 bolos en triángulo al fondo de cada uno, a {_m(d)} de la línea de pateo.")
+    centros, z0, z1 = _pistas(esc, p, n, 2.5, d + 1.5, salida="Pateo", llegada=None)
+    for cx in centros:
+        zb = z0 - d
+        for fila_b, cant in enumerate((3, 2, 1)):
+            for k in range(cant):
+                esc.add("bolo", p, x=cx + (k - (cant - 1) / 2) * 0.28, z=zb - 0.25 * (2 - fila_b))
+        esc.add("balon", p, x=cx, z=z0 + 0.2, color="blanco")
+    esc.cota(p, (centros[-1] + 1.5, 0, z0), (centros[-1] + 1.5, 0, z0 - d))
+    esc.resumen = f"{n} pasillos de bolos a {_m(d)}"
+    _docente_costado(esc, z0 - d / 2, "Ubícate al costado de los pasillos: ves el apoyo junto al balón y si el pie "
+                                      "sigue hacia los bolos después del golpe.")
+
+
+def _estatuas(esc: Escena, t: str, o: str, ctx: Dict[str, Any]) -> None:
+    """Un aro por estudiante repartido por el espacio (trabajo individual de equilibrio o autolanzamientos)."""
+    ancho, largo = _dimensiones(t) or (12.0, 14.0)
+    esc.ajustar(ancho, largo)
+    p = esc.paso(f"Delimita {_m(ancho)} × {_m(largo)} y reparte {esc.estudiantes} aros dispersos, a 2 m o más uno de otro.")
+    esc.delimitar(p)
+    for k, e in enumerate(esc._dispersos(esc.estudiantes)):
+        esc.aro(p, e["x"], e["z"], ["amarillo", "verde", "rojo", "celeste"][k % 4])
+        esc.puesto(e["x"], e["z"], (0.0, 0.0), k % 2)
+        if _con_pelota(t):
+            esc.add("balon", p, x=e["x"] + 0.35, z=e["z"], color="amarillo")
+    esc.organizar = "cada uno dentro de su aro"
+    esc.resumen = f"{esc.estudiantes} aros dispersos en {_m(ancho)} × {_m(largo)}"
+    esc.docente = {"x": 0.0, "z": largo / 2 + 1.2, "consejo": "Párate en el borde, a mitad del lado largo: todos te "
+                   "ven al dar la señal y tú ves a todos.", "mira": [0.0, 0.0]}
+
+
+def _laberinto(esc: Escena, t: str, o: str, ctx: Dict[str, Any]) -> None:
+    """Unidad «El arte de marchar», actividad «Laberinto postal»: platillos y conos para esquivar en zigzag."""
+    ancho, largo = _dimensiones(t) or (10.0, 14.0)
+    platillos = _cantidad(t, "platillos") or 16
+    conos = _cantidad(t, "conos") or 8
+    esc.ajustar(ancho, largo + 3)
+    p = esc.paso(f"Delimita {_m(ancho)} × {_m(largo)} y reparte {platillos} platillos y {conos} conos al azar, "
+                 "dejando al menos 1 m entre ellos.")
+    a, l = ancho / 2, largo / 2
+    esc.linea(p, [(-a, -l), (a, -l), (a, l), (-a, l), (-a, -l)], "blanco", 0.06)
+    semilla = 11 + platillos
+    puestos = []
+    while len(puestos) < platillos + conos:
+        semilla = (semilla * 1103515245 + 12345) % 2 ** 31
+        x = -a + 0.8 + (semilla % 1000) / 1000 * (ancho - 1.6)
+        z = -l + 0.8 + ((semilla // 1000) % 1000) / 1000 * (largo - 1.6)
+        if all(math.dist((x, z), q) >= 1.1 for q in puestos):
+            puestos.append((x, z))
+    for k, (x, z) in enumerate(puestos):
+        if k < platillos:
+            esc.add("platillo", p, x=x, z=z, color=["amarillo", "naranja", "verde"][k % 3])
+        else:
+            esc.cono(p, x, z, "rojo")
+    pe = esc.paso("Marca la entrada (verde) y la salida (roja) en lados opuestos.")
+    esc.zona(pe, 0, l + 0.8, 3, 1.4, "verde", "Entrada")
+    esc.zona(pe, 0, -l - 0.8, 3, 1.4, "rojo", "Salida")
+    esc.cota(pe, (-a - 0.7, 0, l), (-a - 0.7, 0, -l))
+    esc.fila(-0.6, l + 1.8)
+    esc.fila(0.6, l + 1.8)
+    esc.organizar = "parejas en dos hileras en la entrada"
+    esc.resumen = f"Laberinto de {platillos} platillos y {conos} conos"
+    _docente_costado(esc, 0, "Ubícate al costado del laberinto: ves de perfil la postura y si esquivan sin tocar.")
+
+
+def _estrella(esc: Escena, t: str, o: str, ctx: Dict[str, Any]) -> None:
+    """Líneas que salen de un centro (estrella): se va y se vuelve por el radio; o pases desde el centro."""
+    radios = _cantidad(t, "lineas", "radios", "puntas") or 6
+    largo = _metros_tras(t, r"\bde") or 4.0
+    esc.ajustar(2 * largo + 5, 2 * largo + 5)
+    p = esc.paso(f"Desde un aro central traza {radios} líneas de {_m(largo)} en estrella, con un cono en cada punta.")
+    esc.aro(p, 0, 0, "rojo")
+    for k in range(radios):
+        a = 2 * math.pi * k / radios
+        ux, uz = math.cos(a), math.sin(a)
+        esc.linea(p, [(ux * 0.4, uz * 0.4), (ux * largo, uz * largo)], ["amarillo", "blanco"][k % 2], 0.06)
+        esc.cono(p, ux * (largo + 0.3), uz * (largo + 0.3), COLORES_FILA[k % len(COLORES_FILA)])
+        esc.fila(ux * (largo + 0.9), uz * (largo + 0.9), dx=ux, dz=uz)
+    esc.cota(p, (0, 0, 0), (largo, 0, 0))
+    if _con_pelota(t):
+        pb = esc.paso("Deja una pelota en el aro central: quien está en el centro la pasa a la primera persona de cada punta.")
+        esc.add("balon", pb, x=0.2, z=0.0, color="amarillo")
+    esc.resumen = f"Estrella de {radios} líneas de {_m(largo)}"
+    esc.docente = {"x": 0.0, "z": largo + 2.2, "consejo": "Párate por fuera, entre dos puntas: ves de frente a la mitad "
+                   "del grupo y de perfil a la otra mitad.", "mira": [0.0, 0.0]}
+
+
+def _escondite(esc: Escena, t: str, o: str, ctx: Dict[str, Any]) -> None:
+    """Juego «El escondite inglés» (Pérez Feito, «Equilibrio y ajustes corporales»): congelarse en equilibrio."""
+    ancho, largo = _dimensiones(t) or (12.0, 16.0)
+    esc.ajustar(ancho, largo)
+    p = esc.paso(f"Delimita {_m(ancho)} × {_m(largo)}; traza la línea de salida al fondo y una «pared» al frente.")
+    a, l = ancho / 2, largo / 2
+    esc.linea(p, [(-a, l - 1), (a, l - 1)], "blanco", 0.1)
+    esc.etiqueta(p, -a - 0.6, l - 1, "Salida")
+    esc.zona(p, 0, -l + 1, ancho - 1, 1.6, "amarillo", "Pared (el que cuenta)")
+    esc.cota(p, (a + 0.6, 0, l - 1), (a + 0.6, 0, -l + 1.8))
+    for k in range(esc.estudiantes):
+        x = -a + 0.6 + (ancho - 1.2) * (k + 0.5) / esc.estudiantes
+        esc.puesto(x, l - 0.6 - 0.5 * (k % 2), (x, -l), k % 2)
+    pz = esc.paso("Pinta 3 franjas de tiza a lo largo: quien se mueve fuera de equilibrio vuelve a la franja anterior.")
+    for k in range(1, 4):
+        z = l - 1 - k * (largo - 3) / 4
+        esc.linea(pz, [(-a, z), (a, z)], "amarillo", 0.05)
+    esc.organizar = "todos en la línea de salida; uno cuenta de espaldas en la «pared»"
+    esc.resumen = f"Escondite inglés en {_m(ancho)} × {_m(largo)}"
+    esc.docente = {"x": a + 1.2, "z": -l + 2.5, "consejo": "Párate junto a quien cuenta: ves de frente quién queda "
+                   "quieto en un pie y quién apoya otra parte.", "mira": [0.0, 0.0]}
+
+
+def _colchonetas_circulo(esc: Escena, t: str, o: str, ctx: Dict[str, Any]) -> None:
+    """Prueba 15 de la batería (descalzo sobre colchoneta), en estaciones alrededor del docente."""
+    k = max(4, min(8, math.ceil(esc.estudiantes / 3)))
+    radio = max(3.0, k * 0.75)
+    esc.ajustar(2 * radio + 4, 2 * radio + 4)
+    p = esc.paso(f"Pon {k} colchonetas en círculo de {_m(radio)} de radio, con la cabecera mirando al centro.")
+    for i in range(k):
+        a = 2 * math.pi * i / k
+        x, z = radio * math.cos(a), radio * math.sin(a)
+        esc.add("colchoneta", p, x=x, z=z, ancho=1.0, largo=1.0)
+        esc.puesto(x, z, (0.0, 0.0), i)
+        for j, off in enumerate((-0.9, 0.9)):
+            ox, oz = -math.sin(a) * off, math.cos(a) * off
+            esc.puesto(x * 1.25 + ox, z * 1.25 + oz, (x, z), i)
+    esc.cota(p, (0, 0, 0), (radio, 0, 0))
+    esc.organizar = "tríos por colchoneta: uno ejecuta descalzo, uno cuenta los 5 segundos y uno observa la postura"
+    esc.resumen = f"{k} colchonetas en círculo"
+    esc.docente = {"x": 0.0, "z": 0.0, "consejo": "Párate en el centro del círculo: ves de frente a todos los que "
+                   "ejecutan y das la señal de inicio y fin de los 5 segundos.", "mira": [0.0, 1.0]}
+
+
+def _pasos(esc: Escena, t: str, o: str, ctx: Dict[str, Any]) -> None:
+    """Huellas pintadas: alternas talón-punta (marcha) o de un solo pie en grupos de tres (salto unipodal)."""
+    un_pie = "un solo pie" in t
+    sep = _metros_tras(t, "cada") or (0.6 if un_pie else 0.5)
+    n = _carriles_por_grupo(esc, 3, 5, 6)
+    cuantas = 9 if un_pie else 14
+    largo = cuantas * sep + (0.6 * 2 if un_pie else 0) + 1
+    p = esc.paso(f"Pinta {n} recorridos de huellas separados 2,5 m: "
+                 + (f"3 grupos de 3 huellas del mismo pie, cada {_m(sep)}, con una pausa de 60 cm entre grupos."
+                    if un_pie else f"{cuantas} huellas alternas izquierda-derecha, cada {_m(sep)}, a 10 cm de la línea central."))
+    centros, z0, z1 = _pistas(esc, p, n, 2.5, largo, lineas=False)
+    for cx in centros:
+        z = z0 - 0.6
+        for k in range(cuantas):
+            if un_pie:
+                esc.add("huella", p, x=cx, z=z, lado="der", rot=0.0)
+                z -= sep + (0.6 if k % 3 == 2 else 0)
+            else:
+                esc.add("huella", p, x=cx + (0.1 if k % 2 else -0.1), z=z, lado="der" if k % 2 else "izq", rot=0.0)
+                z -= sep
+        esc.linea(p, [(cx - 0.5, z0), (cx + 0.5, z0)], "blanco", 0.1)
+    esc.cota(p, (centros[0] - 0.7, 0, z0 - 0.6), (centros[0] - 0.7, 0, z0 - 0.6 - sep))
+    esc.resumen = f"{n} recorridos de huellas {'de un solo pie' if un_pie else 'alternas'} cada {_m(sep)}"
+    _docente_costado(esc, z0 - largo / 2, "Ubícate al costado de las huellas: de perfil ves si el pie entra por el "
+                                          "talón y sale por la punta, o si cae suave sobre el mismo pie.")
+
+
+def _rebote(esc: Escena, t: str, o: str, ctx: Dict[str, Any]) -> None:
+    """Pared de rebote: pases contra la pared y recepción (atrape) o golpeo con el pie (pateo)."""
+    pie = bool(re.search(r"\bpie\b|patea|pateo|golpe", t))
+    d = next((lst[0] for lst in _listas_tras_a(t) if lst[0] >= 1), 3.0)
+    n = _carriles_por_grupo(esc, 4, 6, 5)
+    sep = 2.2
+    esc.ajustar(n * sep + 2, d + 6)
+    zp = -esc.largo / 2
+    p = esc.paso(f"Usa una pared lisa de al menos {_m(esc.ancho)}; marca {n} puestos frente a ella cada {_m(sep)}.")
+    esc.add("pared", p, x=0, z=zp - 0.1, ancho=esc.ancho, alto=3.0)
+    xs = [-(n - 1) * sep / 2 + i * sep for i in range(n)]
+    if pie:
+        pf = esc.paso("Pinta en la pared un rectángulo bajo de 1,2 m de ancho y 60 cm de alto por puesto: ahí debe pegar el balón.")
+        for x in xs:
+            esc.add("franja", pf, x=x, z=zp, y0=0.0, y1=0.6, ancho=1.2, color="amarillo")
+        esc.cota(pf, (xs[0] - 0.8, 0, zp + 0.05), (xs[0] - 0.8, 0.6, zp + 0.05))
+    else:
+        pf = esc.paso("Pinta en la pared un recuadro de 1 m entre 1 y 2 m de altura por puesto: la pelota debe pegar ahí.")
+        for x in xs:
+            esc.add("franja", pf, x=x, z=zp, y0=1.0, y1=2.0, ancho=1.0, color="celeste")
+        esc.cota(pf, (xs[0] - 0.8, 0, zp + 0.05), (xs[0] - 0.8, 1.0, zp + 0.05))
+    pl = esc.paso(f"Traza la línea de trabajo a {_m(d)} de la pared y deja una pelota en cada puesto.")
+    esc.linea(pl, [(-esc.ancho / 2 + 0.5, zp + d), (esc.ancho / 2 - 0.5, zp + d)], "blanco", 0.08)
+    for x in xs:
+        esc.add("balon", pl, x=x + 0.3, z=zp + d + 0.3, color="blanco" if pie else "amarillo")
+        esc.fila(x, zp + d + 0.6)
+    esc.cota(pl, (xs[-1] + 0.9, 0, zp), (xs[-1] + 0.9, 0, zp + d))
+    esc.resumen = f"Pared de rebote con {n} puestos a {_m(d)}" + (" (con el pie)" if pie else "")
+    _docente_costado(esc, zp + d / 2, "Ubícate a un costado, entre la pared y la línea: de perfil ves "
+                     + ("el péndulo de la pierna y el seguimiento." if pie else "los brazos semiflexionados y cómo amortiguan."))
+
+
+def _pie_apoyo(esc: Escena, t: str, o: str, ctx: Dict[str, Any]) -> None:
+    """Puestos de pateo con la huella del pie de apoyo junto al balón y una puerta de conos al frente."""
+    d = next((lst[0] for lst in _listas_tras_a(t) if lst[0] >= 2), 4.0)
+    n = _carriles_por_grupo(esc, 4, 6, 5)
+    sep = 2.5
+    total = (n - 1) * sep
+    esc.ajustar(total + 4, d + 6)
+    z0 = esc.largo / 2 - 3
+    xs = [-total / 2 + i * sep for i in range(n)]
+    p = esc.paso(f"Marca {n} puestos cada {_m(sep)}: el balón, la huella del pie de apoyo a su lado (a un palmo) y "
+                 "la huella de la pierna que patea un paso atrás.")
+    for x in xs:
+        esc.add("balon", p, x=x, z=z0, color="blanco")
+        esc.add("huella", p, x=x - 0.22, z=z0 + 0.05, lado="izq", rot=0.0)
+        esc.add("huella", p, x=x + 0.05, z=z0 + 0.65, lado="der", rot=0.3)
+        esc.fila(x, z0 + 1.4)
+    esc.cota(p, (xs[0] - 0.6, 0, z0), (xs[0] - 0.6, 0, z0 + 0.65))
+    pp = esc.paso(f"A {_m(d)} de cada balón arma una puerta de 2 conos separados 1,5 m.")
+    for x in xs:
+        esc.cono(pp, x - 0.75, z0 - d, "azul")
+        esc.cono(pp, x + 0.75, z0 - d, "azul")
+    esc.cota(pp, (xs[-1] + 1.1, 0, z0), (xs[-1] + 1.1, 0, z0 - d))
+    esc.avisos.append("Las huellas están dibujadas para quien patea con la derecha: para los zurdos, la huella de apoyo va a la derecha del balón.")
+    esc.resumen = f"{n} puestos de pie de apoyo con puerta a {_m(d)}"
+    _docente_costado(esc, z0, "Ubícate al costado, a la altura de los balones: ves si el pie de apoyo queda al lado "
+                              "del balón y si el brazo contrario se adelanta.")
 
 
 OBJETOS = {"cuerdas": "cuerda", "aros": "aro", "conos": "cono", "colchonetas": "colchoneta", "balones": "balon",
@@ -1117,8 +1605,8 @@ def _objetos(esc: Escena, t: str, o: str, ctx: Dict[str, Any]) -> None:
         esc.avisos.append(f"Con {esc.estudiantes} estudiantes y un solo montaje, cada uno espera mucho su turno: "
                           f"considera armar 3 o 4 montajes iguales separados 3 m.")
     esc.resumen = f"{n} {plural} a {_m(d)}"
-    _docente_costado(esc, z0 - 1 - largo / 2, "Ubícate al costado, a la altura del montaje: ves la salida, el "
-                                              "vuelo y la caída de cada estudiante.")
+    _docente_costado(esc, z0 - 1 - largo / 2, "Ubícate al costado, a la altura del montaje: ves la salida y cada "
+                                              "apoyo de los estudiantes sobre el material.")
 
 
 def _area_generica(esc: Escena, t: str, o: str, ctx: Dict[str, Any]) -> None:
@@ -1146,7 +1634,31 @@ def _area_generica(esc: Escena, t: str, o: str, ctx: Dict[str, Any]) -> None:
 
 
 Receta = Callable[[Escena, str, str, Dict[str, Any]], None]
+
+
+def _sin_estaciones(aplica: Callable[[str], bool]) -> Callable[[str], bool]:
+    return lambda t: "estacion" not in t and aplica(t)
+
 RECETAS: List[Tuple[str, Callable[[str], bool], Receta]] = [
+    # recetas por habilidad: frases propias de sus plantillas, se revisan primero; un circuito con una
+    # estación «Bolos» o «Mini-portería» sigue siendo un circuito
+    ("senderos", _sin_estaciones(lambda t: "sendero de lineas" in t), _senderos),
+    ("linea_9m", _sin_estaciones(lambda t: bool(re.search(r"lineas? (?:rectas? )?de 9 metros", t))), _linea_9m),
+    ("bancos_cuadro", _sin_estaciones(lambda t: "bancos suecos en cuadrado" in t), _bancos_cuadro),
+    ("bancos_paralelos", _sin_estaciones(lambda t: "bancos suecos paralelos" in t), _bancos_paralelos),
+    ("bancos", _sin_estaciones(lambda t: "bancos suecos" in t), _bancos),
+    ("parejas", _sin_estaciones(lambda t: "parejas enfrentadas" in t), _parejas),
+    ("corro", _sin_estaciones(lambda t: bool(re.search(r"\bcorros?\b|\brondos?\b", t))), _corro),
+    ("porterias", _sin_estaciones(lambda t: bool(re.search(r"mini-? ?porteria", t))), _porterias),
+    ("bolos", _sin_estaciones(lambda t: bool(re.search(r"\bbolos\b", t))), _bolos),
+    ("estatuas", _sin_estaciones(lambda t: "aros dispersos" in t), _estatuas),
+    ("laberinto", _sin_estaciones(lambda t: "laberinto" in t), _laberinto),
+    ("estrella", _sin_estaciones(lambda t: "en estrella" in t), _estrella),
+    ("escondite", _sin_estaciones(lambda t: "escondite" in t), _escondite),
+    ("colchonetas_circulo", _sin_estaciones(lambda t: "colchonetas en circulo" in t), _colchonetas_circulo),
+    ("pasos", _sin_estaciones(lambda t: bool(re.search(r"huellas de (?:pasos|un solo pie)", t))), _pasos),
+    ("rebote", _sin_estaciones(lambda t: "pared de rebote" in t), _rebote),
+    ("pie_apoyo", _sin_estaciones(lambda t: "pie de apoyo" in t), _pie_apoyo),
     ("despegue_distancias", lambda t: "despegue" in t and "distancia" in t, _despegue_distancias),
     ("despegue", lambda t: "despegue" in t, _despegue),
     ("slalom", lambda t: bool(re.search(r"slalom|zigzag", t)) and "estacion" not in t, _slalom),

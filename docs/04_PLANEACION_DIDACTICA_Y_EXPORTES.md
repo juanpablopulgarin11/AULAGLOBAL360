@@ -18,6 +18,8 @@ Banco de **12 sesiones progresivas** por habilidad. Cada sesión:
 
 Las 12 sesiones siguen 4 fases: *1 Iniciación y Esquema Corporal* (1–3), *2 Coordinación y Ajuste Técnico* (4–6), *3 Complejidad y Retos Dinámicos* (7–9), *4 Consolidación y Aplicación en Juego* (10–12).
 
+> **Django (doc 09):** el banco ya tiene 12 sesiones propias por cada una de las 9 habilidades y la unidad se personaliza con el resultado de la evaluación. Lo que sigue describe la web.
+
 **Solo existen plantillas para 3 habilidades**: Carrera, Salto Horizontal y Lanzamiento Sobre Hombro. Las otras 6 (Marcha, Salto Unipodal, Recepción y Atrape, Patear, Equilibrio Dinámico, Equilibrio Estático) **reciben las sesiones de Carrera**. Este es el principal hueco de contenido; la carpeta `Data/` (libros de sesiones y juegos motores de 6 a 13 años) es la fuente natural para completarlo.
 
 Datos completos (36 sesiones): [`datos/plantillas_progresion.json`](datos/plantillas_progresion.json). Los marcadores `{materiales}`, `{formato}`, `{metodologia}` se sustituyen con las preferencias del docente.

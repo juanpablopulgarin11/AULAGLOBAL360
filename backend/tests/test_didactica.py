@@ -1,4 +1,4 @@
-"""Paridad del generador de unidades didácticas con ``generateDidacticPlan`` del JS.
+"""Paridad del generador v1 de unidades didácticas con ``generateDidacticPlan`` del JS.
 
 El JS mezcla HTML en las actividades (minutos, recuadro de refuerzo); aquí se desarma ese HTML
 y se compara campo por campo con la salida estructurada de Python.
@@ -12,10 +12,12 @@ from pathlib import Path
 
 import pytest
 
-from biomecanica.didactica import generar_unidad, tiempos_sesion
+from biomecanica.didactica import generar_unidad_v1 as generar_unidad, tiempos_sesion
 
 RAIZ = Path(__file__).resolve().parents[2]
-BANCO = json.loads((RAIZ / "docs" / "datos" / "plantillas_progresion.json").read_text(encoding="utf-8"))["plantillas"]
+# La web (script.js) solo tiene bancos de estas tres habilidades; las demás usan las sesiones de Carrera
+BANCO = {k: v for k, v in json.loads((RAIZ / "docs" / "datos" / "plantillas_progresion.json").read_text(encoding="utf-8"))["plantillas"].items()
+         if k in ("Carrera", "Salto Horizontal", "Lanzamiento Sobre Hombro")}
 DORADOS = json.loads((Path(__file__).parent / "golden" / "dorados.json").read_text(encoding="utf-8"))
 
 PLANES = [(c["nombre"], m, p) for c in DORADOS["casos"] for m in c["salida"]["motor"] for p in m.get("planes", [])]

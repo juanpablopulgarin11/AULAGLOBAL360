@@ -564,6 +564,81 @@ const CONSTRUCTORES = {
         g.rotation.y = e.rot || 0;
         return g;
     },
+    banco(e) {
+        // banco sueco: tabla superior a 30 cm, dos caballetes y la barra inferior estrecha (se usa al darle la vuelta)
+        const g = new THREE.Group();
+        const largo = e.largo || 3;
+        const madera = material(0xC8955A, { roughness: 0.7 });
+        const oscura = material(0x8A5A2B, { roughness: 0.75 });
+        const tabla = malla(new RoundedBoxGeometry(0.26, 0.045, largo, 2, 0.012), madera);
+        tabla.position.y = 0.3;
+        const barra = malla(new RoundedBoxGeometry(0.1, 0.04, largo - 0.1, 2, 0.01), oscura);
+        barra.position.y = 0.05;
+        g.add(tabla, barra);
+        for (const z of [-largo / 2 + 0.2, largo / 2 - 0.2]) {
+            const caballete = malla(new RoundedBoxGeometry(0.4, 0.28, 0.06, 2, 0.015), oscura);
+            caballete.position.set(0, 0.15, z);
+            g.add(caballete);
+        }
+        g.position.set(e.x, 0, e.z);
+        g.rotation.y = e.rot || 0;
+        return g;
+    },
+    porteria(e) {
+        // mini-portería de tubo blanco con red; la boca mira hacia +z (de donde viene el balón)
+        const g = new THREE.Group();
+        const ancho = e.ancho || 1.5, alto = e.alto || 0.9, fondo = 0.6;
+        const tubo = material(0xF8FAFC, { roughness: 0.35 });
+        const palo = (x0, y0, z0, x1, y1, z1) => {
+            const a = new THREE.Vector3(x0, y0, z0), b = new THREE.Vector3(x1, y1, z1);
+            const m = malla(new THREE.CylinderGeometry(0.025, 0.025, a.distanceTo(b), 12), tubo);
+            m.position.copy(a).add(b).multiplyScalar(0.5);
+            m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), b.clone().sub(a).normalize());
+            g.add(m);
+        };
+        palo(-ancho / 2, 0, 0, -ancho / 2, alto, 0);
+        palo(ancho / 2, 0, 0, ancho / 2, alto, 0);
+        palo(-ancho / 2, alto, 0, ancho / 2, alto, 0);
+        palo(-ancho / 2, 0, -fondo, ancho / 2, 0, -fondo);
+        palo(-ancho / 2, alto, 0, -ancho / 2, 0, -fondo);
+        palo(ancho / 2, alto, 0, ancho / 2, 0, -fondo);
+        const red = new THREE.MeshBasicMaterial({ color: 0xFFFFFF, wireframe: true, transparent: true, opacity: 0.45 });
+        const atras = new THREE.Mesh(new THREE.PlaneGeometry(ancho, Math.hypot(alto, fondo), 14, 8), red);
+        atras.position.set(0, alto / 2, -fondo / 2);
+        atras.rotation.x = Math.atan2(fondo, alto);
+        g.add(atras);
+        for (const lado of [-1, 1]) {
+            const forma = new THREE.Shape([new THREE.Vector2(0, 0), new THREE.Vector2(0, alto), new THREE.Vector2(-fondo, 0)]);
+            const costado = new THREE.Mesh(new THREE.ShapeGeometry(forma, 4), red);
+            costado.rotation.y = -Math.PI / 2;
+            costado.position.x = lado * ancho / 2;
+            g.add(costado);
+        }
+        g.position.set(e.x, 0, e.z);
+        g.rotation.y = e.rot || 0;
+        return g;
+    },
+    platillo(e) {
+        // cono plano de entrenamiento (marca de suelo) con agujero central
+        const perfil = [[0.025, 0.045], [0.1, 0.004], [0.1, 0.0], [0.09, 0.0], [0.022, 0.04]].map(([x, y]) => new THREE.Vector2(x, y));
+        const m = malla(new THREE.LatheGeometry(perfil, 28), plastico(color(e.color, COLORES.amarillo), { side: THREE.DoubleSide }));
+        m.position.set(e.x, 0, e.z);
+        return m;
+    },
+    bolo(e) {
+        // bolo de plástico blanco con dos franjas rojas en el cuello
+        const g = new THREE.Group();
+        const perfil = [[0, 0], [0.035, 0.0], [0.05, 0.06], [0.055, 0.12], [0.035, 0.22], [0.022, 0.27], [0.03, 0.33], [0.024, 0.37], [0, 0.38]]
+            .map(([x, y]) => new THREE.Vector2(x, y));
+        g.add(malla(new THREE.LatheGeometry(perfil, 24), plastico(0xF8FAFC)));
+        for (const y of [0.25, 0.28]) {
+            const franja = malla(new THREE.CylinderGeometry(0.0235, 0.0235, 0.012, 20), plastico(COLORES.rojo));
+            franja.position.y = y;
+            g.add(franja);
+        }
+        g.position.set(e.x, 0, e.z);
+        return g;
+    },
     flecha(e) {
         const g = new THREE.Group();
         const hex = color(e.color, COLORES.azul);

@@ -1,4 +1,7 @@
-"""Generador de la unidad didáctica (port de ``generateDidacticPlan``, ``script.js:5153``).
+"""Generador de la unidad didáctica v1 (port de ``generateDidacticPlan``, ``script.js:5153``).
+
+Se conserva para la paridad con la web; Django usa ``didactica_v2.generar_unidad``, personalizado
+por habilidad y por el resultado de la evaluación.
 
 Python puro: recibe el diagnóstico, las preferencias del docente y el banco de plantillas
 (``{habilidad: [plantilla, ...]}``, desde la base de datos o desde
@@ -57,7 +60,7 @@ def plantillas_para(banco: Mapping[str, Sequence[Mapping[str, Any]]], habilidad:
     return sorted(lista, key=lambda p: p.get("orden", 0))
 
 
-def generar_unidad(diagnostico: Mapping[str, Any], prefs: Optional[Mapping[str, Any]],
+def generar_unidad_v1(diagnostico: Mapping[str, Any], prefs: Optional[Mapping[str, Any]],
                    banco: Mapping[str, Sequence[Mapping[str, Any]]], grado: Optional[str] = "7_anos",
                    es_grupal: bool = False, anio: Optional[int] = None,
                    priorizar: Optional[bool] = None) -> Dict[str, Any]:

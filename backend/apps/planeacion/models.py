@@ -65,6 +65,8 @@ class Sesion(models.Model):
     actividad_final = models.TextField()
     consigna = models.TextField(blank=True)
     criterio_eval = models.TextField(blank=True)
+    criterios = models.JSONField("criterios de la batería que trabaja", default=list, blank=True)
+    fuente = models.CharField("referente bibliográfico", max_length=300, blank=True)
 
     class Meta:
         verbose_name = "sesión"
@@ -74,3 +76,12 @@ class Sesion(models.Model):
 
     def __str__(self) -> str:
         return f"Sesión {self.numero}: {self.titulo}"
+
+    @property
+    def criterios_detalle(self) -> list:
+        """Criterios de la batería que trabaja la sesión (``orden``, ``fase``, ``texto``, ``reforzado``)."""
+        from biomecanica.didactica_v2 import criterios_de
+
+        base = {c["orden"]: c for c in criterios_de(self.unidad.habilidad.nombre)}
+        return [base[o] | {"reforzado": self.es_refuerzo and base[o]["error"] in self.error_reforzado}
+                for o in self.criterios if o in base]

@@ -52,7 +52,8 @@ def lista(request):
 @login_required
 def detalle(request, pk):
     ud = get_object_or_404(UnidadDidactica.objects.select_related("habilidad"), pk=pk, docente=request.user)
-    return render(request, "planeacion/detalle.html", {"u": ud, "c": ud.contenido, "sesiones": ud.sesiones.all()})
+    return render(request, "planeacion/detalle.html", {"u": ud, "c": ud.contenido,
+                                                    "sesiones": ud.sesiones.select_related("unidad__habilidad")})
 
 
 @login_required

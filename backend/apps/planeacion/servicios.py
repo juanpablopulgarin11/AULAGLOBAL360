@@ -8,7 +8,8 @@ from django.db import transaction
 from apps.catalogo.models import Habilidad, PlantillaSesion
 from apps.evaluaciones.models import Evaluacion, EvaluacionGrupal
 from apps.evaluaciones.servicios import consolidar_grupo, habilidad_mas_debil
-from biomecanica.didactica import MATERIALES_DEFECTO, generar_unidad
+from biomecanica.didactica import MATERIALES_DEFECTO
+from biomecanica.didactica_v2 import generar_unidad
 from biomecanica.habilidades import CARRERA
 
 from .models import Formato, Metodologia, Sesion, UnidadDidactica
@@ -17,7 +18,7 @@ from .models import Formato, Metodologia, Sesion, UnidadDidactica
 UMBRAL_ERROR_GRUPAL = 25
 
 CAMPOS_PLANTILLA = ["orden", "titulo", "fase_pedagogica", "objetivo", "distribucion", "actividad_inicial",
-                    "actividad_central", "actividad_final", "consigna", "criterio_eval"]
+                    "actividad_central", "actividad_final", "consigna", "criterio_eval", "criterios", "fuente"]
 
 
 def banco_plantillas() -> Dict[str, List[Dict[str, Any]]]:
@@ -54,7 +55,8 @@ def _guardar(docente, habilidad: Habilidad, unidad: Dict[str, Any], prefs: Dict[
                titulo=s["titulo"][:220], fase_pedagogica=s["fase_pedagogica"][:80], objetivo=s["objetivo"],
                distribucion=s["distribucion"], actividad_inicial=s["actividad_inicial"],
                actividad_central=s["actividad_central"], actividad_final=s["actividad_final"],
-               consigna=s["consigna"], criterio_eval=s["criterio_eval"])
+               consigna=s["consigna"], criterio_eval=s["criterio_eval"],
+               criterios=[c["orden"] for c in s.get("criterios", [])], fuente=(s.get("fuente") or "")[:300])
         for s in unidad["clases_secuencia"]
     ])
     return ud
@@ -83,7 +85,10 @@ def unidad_para_grupo(grupal: EvaluacionGrupal, docente, prefs: Dict[str, Any]) 
     errores = [{"error": e["error"], "impacto_biomecanico": f"Presente en el {e['porcentaje']}% del salón"}
                for e in consolidado["errores"] if e["porcentaje"] >= UMBRAL_ERROR_GRUPAL]
     diagnostico = {"habilidad_detectada": habilidad.nombre, "criterios": [], "errores_criticos": errores,
-                   "frases_profe": habilidad.frases_profe}
+                   "frases_profe": habilidad.frases_profe,
+                   "estadio_gallahue": max(consolidado["estadios"], key=consolidado["estadios"].get, default=""),
+                   "porcentaje_madurez": consolidado["madurez_media"],
+                   "puntaje_obtenido": f"{consolidado['evaluados']} estudiantes evaluados"}
     unidad = generar_unidad(diagnostico, prefs, banco_plantillas(), grado=grupal.grupo.grado, es_grupal=True, priorizar=True)
     return _guardar(docente, habilidad, unidad, prefs, grupal=grupal)
 
@@ -95,8 +100,9 @@ def unidad_como_dict(ud: UnidadDidactica) -> Dict[str, Any]:
         "fase_pedagogica": s.fase_pedagogica, "objetivo": s.objetivo, "distribucion": s.distribucion,
         "actividad_inicial": s.actividad_inicial, "actividad_central": s.actividad_central,
         "actividad_final": s.actividad_final, "consigna": s.consigna, "criterio_eval": s.criterio_eval,
+        "criterios": s.criterios_detalle, "fuente": s.fuente,
         "minutos_inicial": ud.contenido.get("duraciones", {}).get("inicial", "").split(" ")[0],
         "minutos_central": ud.contenido.get("duraciones", {}).get("central", "").split(" ")[0],
         "minutos_final": ud.contenido.get("duraciones", {}).get("final", "").split(" ")[0],
-    } for s in ud.sesiones.all()]
+    } for s in ud.sesiones.select_related("unidad__habilidad")]
     return {**ud.contenido, "clases_secuencia": sesiones}

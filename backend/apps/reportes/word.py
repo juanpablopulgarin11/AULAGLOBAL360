@@ -348,6 +348,31 @@ def reporte_estudiante(d: Mapping[str, Any], estudiante: str = "", grupo: str = 
 # --------------------------------------------------------------------------------------
 # Unidad didáctica
 # --------------------------------------------------------------------------------------
+def _punto_de_partida(doc: Document, u: Mapping[str, Any]) -> None:
+    """Resultado de la evaluación del que parte la unidad (solo unidades del generador personalizado)."""
+    d = u.get("diagnostico_base")
+    if not d:
+        return
+    grupos = [("Logrado", d.get("logrados") or [], "DCFCE7"), ("Por mejorar (se refuerza)", d.get("por_mejorar") or [], "FEE2E2"),
+              ("Por confirmar en clase", d.get("por_confirmar") or [], "FEF3C7")]
+    grupos = [g for g in grupos if g[1]]
+    t = _tabla(doc, 2 + len(grupos) + bool(u.get("desempeno_men")), 2, (5.7, 12.1))
+    quien = "del salón" if d.get("fuente") == "salón" else "del estudiante"
+    _encabezado(_fila_unida(t, 0), f"Punto de partida: resultado de la evaluación {quien}")
+    resumen = " · ".join(x for x in (d.get("puntaje"), f"Estadio {d['estadio']}" if d.get("estadio") else "",
+                                      f"{d['porcentaje']}% de madurez" if d.get("porcentaje") is not None else "") if x)
+    _subencabezado(t.cell(1, 0), d.get("prueba", "Batería HMB").upper())
+    _escribir(t.cell(1, 1), resumen or "Sin criterios calificados")
+    for i, (titulo, items, fondo) in enumerate(grupos, start=2):
+        _subencabezado(t.cell(i, 0), titulo.upper())
+        _sombrear(t.cell(i, 1), fondo)
+        _lista(t.cell(i, 1), items)
+    if u.get("desempeno_men"):
+        fila = _fila_unida(t, 2 + len(grupos))
+        _escribir(fila, f"«{u['desempeno_men']}»", etiqueta="Desempeño esperado (MEN, Documento 15):")
+    _espacio(doc)
+
+
 def unidad_didactica(u: Mapping[str, Any], sesiones: Optional[Sequence[Mapping[str, Any]]] = None,
                      institucion: str = "", docente: str = "",
                      montajes: Optional[Mapping[int, Mapping[str, Any]]] = None) -> bytes:
@@ -395,6 +420,7 @@ def unidad_didactica(u: Mapping[str, Any], sesiones: Optional[Sequence[Mapping[s
         _subencabezado(t.cell(7, j), titulo)
         _escribir(t.cell(8, j), u["indicadores"][clave])
     _espacio(doc)
+    _punto_de_partida(doc, u)
 
     # 3. Secuencia de sesiones
     titulo = doc.add_paragraph()
@@ -402,7 +428,8 @@ def unidad_didactica(u: Mapping[str, Any], sesiones: Optional[Sequence[Mapping[s
     r = titulo.add_run(f"SECUENCIA DIDÁCTICA Y MATRIZ DE PROGRESIÓN ({len(sesiones)} SESIONES)")
     r.bold, r.font.size, r.font.color.rgb = True, Pt(11), RGBColor.from_string(AZUL_OSCURO)
     for s in sesiones:
-        t = _tabla(doc, 6, 2, (4.9, 12.9))
+        criterios = s.get("criterios") or []
+        t = _tabla(doc, 6 + bool(criterios) + bool(s.get("fuente")), 2, (4.9, 12.9))
         cab = _fila_unida(t, 0)
         _encabezado(cab, f"Sesión {s['numero']} de {len(sesiones)}: {s['titulo']}")
         r = cab.paragraphs[0].add_run(f"   {s.get('fase_pedagogica', '')} · {u['duracion_clase']}")
@@ -427,6 +454,15 @@ def unidad_didactica(u: Mapping[str, Any], sesiones: Optional[Sequence[Mapping[s
         _escribir(t.cell(4, 1), s["actividad_final"])
         _subencabezado(t.cell(5, 0), "INDICADOR DE EVALUACIÓN")
         _escribir(t.cell(5, 1), s.get("criterio_eval", ""), etiqueta="Criterio de logro:")
+        fila = 6
+        if criterios:
+            _subencabezado(t.cell(fila, 0), "CRITERIOS DE LA BATERÍA QUE TRABAJA")
+            _lista(t.cell(fila, 1), [f"{c['orden']}. {c['fase']}: {c['texto']}" + ("  ← refuerzo" if c.get("reforzado") else "")
+                                     for c in criterios])
+            fila += 1
+        if s.get("fuente"):
+            _subencabezado(t.cell(fila, 0), "REFERENTE")
+            _escribir(t.cell(fila, 1), s["fuente"], tam=8.5, color="475569")
         fotos = montajes.get(s["numero"])
         if fotos and (fotos.get("completo") or fotos.get("pasos")):
             _espacio(doc, 2)

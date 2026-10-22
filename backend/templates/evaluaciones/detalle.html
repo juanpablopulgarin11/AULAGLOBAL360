@@ -158,6 +158,7 @@
                 <span class="stage-badge stage-maduro">{{ plan.total_clases }} sesiones</span>
             </div>
             {% if not ev.habilidad_detectada.tiene_plantillas_propias %}<div class="aviso-video">{{ ev.habilidad_detectada.nombre }} aún no tiene banco de sesiones propio: se usan las sesiones de Carrera.</div>{% endif %}
+            {% with d=plan.diagnostico_base %}{% if d.por_mejorar %}<div class="partida partida-mejorar" style="margin-bottom:12px;"><strong>La unidad refuerza primero lo que falta:</strong><ul>{% for x in d.por_mejorar %}<li>{{ x }}</li>{% endfor %}</ul></div>{% endif %}{% endwith %}
 
             <!-- PREGUNTA PROBLEMATIZADORA Y OBJETIVOS -->
             <div style="background:var(--bg); border:1px solid var(--border); padding:10px 12px; border-radius:6px; font-size:12px; margin-bottom:12px;">
@@ -186,6 +187,7 @@
                             <strong style="color:var(--text); font-size:12.5px;">Sesión {{ c.numero }} de {{ plan.total_clases }}: {{ c.titulo }}</strong>
                             <span style="font-size:10px; background:var(--accent-soft); color:var(--accent); padding:2px 6px; border-radius:4px; font-weight:600; font-family:var(--font-mono);">{{ c.fase_pedagogica }}</span>
                         </div>
+                        {% if c.es_refuerzo %}<div style="font-size:11px; background:var(--info-soft); color:var(--info); padding:4px 8px; border-radius:4px; margin-bottom:6px;">🎯 Refuerzo dirigido: <em>{{ c.error_reforzado }}</em></div>{% endif %}
                         <div style="font-size:11.5px; color:var(--text-muted); margin-bottom:6px;"><strong>Objetivo de sesión:</strong> {{ c.objetivo }}</div>
                         <div style="font-size:11.5px; line-height:1.45; color:var(--text);">
                             <div style="margin-bottom:2px;"><span style="font-family:var(--font-mono); font-size:10px; color:#64748B; font-weight:700;">[INICIAL]</span> {{ c.actividad_inicial }}</div>
@@ -195,6 +197,7 @@
                         <div style="margin-top:6px; font-size:11px; background:#F8FAFC; border:1px solid #E2E8F0; padding:5px 8px; border-radius:4px; color:var(--text);">
                             <strong>Consigna verbal:</strong> "{{ c.consigna }}"
                         </div>
+                        {% if c.criterios %}<div class="criterios-sesion" style="margin-top:6px;">{% for k in c.criterios %}<span class="etiqueta-chip{% if k.reforzado %} chip-refuerzo{% endif %}" title="{{ k.texto }}">{{ k.orden }} · {{ k.fase }}</span>{% endfor %}</div>{% endif %}
                     </div>
                     {% endfor %}
                 </div>

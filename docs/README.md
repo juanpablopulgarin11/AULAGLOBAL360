@@ -24,13 +24,14 @@ La migración está implementada en [`backend/`](../backend/README.md): aplicaci
 | [06 · Plan de migración a Django](06_PLAN_MIGRACION_DJANGO.md) | Decisión de arquitectura, estructura de proyecto, dependencias, **modelos de datos**, correspondencia JS → Python, URLs, tarea Celery, estrategia de paridad, fases |
 | [07 · Hallazgos y deuda técnica](07_HALLAZGOS_Y_DEUDA_TECNICA.md) | Errores encontrados, inconsistencias, riesgos de seguridad/privacidad y limitaciones del método |
 | [08 · Motor v2](08_MOTOR_V2.md) | Evaluación sobre el video completo: eventos, detección con confianza, criterios por confirmar (IA o docente), verificación y cómo validar con videos reales |
+| [09 · Planeación personalizada](09_PLANEACION_V2.md) | Banco de 108 sesiones (12 por habilidad) con referentes de `Data/`, refuerzos por criterios no logrados, unidad por habilidad y montajes 3D propios |
 
 ## Datos extraídos (listos para fixtures de Django)
 
 | Archivo | Contenido |
 |---|---|
 | [`datos/bateria_hmb_reglas.json`](datos/bateria_hmb_reglas.json) | 9 habilidades: componente, nº de prueba, protocolo, frases y 5 criterios con condición, umbral y error |
-| [`datos/plantillas_progresion.json`](datos/plantillas_progresion.json) | 36 sesiones (12 × Carrera, Salto Horizontal, Lanzamiento) con marcadores `{materiales}`, `{formato}`, `{metodologia}` |
+| [`datos/plantillas_progresion.json`](datos/plantillas_progresion.json) | 108 sesiones (12 por habilidad) con marcadores `{materiales}`, `{formato}`, `{metodologia}`, criterios de la batería que trabaja y referente. Las de Carrera, Salto Horizontal y Lanzamiento vienen de `script.js`; las demás, de los libros de `Data/` (doc 09) |
 
 Se generaron ejecutando las funciones originales de `script.js` con Node, de modo que coinciden con el código del commit `72e7a88`. Si se cambian las reglas o plantillas en el JS antes de migrar, hay que volver a generarlos.
 

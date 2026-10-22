@@ -14,8 +14,8 @@ def test_carga_completa_e_idempotente():
     call_command("cargar_catalogo", stdout=salida)
     assert Habilidad.objects.count() == 9
     assert CriterioHMB.objects.count() == 45
-    assert PlantillaSesion.objects.count() == 36
-    assert "Sin plantillas propias" in salida.getvalue()
+    assert PlantillaSesion.objects.count() == 108                 # 12 sesiones por cada una de las 9 habilidades
+    assert "Sin plantillas propias" not in salida.getvalue()
 
 
 @pytest.mark.django_db
@@ -29,12 +29,14 @@ def test_criterios_coinciden_con_el_motor(catalogo):
 
 @pytest.mark.django_db
 def test_plantillas_ordenadas_por_fase(catalogo):
-    carrera = Habilidad.objects.get(codigo="carrera")
-    plantillas = list(carrera.plantillas.all())
-    assert [p.orden for p in plantillas] == list(range(1, 13))
-    assert plantillas[0].fase_pedagogica.startswith("Fase 1")
-    assert plantillas[-1].fase_pedagogica.startswith("Fase 4")
-    assert not Habilidad.objects.get(codigo="patear").tiene_plantillas_propias
+    for h in Habilidad.objects.all():
+        plantillas = list(h.plantillas.all())
+        assert [p.orden for p in plantillas] == list(range(1, 13)), h
+        assert plantillas[0].fase_pedagogica.startswith("Fase 1")
+        assert plantillas[-1].fase_pedagogica.startswith("Fase 4")
+        assert all(p.criterios and set(p.criterios) <= {1, 2, 3, 4, 5} and p.fuente for p in plantillas), h
+        # cada criterio de la batería se trabaja en al menos dos sesiones además del festival final
+        assert all(sum(c in p.criterios for p in plantillas[:-1]) >= 2 for c in range(1, 6)), h
 
 
 @pytest.mark.django_db

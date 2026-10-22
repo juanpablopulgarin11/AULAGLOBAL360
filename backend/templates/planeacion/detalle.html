@@ -10,6 +10,18 @@
     <form method="post" action="{% url 'unidad_eliminar' u.pk %}" onsubmit="return confirm('¿Eliminar esta planeación?')">{% csrf_token %}<button class="btn btn-secundario">Eliminar</button></form></div>
 </div>
 <p class="estado-descarga" data-descarga-estado role="status" aria-live="polite" hidden></p>
+{% with d=c.diagnostico_base %}{% if d %}
+<section class="tarjeta punto-partida">
+    <h2>Punto de partida: evaluación {% if d.fuente == "salón" %}del salón{% else %}del estudiante{% endif %}</h2>
+    <p class="muted">{{ d.prueba|capfirst }}{% if d.puntaje %} · {{ d.puntaje }}{% endif %}{% if d.estadio %} · Estadio {{ d.estadio }}{% endif %}{% if d.porcentaje is not None %} · {{ d.porcentaje }}% de madurez{% endif %}</p>
+    <div class="rejilla">
+        {% if d.logrados %}<div class="partida partida-logrado"><strong>Logrado</strong><ul>{% for x in d.logrados %}<li>{{ x }}</li>{% endfor %}</ul></div>{% endif %}
+        {% if d.por_mejorar %}<div class="partida partida-mejorar"><strong>Por mejorar · se refuerza</strong><ul>{% for x in d.por_mejorar %}<li>{{ x }}</li>{% endfor %}</ul></div>{% endif %}
+        {% if d.por_confirmar %}<div class="partida partida-confirmar"><strong>Por confirmar en clase</strong><ul>{% for x in d.por_confirmar %}<li>{{ x }}</li>{% endfor %}</ul></div>{% endif %}
+    </div>
+    {% if c.desempeno_men %}<p class="subtle" style="margin-top:12px"><strong>Desempeño esperado (MEN, Documento 15):</strong> «{{ c.desempeno_men }}»</p>{% endif %}
+</section>
+{% endif %}{% endwith %}
 <section class="tarjeta">
     <h2>Pregunta problematizadora</h2><p><em>{{ c.pregunta_problematizadora }}</em></p>
     <h3>Objetivo general</h3><p>{{ c.objetivo_general }}</p>
@@ -34,6 +46,8 @@
         <dt>Final · {{ c.duraciones.final }}</dt><dd>{{ s.actividad_final }}</dd>
         <dt>Consigna</dt><dd><em>“{{ s.consigna }}”</em></dd>
         <dt>Indicador</dt><dd>{{ s.criterio_eval }}</dd>
+        {% with crit=s.criterios_detalle %}{% if crit %}<dt>Criterios HMB</dt><dd class="criterios-sesion">{% for k in crit %}<span class="etiqueta-chip{% if k.reforzado %} chip-refuerzo{% endif %}" title="{{ k.texto }}">{{ k.orden }} · {{ k.fase }}</span>{% endfor %}</dd>{% endif %}{% endwith %}
+        {% if s.fuente %}<dt>Referente</dt><dd class="subtle">{{ s.fuente }}</dd>{% endif %}
     </dl>
 </article>
 {% endfor %}

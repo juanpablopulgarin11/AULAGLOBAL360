@@ -111,7 +111,7 @@ class Evaluacion(models.Model):
             "estadio_gallahue": self.estadio_gallahue,
             "porcentaje_madurez": self.porcentaje_madurez,
             "resumen_biomecanico": self.resumen,
-            "criterios": [{"criterio": r.texto, "fase": r.fase, "puntaje": r.puntaje, "medido": r.medido,
+            "criterios": [{"orden": r.orden, "criterio": r.texto, "fase": r.fase, "puntaje": r.puntaje, "medido": r.medido,
                            "umbral": r.umbral, "observacion": r.observacion, "fuente": r.fuente,
                            "fuente_texto": r.get_fuente_display()} for r in self.resultados.all()],
             "analisis_articular": self.analisis_articular,

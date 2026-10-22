@@ -80,6 +80,9 @@ class PlantillaSesion(models.Model):
     actividad_final = models.TextField()
     consigna = models.TextField()
     criterio_eval = models.TextField("criterio de evaluación")
+    criterios = models.JSONField("criterios de la batería que trabaja", default=list, blank=True,
+                                 help_text="Números de los criterios HMB de la habilidad (1 a 5)")
+    fuente = models.CharField("referente bibliográfico", max_length=300, blank=True)
 
     class Meta:
         verbose_name = "plantilla de sesión"

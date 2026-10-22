@@ -76,7 +76,8 @@ class Command(BaseCommand):
             for s in sesiones:
                 PlantillaSesion.objects.update_or_create(
                     habilidad=habilidad, orden=s["orden"],
-                    defaults={campo: s[campo] for campo in CAMPOS_PLANTILLA},
+                    defaults={campo: s[campo] for campo in CAMPOS_PLANTILLA}
+                    | {"criterios": s.get("criterios", []), "fuente": s.get("fuente", "")},
                 )
                 n_plant += 1
             habilidad.plantillas.filter(orden__gt=len(sesiones)).delete()
