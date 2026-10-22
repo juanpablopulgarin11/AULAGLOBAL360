@@ -10,7 +10,7 @@ from apps.planeacion.servicios import preferencias, unidad_para_evaluacion
 
 from tests.test_planeacion import evaluacion  # noqa: F401  (fixture)
 
-PLANTILLAS = json.loads((Path(__file__).resolve().parents[2] / "docs/datos/plantillas_progresion.json").read_text())
+PLANTILLAS = json.loads((Path(__file__).resolve().parents[2] / "docs/datos/plantillas_progresion.json").read_text(encoding="utf-8"))
 
 
 def _todas():

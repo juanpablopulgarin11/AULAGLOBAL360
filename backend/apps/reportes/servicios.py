@@ -1,7 +1,7 @@
 """Documentos Word a partir de los modelos."""
 from __future__ import annotations
 
-from typing import Tuple
+from typing import Any, Mapping, Optional, Tuple
 
 from apps.evaluaciones.models import Evaluacion
 from apps.planeacion.models import UnidadDidactica
@@ -35,9 +35,20 @@ def reporte_de_evaluacion(ev: Evaluacion) -> Tuple[bytes, str]:
     return contenido, nombre
 
 
-def documento_de_unidad(ud: UnidadDidactica) -> Tuple[bytes, str]:
+def documento_de_unidad(ud: UnidadDidactica, montajes: Optional[Mapping[int, Mapping[str, Any]]] = None,
+                        sesiones_filtro: Optional[Iterable[int]] = None) -> Tuple[bytes, str]:
+    """Word de la unidad. ``montajes``: fotos del montaje 3D por número de sesión (ver ``word.unidad_didactica``).
+    ``sesiones_filtro``: si se indica, solo se incluyen las sesiones cuyos números estén en esta colección.
+    """
     u = unidad_como_dict(ud)
-    contenido = word.unidad_didactica(u, institucion=_institucion(ud.docente), docente=_docente(ud.docente))
-    nombre = word.nombre_archivo("Unidad_Didactica", f"Periodo{ud.periodo}", f"{ud.total_clases}Clases",
+    if sesiones_filtro is not None:
+        filtro_set = {int(x) for x in sesiones_filtro}
+        if filtro_set:
+            u["clases_secuencia"] = [s for s in u["clases_secuencia"] if s["numero"] in filtro_set]
+    contenido = word.unidad_didactica(u, institucion=_institucion(ud.docente), docente=_docente(ud.docente),
+                                      montajes=montajes)
+    total_clases = len(u.get("clases_secuencia", []))
+    nombre = word.nombre_archivo("Unidad_Didactica", f"Periodo{ud.periodo}", f"{total_clases}Clases",
                                  ud.habilidad.nombre, ud.formato)
     return contenido, nombre
+

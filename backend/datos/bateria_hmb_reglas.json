@@ -1,0 +1,518 @@
+{
+  "_nota": "Extraído de script.js:biomechanicalRulesTable. condicion_js es la expresión literal que decide puntaje 1/0 sobre el objeto de telemetría agregada (t). Los textos de observación aprobada/fallida contienen valores interpolados y se documentan en docs/03_REGLAS_BATERIA_HMB.md.",
+  "habilidades": {
+    "Carrera": {
+      "componente": "[HMB-L] Locomoción",
+      "prueba_nro": 2,
+      "puntaje_max": 5,
+      "protocolo": "Desplazamiento en carrera de 18 metros con retorno al cono de inicio.",
+      "frases_profe": [
+        "¡Imagina que el piso es una nube y tus pies son plumas que no deben hacer ruido!",
+        "¡Codos en caja fuerte (a 90 grados) impulsando directo hacia la meta!"
+      ],
+      "criterios": [
+        {
+          "orden": 1,
+          "criterio": "Brazos en arco desde hombros flexionados ~90° en oposición coordinada a piernas",
+          "fase": "Sincronía",
+          "condicion_js": "t.avgElbowAngle >= 75 && t.avgElbowAngle <= 110",
+          "umbral_texto": "75° a 110°",
+          "error_si_falla": "Braceo desalineado o codos hiperextendidos",
+          "impacto_si_falla": "Codos a 0° generan torque asimétrico y desestabilizan el plano sagital."
+        },
+        {
+          "orden": 2,
+          "criterio": "Tronco con ligera inclinación fisiológica hacia adelante (5°-16°)",
+          "fase": "Postura",
+          "condicion_js": "t.avgTrunkAngle >= 4 && t.avgTrunkAngle <= 16",
+          "umbral_texto": "5° a 16°",
+          "error_si_falla": "Tronco hiperextendido o flexionado en exceso",
+          "impacto_si_falla": "Inclinación de 99° desvía el vector de empuje horizontal del centro de masa."
+        },
+        {
+          "orden": 3,
+          "criterio": "Pierna de apoyo se flexiona en amortiguación y propulsa vigorosamente",
+          "fase": "Propulsión",
+          "condicion_js": "t.maxHipAngle >= 32",
+          "umbral_texto": "Apertura cadera ≥ 32°",
+          "error_si_falla": "Propulsión incompleta y tiempo de apoyo excesivo",
+          "impacto_si_falla": "Disminuye la velocidad de traslación y recarga la articulación patelofemoral."
+        },
+        {
+          "orden": 4,
+          "criterio": "Pierna de recobro marcadamente flexionada con talón próximo a glúteos (rodilla ≤ 95°)",
+          "fase": "Recobro",
+          "condicion_js": "t.minKneeAngle <= 95",
+          "umbral_texto": "≤ 95°",
+          "error_si_falla": "Recobro de rodilla bajo / insuficiente",
+          "impacto_si_falla": "Registró 180°, aumentando el momento de inercia y ralentizando la zancada."
+        },
+        {
+          "orden": 5,
+          "criterio": "Fase aérea de vuelo definida (ambos pies sin tocar simultáneamente el suelo)",
+          "fase": "Vuelo",
+          "condicion_js": "t.flightDetected",
+          "umbral_texto": "Fase aérea evidente",
+          "error_si_falla": "Ausencia de fase de vuelo definida",
+          "impacto_si_falla": "Corresponde a un patrón elemental de marcha rápida sin aprovechamiento de energía elástica."
+        }
+      ]
+    },
+    "Salto Horizontal": {
+      "componente": "[HMB-L] Locomoción",
+      "prueba_nro": 3,
+      "puntaje_max": 5,
+      "protocolo": "Salto bipodal hacia adelante sobrepasando línea marcada con pies al ancho de hombros.",
+      "frases_profe": [
+        "¡Aterriza suavemente como un gato ninja, que nadie escuche tus pasos!",
+        "¡Lanza tus brazos al cielo como si fueras a tocar las estrellas en el despegue!"
+      ],
+      "criterios": [
+        {
+          "orden": 1,
+          "criterio": "Genera impulso flexionando rodillas (≤ 110°) y llevando brazos hacia atrás",
+          "fase": "Carga",
+          "condicion_js": "t.minKneeAngle <= 112",
+          "umbral_texto": "≤ 110°",
+          "error_si_falla": "Carga elástica insuficiente en contramovimiento",
+          "impacto_si_falla": "No aprovecha el ciclo estiramiento-acortamiento de extensores de rodilla y cadera."
+        },
+        {
+          "orden": 2,
+          "criterio": "Extensión vigorosa de rodillas (≥ 155°) proyectando brazos hacia adelante y arriba",
+          "fase": "Despegue",
+          "condicion_js": "t.maxKneeAngle >= 155",
+          "umbral_texto": "≥ 155°",
+          "error_si_falla": "Extensión terminal incompleta en despegue",
+          "impacto_si_falla": "Pérdida de vector horizontal y aceleración en la parábola de vuelo."
+        },
+        {
+          "orden": 3,
+          "criterio": "Existe fase aérea de vuelo con desplazamiento hacia adelante",
+          "fase": "Vuelo",
+          "condicion_js": "t.flightDetected || t.maxHipAngle >= 30",
+          "umbral_texto": "Trayectoria parabólica aérea",
+          "error_si_falla": "Parábola de vuelo deficiente o rasante",
+          "impacto_si_falla": "Limita la distancia de proyección y la suspensión coordinada en el aire."
+        },
+        {
+          "orden": 4,
+          "criterio": "Despega y cae apoyando ambas piernas simultáneamente amortiguando rodillas (≤ 135°)",
+          "fase": "Aterrizaje",
+          "condicion_js": "t.minKneeAngle <= 135 && t.symmetryScore >= 65",
+          "umbral_texto": "Flexión ≤ 135° y apoyo simultáneo",
+          "error_si_falla": "Aterrizaje rígido o asincrónico",
+          "impacto_si_falla": "Transmite fuerzas de reacción del suelo lesivas hacia rodillas y zona lumbar."
+        },
+        {
+          "orden": 5,
+          "criterio": "Logra mantener el equilibrio al aterrizar sin caídas ni pasos compensatorios",
+          "fase": "Recepción",
+          "condicion_js": "t.avgTrunkAngle <= 16",
+          "umbral_texto": "Estabilidad axial ≤ 16°",
+          "error_si_falla": "Pérdida de equilibrio post-aterrizaje",
+          "impacto_si_falla": "El centro de gravedad sobrepasa la base de sustentación requiriendo apoyos de auxilio."
+        }
+      ]
+    },
+    "Marcha": {
+      "componente": "[HMB-L] Locomoción",
+      "prueba_nro": 1,
+      "puntaje_max": 5,
+      "protocolo": "Caminar 9 metros hacia adelante tocando el cono y retornar al cono de inicio (total 18m).",
+      "frases_profe": [
+        "¡Camina como un rey o reina con su corona erguida mirando al horizonte!",
+        "¡Tus brazos son péndulos de reloj que se mueven suaves al compás!"
+      ],
+      "criterios": [
+        {
+          "orden": 1,
+          "criterio": "Balanceo libre de los brazos en el plano sagital y en oposición a las piernas",
+          "fase": "Sincronía",
+          "condicion_js": "t.avgElbowAngle >= 100 && t.symmetryScore >= 68",
+          "umbral_texto": "Balanceo alternado relajado",
+          "error_si_falla": "Falta de balanceo libre en brazos",
+          "impacto_si_falla": "Impide compensar el momento torsional de la pelvis generado por la zancada."
+        },
+        {
+          "orden": 2,
+          "criterio": "La posición del tronco se mantiene erguida con alineación axial",
+          "fase": "Postura",
+          "condicion_js": "t.avgTrunkAngle <= 8",
+          "umbral_texto": "≤ 8° de inclinación",
+          "error_si_falla": "Tronco inclinado o postura colapsada",
+          "impacto_si_falla": "Altera la línea de gravedad corporal provocando sobrecarga cervical y lumbar."
+        },
+        {
+          "orden": 3,
+          "criterio": "Transfiere el peso corporal de talón a punta de forma fluida",
+          "fase": "Apoyo",
+          "condicion_js": "t.maxHipAngle >= 24",
+          "umbral_texto": "Apertura cadera ≥ 24°",
+          "error_si_falla": "Contacto podal plano o sin rodillo talón-punta",
+          "impacto_si_falla": "Disminuye la disipación elástica de impacto en el arco plantar."
+        },
+        {
+          "orden": 4,
+          "criterio": "Existe fase de doble apoyo (ambos pies tocan simultáneamente el suelo en transición)",
+          "fase": "Transición",
+          "condicion_js": "!t.flightDetected",
+          "umbral_texto": "Contacto podal continuo sin vuelo",
+          "error_si_falla": null,
+          "impacto_si_falla": null
+        },
+        {
+          "orden": 5,
+          "criterio": "Los pies siguen una línea longitudinal continua en dirección al cono",
+          "fase": "Dirección",
+          "condicion_js": "t.symmetryScore >= 72",
+          "umbral_texto": "Simetría ≥ 72%",
+          "error_si_falla": "Desviación lateral de la línea de progresión",
+          "impacto_si_falla": "Indica desequilibrio en abductores de cadera o debilidad en musculatura estabilizadora."
+        }
+      ]
+    },
+    "Salto Unipodal": {
+      "componente": "[HMB-L] Locomoción",
+      "prueba_nro": 4,
+      "puntaje_max": 5,
+      "protocolo": "Avanzar realizando tres saltos consecutivos con el pie de apoyo (pata sola).",
+      "frases_profe": [
+        "¡Salta como un resorte alegre manteniendo el pie firme y ágil!",
+        "¡Tu pierna en el aire es una vela de barco que te impulsa hacia adelante!"
+      ],
+      "criterios": [
+        {
+          "orden": 1,
+          "criterio": "Brazos se flexionan y desplazan hacia adelante proveyendo estabilidad",
+          "fase": "Equilibrio",
+          "condicion_js": "t.avgElbowAngle >= 60 && t.avgElbowAngle <= 125",
+          "umbral_texto": "60° a 125°",
+          "error_si_falla": "Falta de acción estabilizadora de brazos",
+          "impacto_si_falla": "Impide reajustar el centro de gravedad en el eje anteroposterior."
+        },
+        {
+          "orden": 2,
+          "criterio": "El tronco se mantiene levemente inclinado hacia adelante y alineado",
+          "fase": "Postura",
+          "condicion_js": "t.avgTrunkAngle >= 4 && t.avgTrunkAngle <= 18",
+          "umbral_texto": "4° a 18°",
+          "error_si_falla": "Alineación deficiente de tronco en salto unipodal",
+          "impacto_si_falla": "Dificulta la propulsión anterior y genera fuerzas de cizallamiento en la cadera de apoyo."
+        },
+        {
+          "orden": 3,
+          "criterio": "Pierna libre oscila hacia adelante en movimiento pendular rítmico",
+          "fase": "Propulsión",
+          "condicion_js": "t.maxHipAngle >= 26",
+          "umbral_texto": "Apertura cadera ≥ 26°",
+          "error_si_falla": "Ausencia de balanceo pendular en pierna libre",
+          "impacto_si_falla": "Obliga a la pierna de apoyo a realizar todo el trabajo mecánico sin ayuda inercial."
+        },
+        {
+          "orden": 4,
+          "criterio": "Logra mantener el control postural y equilibrio en cada aterrizaje",
+          "fase": "Amortiguación",
+          "condicion_js": "t.minKneeAngle <= 140",
+          "umbral_texto": "Flexión rodilla ≤ 140°",
+          "error_si_falla": "Amortiguación deficiente en aterrizaje unipodal",
+          "impacto_si_falla": "Sobrecarga la articulación tibiotarsiana y el tendón rotuliano."
+        },
+        {
+          "orden": 5,
+          "criterio": "Despega y aterriza exitosamente tres veces consecutivas sobre el mismo pie",
+          "fase": "Continuidad",
+          "condicion_js": "t.flightDetected || t.maxKneeAngle >= 150",
+          "umbral_texto": "3 despegues aéreos consecutivos",
+          "error_si_falla": "Falta de continuidad en los 3 saltos unipodales",
+          "impacto_si_falla": "Refleja déficit en la fuerza reactiva unilateral y el control neuromuscular."
+        }
+      ]
+    },
+    "Lanzamiento Sobre Hombro": {
+      "componente": "[HMB-M] Manipulación",
+      "prueba_nro": 7,
+      "puntaje_max": 5,
+      "protocolo": "Lanzamiento unimanual de pelota sobre el hombro hacia aro ubicado a 5m de distancia y 1.5m de altura.",
+      "frases_profe": [
+        "¡Apunta con el hombro contrario como si fueras un arquero afinando la diana!",
+        "¡Gira tu cintura como si desataras un resorte gigante para lanzar lejos y certero!"
+      ],
+      "criterios": [
+        {
+          "orden": 1,
+          "criterio": "Extensión total del brazo ejecutante en el momento de soltar la pelota",
+          "fase": "Liberación",
+          "condicion_js": "t.maxElbowAngle >= 145 || t.avgElbowAngle >= 80",
+          "umbral_texto": "≥ 145° extensión",
+          "error_si_falla": "Lanzamiento en empuje sin extensión de palanca",
+          "impacto_si_falla": "Disminuye drásticamente la velocidad de salida de la pelota y la precisión."
+        },
+        {
+          "orden": 2,
+          "criterio": "Rotación axial armónica del tronco acompañando la aceleración del brazo",
+          "fase": "Torsión",
+          "condicion_js": "t.avgTrunkAngle >= 5",
+          "umbral_texto": "Rotación tronco evidente",
+          "error_si_falla": null,
+          "impacto_si_falla": null
+        },
+        {
+          "orden": 3,
+          "criterio": "Pierna contralateral claramente adelantada como base de sustentación",
+          "fase": "Apoyo",
+          "condicion_js": "t.maxHipAngle >= 28",
+          "umbral_texto": "Paso contralateral ≥ 28°",
+          "error_si_falla": "Paso homolateral o base paralela estrecha",
+          "impacto_si_falla": "Bloquea la cadena cinética e impide transferir energía desde los pies al balón."
+        },
+        {
+          "orden": 4,
+          "criterio": "Manifiesta control manual del móvil sin resbalamientos durante la aceleración",
+          "fase": "Control",
+          "condicion_js": "t.avgElbowAngle >= 70",
+          "umbral_texto": "Control digital firme",
+          "error_si_falla": "Pérdida de control manual",
+          "impacto_si_falla": "Afecta la sincronización del punto de suelta y el ángulo de salida parabólico."
+        },
+        {
+          "orden": 5,
+          "criterio": "La pelota avanza hacia el frente en dirección al objetivo (aro o referencia)",
+          "fase": "Dirección",
+          "condicion_js": "t.symmetryScore >= 65",
+          "umbral_texto": "Trayectoria frontal hacia la meta",
+          "error_si_falla": "Desviación direccional del móvil",
+          "impacto_si_falla": "El vector de aceleración final se disipa fuera del plano sagital objetivo."
+        }
+      ]
+    },
+    "Recepción y Atrape": {
+      "componente": "[HMB-M] Manipulación",
+      "prueba_nro": 9,
+      "puntaje_max": 5,
+      "protocolo": "Atrapar bimanualmente pelota plástica lanzada por el evaluador en parábola a 3 metros de distancia.",
+      "frases_profe": [
+        "¡Tus manos son una cesta mágica suave que abraza el balón!",
+        "¡Cede con tus brazos hacia el pecho como si atraparas un huevo de cristal sin romperlo!"
+      ],
+      "criterios": [
+        {
+          "orden": 1,
+          "criterio": "Seguimiento visual continuo de la pelota desde su inicio hasta el contacto final",
+          "fase": "Anticipación",
+          "condicion_js": "t.avgTrunkAngle <= 15",
+          "umbral_texto": "Fijación visual ininterrumpida",
+          "error_si_falla": "Pérdida de seguimiento visual anticipatorio",
+          "impacto_si_falla": "Impide calcular la velocidad angular y el punto de intercepción espacial."
+        },
+        {
+          "orden": 2,
+          "criterio": "Brazos semiflexionados y relajados en actitud receptora de espera (75°-135°)",
+          "fase": "Espera",
+          "condicion_js": "t.avgElbowAngle >= 75 && t.avgElbowAngle <= 135",
+          "umbral_texto": "75° a 135°",
+          "error_si_falla": "Brazos rígidos en fase de espera",
+          "impacto_si_falla": "Elimina los grados de libertad necesarios para corregir la intercepción."
+        },
+        {
+          "orden": 3,
+          "criterio": "Las manos adoptan forma de copa o recipiente con pulgares y meñiques opuestos",
+          "fase": "Contacto",
+          "condicion_js": "t.symmetryScore >= 70",
+          "umbral_texto": "Manos en copa simétrica",
+          "error_si_falla": "Atrapada corporal o manos sin forma de copa",
+          "impacto_si_falla": "El impacto del móvil genera rebote contra la pared torácica en vez de retención digital."
+        },
+        {
+          "orden": 4,
+          "criterio": "Los dos brazos realizan flexión elástica absorbiendo la energía del móvil",
+          "fase": "Amortiguación",
+          "condicion_js": "t.minKneeAngle <= 150 || t.avgElbowAngle <= 120",
+          "umbral_texto": "Flexión amortiguadora sincrónica",
+          "error_si_falla": null,
+          "impacto_si_falla": null
+        },
+        {
+          "orden": 5,
+          "criterio": "Mantiene la pelota asegurada en sus dos manos sin rebote ni escape",
+          "fase": "Retención",
+          "condicion_js": "t.avgTrunkAngle <= 14",
+          "umbral_texto": "Dominio final del móvil",
+          "error_si_falla": "Escape del móvil post-contacto",
+          "impacto_si_falla": "Déficit en la coordinación fina y presión digital coordinada."
+        }
+      ]
+    },
+    "Patear": {
+      "componente": "[HMB-M] Manipulación",
+      "prueba_nro": 10,
+      "puntaje_max": 5,
+      "protocolo": "Ubicado a un paso de una pelota estática, patear hacia una meta situada a 5 metros de distancia.",
+      "frases_profe": [
+        "¡Patea con el empeine como si enviaras una carta al cielo!",
+        "¡Acompaña el disparo con tu cuerpo como un cohete que sigue volando suave después del despegue!"
+      ],
+      "criterios": [
+        {
+          "orden": 1,
+          "criterio": "El brazo contralateral acompaña el gesto describiendo un péndulo desde el hombro",
+          "fase": "Equilibrio",
+          "condicion_js": "t.avgElbowAngle >= 70 && t.symmetryScore >= 65",
+          "umbral_texto": "Brazo opuesto pendular activo",
+          "error_si_falla": "Falta de contrapeso con brazo contralateral",
+          "impacto_si_falla": "Provoca rotación descontrolada del tronco y pérdida de estabilidad en el pie de apoyo."
+        },
+        {
+          "orden": 2,
+          "criterio": "Participación coordinada del tronco con ligera flexión anterior hacia el impacto",
+          "fase": "Postura",
+          "condicion_js": "t.avgTrunkAngle >= 4 && t.avgTrunkAngle <= 18",
+          "umbral_texto": "4° a 18° de flexión",
+          "error_si_falla": "Tronco hiperextendido hacia atrás al patear",
+          "impacto_si_falla": "Eleva involuntariamente la trayectoria del balón y reduce la potencia transmitida."
+        },
+        {
+          "orden": 3,
+          "criterio": "Movimiento pendular amplio de toda la pierna ejecutante partiendo de la cadera",
+          "fase": "Impulso",
+          "condicion_js": "t.maxHipAngle >= 32",
+          "umbral_texto": "Apertura cadera ≥ 32°",
+          "error_si_falla": "Patrón de patada segmentario limitado a la rodilla",
+          "impacto_si_falla": "Falta de reclutamiento de psoas ilíaco y glúteos mayores para la aceleración del impacto."
+        },
+        {
+          "orden": 4,
+          "criterio": "La pierna que ejecuta la acción finaliza el seguimiento y retorna con control a la base",
+          "fase": "Desaceleración",
+          "condicion_js": "t.minKneeAngle <= 135",
+          "umbral_texto": "Seguimiento y retorno suave",
+          "error_si_falla": "Frenado hiperextendido sin seguimiento",
+          "impacto_si_falla": "Genera impacto de cizallamiento en el ligamento cruzado anterior de la rodilla ejecutante."
+        },
+        {
+          "orden": 5,
+          "criterio": "Golpea la pelota nítidamente y esta avanza hacia el frente hacia el objetivo",
+          "fase": "Efectividad",
+          "condicion_js": "t.symmetryScore >= 68",
+          "umbral_texto": "Progresión frontal hacia la meta",
+          "error_si_falla": "Impacto descentrado del móvil",
+          "impacto_si_falla": "Pie de apoyo mal situado respecto al eje del balón desalineando el punto de contacto."
+        }
+      ]
+    },
+    "Equilibrio Dinámico": {
+      "componente": "[HMB-E] Estabilidad-Equilibrio",
+      "prueba_nro": 14,
+      "puntaje_max": 5,
+      "protocolo": "Caminar sobre una línea de 5 cm de ancho por 9 metros de largo hasta el final del recorrido.",
+      "frases_profe": [
+        "¡Imagina que caminas sobre una cuerda de oro como un hábil equilibrista!",
+        "¡Fija tus ojos en la meta como un halcón y tu cuerpo te seguirá con suavidad!"
+      ],
+      "criterios": [
+        {
+          "orden": 1,
+          "criterio": "La mirada se mantiene orientada al frente hacia el final del recorrido",
+          "fase": "Orientación",
+          "condicion_js": "t.avgTrunkAngle <= 8",
+          "umbral_texto": "Orientación cefálica horizontal",
+          "error_si_falla": "Mirada fija hacia el suelo",
+          "impacto_si_falla": "Altera el sistema vestibular y disminuye la integración propioceptiva dinámica."
+        },
+        {
+          "orden": 2,
+          "criterio": "Mantiene una postura de tronco erguida y armónica durante todo el trayecto",
+          "fase": "Postura",
+          "condicion_js": "t.avgTrunkAngle <= 7",
+          "umbral_texto": "≤ 7° de inclinación",
+          "error_si_falla": "Tronco desalineado o colapso postural",
+          "impacto_si_falla": "El centro de gravedad oscila fuera de la base estrecha de soporte."
+        },
+        {
+          "orden": 3,
+          "criterio": "Los brazos se coordinan con los pies contrarios sin elevarlos lateralmente en cruz",
+          "fase": "Sincronía",
+          "condicion_js": "t.avgElbowAngle >= 100 && t.symmetryScore >= 75",
+          "umbral_texto": "Brazos relajados sin abducción en cruz",
+          "error_si_falla": "Brazos en cruz compensatorios",
+          "impacto_si_falla": "Indica dependencia de estrategias de inercia externa ante falta de control central del core."
+        },
+        {
+          "orden": 4,
+          "criterio": "En el desplazamiento no se inclina ni tambalea hacia los lados",
+          "fase": "Estabilidad",
+          "condicion_js": "t.symmetryScore >= 80",
+          "umbral_texto": "Simetría lateral ≥ 80%",
+          "error_si_falla": "Oscilación lateral excesiva",
+          "impacto_si_falla": "Inestabilidad en la contracción sinérgica de glúteo medio y oblicuos abdominales."
+        },
+        {
+          "orden": 5,
+          "criterio": "Los pies se mantienen todo el tiempo sobre la línea de trayectoria de 5 cm",
+          "fase": "Precisión",
+          "condicion_js": "t.maxHipAngle <= 35 && t.symmetryScore >= 75",
+          "umbral_texto": "Apoyo 100% sobre la línea",
+          "error_si_falla": "Pérdida de la línea de soporte",
+          "impacto_si_falla": "El estudiante ensancha la base de sustentación para compensar el déficit de equilibrio dinámico."
+        }
+      ]
+    },
+    "Equilibrio Estático Unipodal": {
+      "componente": "[HMB-E] Estabilidad-Equilibrio",
+      "prueba_nro": 15,
+      "puntaje_max": 5,
+      "protocolo": "Parado descalzo sobre colchoneta en apoyo unipodal durante 5 segundos con rodilla libre al frente y talón atrás.",
+      "frases_profe": [
+        "¡Eres un árbol milenario con raíces profundas que el viento no puede mover!",
+        "¡Respira hondo y sostén tu rodilla en el aire como un flamenco elegante!"
+      ],
+      "criterios": [
+        {
+          "orden": 1,
+          "criterio": "Los brazos se encuentran relajados a los lados del cuerpo sin aleteos compensatorios",
+          "fase": "Reposo",
+          "condicion_js": "t.avgElbowAngle >= 120",
+          "umbral_texto": "≥ 120° (brazos a los lados)",
+          "error_si_falla": "Aleteo compensatorio de brazos",
+          "impacto_si_falla": "Indica inmadurez en el control postural del tronco y tobillo, requiriendo auxilio inercial."
+        },
+        {
+          "orden": 2,
+          "criterio": "Mantiene posición erguida evitando inclinar el cuerpo adelante – atrás",
+          "fase": "Sagital",
+          "condicion_js": "t.avgTrunkAngle <= 6",
+          "umbral_texto": "≤ 6° de inclinación sagital",
+          "error_si_falla": "Oscilación anteroposterior del tronco",
+          "impacto_si_falla": "Falta de co-activación equilibrada entre erectores espinales y recto abdominal."
+        },
+        {
+          "orden": 3,
+          "criterio": "Mantiene posición erguida evitando inclinar el cuerpo de lado a lado",
+          "fase": "Frontal",
+          "condicion_js": "(t.avgShoulderTilt === undefined || t.avgShoulderTilt <= 8.5) && t.symmetryScore >= 80",
+          "umbral_texto": "Oscilación ≤ 8.5° y Simetría ≥ 80%",
+          "error_si_falla": "Inclinación lateral o caída pélvica",
+          "impacto_si_falla": "Debilidad funcional del glúteo medio de la pierna de apoyo sobre la colchoneta."
+        },
+        {
+          "orden": 4,
+          "criterio": "La pierna de apoyo se mantiene firme y extendida (rodilla ≥ 160°)",
+          "fase": "Sustentación",
+          "condicion_js": "((t.avgSupportKnee > 0) ? t.avgSupportKnee : t.maxKneeAngle) >= 155",
+          "umbral_texto": "≥ 155° extensión",
+          "error_si_falla": "Rodilla de apoyo flexionada o inestable",
+          "impacto_si_falla": "Genera fatiga prematura en el cuádriceps y mayor inestabilidad sobre la superficie viscoelástica."
+        },
+        {
+          "orden": 5,
+          "criterio": "La pierna libre sostiene la rodilla delante y talón detrás durante 5 segundos continuos",
+          "fase": "Sostenimiento",
+          "condicion_js": "(t.unipodalMaintainedFrames >= 2 || t.unipodalHoldFrames >= 2) || t.minKneeAngle <= 120",
+          "umbral_texto": "Flexión anterior sostenida y pie elevado",
+          "error_si_falla": "Pérdida de suspensión en pierna libre",
+          "impacto_si_falla": "El estudiante apoya el pie contralateral en la colchoneta antes de cumplir los 5 segundos."
+        }
+      ]
+    }
+  }
+}
