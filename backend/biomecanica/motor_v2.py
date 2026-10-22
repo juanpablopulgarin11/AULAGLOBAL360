@@ -17,6 +17,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from .clasificador_v2 import detectar
+from .momentos import _eventos, momentos_clave
 from .fsm import ejecutar_fsm
 from .habilidades import grado_y_ciclo, resolver_habilidad
 from .jsutil import js_round
@@ -44,6 +45,19 @@ def totales(criterios: Sequence[Dict[str, Any]]) -> Dict[str, Any]:
 
 def _muestras_de_frames(frames: Sequence[Dict[str, Any]]) -> List[Tuple[float, Any]]:
     return [(float(f.get("timestampNum") or 0.0), f.get("landmarks")) for f in frames]
+
+
+def gesto_detectado(cin: Dict[str, Any], habilidad: str) -> bool:
+    """El evento característico de la prueba ocurrió (vuelo, suelta, impacto, sostén…)."""
+    return bool(_eventos(cin, habilidad))
+
+
+def momentos_para(serie: Muestras, duracion: float, codigo_habilidad: Optional[str], observaciones: str = "",
+                  n: int = 8) -> List[Dict[str, Any]]:
+    """Instantes de los fotogramas clave para la extracción (misma habilidad que decidirá el motor)."""
+    cin = calcular_cinematica(serie)
+    habilidad = resolver_habilidad(codigo_habilidad) or detectar(cin, observaciones).habilidad
+    return momentos_clave(cin, habilidad, duracion, n)
 
 
 def run_motor_v2(codigo_habilidad: Optional[str], grado: Optional[str], observaciones: str,
@@ -79,7 +93,8 @@ def run_motor_v2(codigo_habilidad: Optional[str], grado: Optional[str], observac
     errores = errores_de(habilidad, criterios, telemetria)
     tot = totales(criterios)
 
-    lado = _lado(cin, habilidad)
+    gesto = gesto_detectado(cin, habilidad) and not es_foto
+    lado = _lado(cin, habilidad) if gesto else ""
     partes = [("🔍 [Detección automática: " if es_auto else "[Evaluación dirigida: ") + f"{habilidad}]"]
     if deteccion:
         partes.append(f"Confianza de la detección: **{deteccion.confianza}** ({deteccion.motivo})")
@@ -112,6 +127,7 @@ def run_motor_v2(codigo_habilidad: Optional[str], grado: Optional[str], observac
         "estadio_gallahue": tot["estadio"],
         "porcentaje_madurez": tot["porcentaje"],
         "resumen_biomecanico": " ".join(partes),
+        "gesto_detectado": gesto,
         "criterios": criterios,
         "analisis_articular": _analisis(cin),
         "errores_criticos": errores or ([dict(SIN_ERRORES)] if tot["calificados"] and not tot["pendientes"] else []),
@@ -134,15 +150,31 @@ def _lado(cin: Dict[str, Any], habilidad: str) -> str:
     return ""
 
 
+def _num(x: Any, unidad: str = "°") -> str:
+    if x is None:
+        return "no medible en esta toma"
+    if isinstance(x, float):
+        x = 0.0 if abs(x) < 0.05 else x
+        x = f"{x:.1f}".replace(".", ",")
+    return f"{x}{unidad}"
+
+
 def _analisis(cin: Dict[str, Any]) -> Dict[str, str]:
     if not cin.get("suficiente"):
-        return {"angulos_principales": "Sin datos suficientes", "cadena_cinetica": "", "apoyo_y_base": ""}
+        return {"angulos_principales": "No hubo suficientes fotogramas con el cuerpo visible.", "cadena_cinetica": "",
+                "apoyo_y_base": ""}
+    op = cin.get("oposicion_brazos")
+    oposicion = (("no visible de frente" if cin.get("vista") == "frontal" else "no medible (no hubo desplazamiento)") if op is None else
+                 "clara" if op >= 0.3 else "parcial" if op >= 0 else "ausente (brazo y pierna del mismo lado avanzan juntos)")
+    doble = cin.get("doble_apoyo_frac")
     return {
-        "angulos_principales": (f"Codo (mediana) {cin.get('codo_mediana')}°, tronco {cin.get('tronco_mediana')}°, "
-                                f"rodilla mínima {cin.get('rodilla_min')}°, recobro {cin.get('recobro_rodilla_min')}°."),
-        "cadena_cinetica": (f"{cin.get('vuelos')} fases aéreas ({cin.get('vuelos_bipodales')} bipodales), "
-                            f"{cin.get('saltos_mismo_pie')} saltos seguidos sobre un pie, oposición brazo-pierna "
-                            f"{cin.get('oposicion_brazos')}."),
-        "apoyo_y_base": (f"Desplazamiento {cin.get('desplazamiento_piernas')} largos de pierna; apoyo unipodal máximo "
-                         f"{cin.get('apoyo_unipodal_s')} s; doble apoyo {cin.get('doble_apoyo_frac')}."),
+        "angulos_principales": (f"Codo (mediana) {_num(cin.get('codo_mediana'))}; inclinación del tronco "
+                                f"{_num(cin.get('tronco_mediana'))}; flexión mínima de rodilla {_num(cin.get('rodilla_min'))}; "
+                                f"rodilla de recobro {_num(cin.get('recobro_rodilla_min'))}."),
+        "cadena_cinetica": (f"{cin.get('vuelos', 0)} fases aéreas ({cin.get('vuelos_bipodales', 0)} con despegue y caída "
+                            f"bipodal); {cin.get('saltos_mismo_pie', 0)} saltos seguidos sobre un pie; oposición "
+                            f"brazo-pierna {oposicion}."),
+        "apoyo_y_base": (f"Desplazamiento de {_num(abs(cin.get('desplazamiento_piernas') or 0.0), ' largos de pierna')}; "
+                         f"apoyo en un pie más largo {_num(cin.get('apoyo_unipodal_s') or 0.0, ' s')}; doble apoyo "
+                         f"{'no medible' if doble is None else f'{round(doble * 100)} % del recorrido'}; toma de {cin.get('vista')}."),
     }

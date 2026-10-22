@@ -9,6 +9,7 @@ from django.conf import settings
 from django.utils import timezone
 
 from biomecanica.extraccion import ArchivoIlegible, detector_mediapipe, extraer_imagen, extraer_video, tipo_de_archivo
+from biomecanica.motor_v2 import momentos_para
 
 from .models import Evaluacion, Fotograma
 from .servicios import diagnosticar_y_guardar
@@ -34,7 +35,9 @@ def procesar_evaluacion(evaluacion_id: int) -> str:
         if not ev.archivo:
             raise ArchivoIlegible("La evaluación no tiene archivo")
         if tipo == "video":
-            resultado = extraer_video(ev.archivo.path, obtener_detector(), habilidad=habilidad)
+            codigo = ev.habilidad_solicitada.codigo if ev.habilidad_solicitada else "auto"
+            resultado = extraer_video(ev.archivo.path, obtener_detector(), habilidad=habilidad,
+                                      momentos=lambda serie, dur: momentos_para(serie, dur, codigo, ev.observaciones_docente))
         elif tipo == "imagen":
             resultado = extraer_imagen(ev.archivo.path, obtener_detector(), habilidad=habilidad)
         else:

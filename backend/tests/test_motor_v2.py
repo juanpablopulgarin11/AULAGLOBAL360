@@ -108,8 +108,13 @@ def test_docente_confirma_los_pendientes(client, catalogo, docente):
     client.force_login(docente)
     html = client.get(reverse("evaluacion", args=[ev.pk])).content.decode()
     assert "2 criterios por confirmar" in html and "✓ Lo logra" in html and "(provisional)" in html
+    assert "Desempeño esperado (MEN, Documento 15)" in html
     contenido, _ = reporte_de_evaluacion(ev)                        # el Word acepta criterios pendientes
     assert contenido[:2] == b"PK"
+    import io
+    from docx import Document
+    texto = "\n".join(c.text for t in Document(io.BytesIO(contenido)).tables for f in t.rows for c in f.cells)
+    assert "Desempeño esperado (MEN, Documento 15)" in texto
 
     client.post(reverse("evaluacion_criterio", args=[ev.pk, 4]), {"logrado": "1"})
     client.post(reverse("evaluacion_criterio", args=[ev.pk, 5]), {"logrado": "0"})
@@ -170,3 +175,42 @@ def test_comando_validar_videos(tmp_path, monkeypatch):
     texto = salida.getvalue()
     assert "Detección automática: 1/2" in texto          # el video sin salto no se reconoce (correcto en «otros»)
     assert "Concordancia con el docente" in texto and (tmp_path / "r.csv").exists()
+
+
+@pytest.mark.django_db
+def test_tarea_toma_los_fotogramas_en_los_eventos(catalogo, docente, tmp_path, monkeypatch):
+    """Video real (codificado) de un salto: la tarea elige despegue, vuelo y caída y los rotula."""
+    import cv2
+    import numpy as np
+    from django.core.files.base import ContentFile
+
+    from apps.evaluaciones import tasks
+
+    serie = S.salto_horizontal()
+    ruta = tmp_path / "salto.mp4"
+    vw = cv2.VideoWriter(str(ruta), cv2.VideoWriter_fourcc(*"mp4v"), 30, (320, 180))
+    for i in range(len(serie)):                       # el brillo de cada cuadro codifica su número
+        vw.write(np.full((180, 320, 3), 20 + 2 * i, np.uint8))
+    vw.release()
+    monkeypatch.setattr(tasks, "obtener_detector",
+                        lambda: (lambda rgb: serie[min(len(serie) - 1, max(0, round((float(rgb.mean()) - 20) / 2)))][1]))
+    ev = Evaluacion(docente=docente, habilidad_solicitada=Habilidad.objects.get(codigo="salto"))
+    ev.archivo.save("salto.mp4", ContentFile(ruta.read_bytes()), save=False)
+    ev.save()
+    assert tasks.procesar_evaluacion(ev.pk) == "lista"
+    ev.refresh_from_db()
+
+    fotos = list(ev.fotogramas.order_by("orden"))
+    rotulos = [f.hito_badge for f in fotos if f.hito_badge]
+    assert {"🛫 DESPEGUE", "★ VUELO", "🛬 CAÍDA"} <= set(rotulos), rotulos
+    vuelo = next(f for f in fotos if f.hito_badge == "★ VUELO")
+    assert 1.05 <= vuelo.tiempo_s <= 1.45 and vuelo.hito_tipo == "pico"      # el vuelo sintético va de 1,05 a 1,45 s
+    assert ev.puntaje == ev.puntaje_maximo == 5
+
+
+def test_desempeno_men_por_ciclo():
+    from biomecanica.habilidades import grado_y_ciclo
+
+    assert grado_y_ciclo("7_anos")["desempeno_men"].startswith("Exploro posibilidades de movimiento")
+    assert grado_y_ciclo("9_11_anos")["desempeno_men"].startswith("Controlo de forma global y segmentaria")
+    assert grado_y_ciclo("5_anos")["desempeno_men"] == ""      # el Documento 15 empieza en primero

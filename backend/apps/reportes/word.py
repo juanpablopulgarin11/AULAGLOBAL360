@@ -235,7 +235,8 @@ def reporte_estudiante(d: Mapping[str, Any], estudiante: str = "", grupo: str = 
     r.font.size, r.font.color.rgb = Pt(9), RGBColor.from_string("64748B")
 
     # 1. Datos generales
-    t = _tabla(doc, 6 if estudiante else 5, 2, (8.9, 8.9))
+    men = d.get("desempeno_men") or ""
+    t = _tabla(doc, (6 if estudiante else 5) + bool(men), 2, (8.9, 8.9))
     _encabezado(_fila_unida(t, 0), "1. Datos generales y resultado evolutivo")
     fila = 1
     if estudiante:
@@ -249,6 +250,9 @@ def reporte_estudiante(d: Mapping[str, Any], estudiante: str = "", grupo: str = 
     _escribir(t.cell(fila + 2, 0), d.get("edad_calibrada") or "", etiqueta="Grado / edad:")
     _escribir(t.cell(fila + 2, 1), "Detección automática por cinemática" if d.get("es_deteccion_automatica") else "Evaluación dirigida",
               etiqueta="Modalidad:")
+    if men:
+        _escribir(_fila_unida(t, fila + 3), f"«{men}»", tam=9, etiqueta="Desempeño esperado (MEN, Documento 15):")
+        fila += 1
     marco = _fila_unida(t, fila + 3)
     _sombrear(marco, GRIS_SUAVE)
     _escribir(marco, "Batería de Habilidades Motrices Básicas para Niños entre 5 y 11 Años (González Palacio, Montoya Grisales, "

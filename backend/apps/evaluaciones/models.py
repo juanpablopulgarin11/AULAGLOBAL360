@@ -107,6 +107,7 @@ class Evaluacion(models.Model):
             "puntaje_obtenido": f"{self.puntaje}/{self.puntaje_maximo}"
                                 + (f" · {self.criterios_pendientes} por confirmar" if self.criterios_pendientes else ""),
             "edad_calibrada": grado_y_ciclo(self.grado)["grado"],
+            "desempeno_men": grado_y_ciclo(self.grado)["desempeno_men"],
             "estadio_gallahue": self.estadio_gallahue,
             "porcentaje_madurez": self.porcentaje_madurez,
             "resumen_biomecanico": self.resumen,

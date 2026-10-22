@@ -49,7 +49,16 @@ La auditoría de octubre de 2026 comparó el motor con la batería original (Dia
 - **La cámara debe estar fija.** Con un temblor fuerte (zoom oscilante del 3 %) aparecen vuelos falsos y la detección falla en ~45 % de los casos sintéticos. La guía de grabación pide la cámara fija: trípode o celular apoyado.
 - **A 15 fps o menos** la detección baja a ~94 % de acierto. Los celulares graban a 30 fps y el servidor muestrea a 30 por segundo para videos de hasta 15 s.
 - **Cobertura de la batería:** faltan el lanzamiento bimanual (prueba 6) y la recepción con el pie (pruebas 12–13). Las pruebas por lado (derecho/izquierdo) se evalúan una a la vez: el resultado indica el lado detectado.
-- Los títulos de los fotogramas clave («Lanzamiento evidente»…) siguen viniendo de la asignación de hitos del v1 y no garantizan que el gesto haya ocurrido; el resultado y los criterios sí.
+- La pose se detecta sobre el cuadro original reducido a 1280 px de lado mayor (antes, sobre la miniatura de 640×360: un video vertical quedaba en 202×360).
+
+## 5.1 Fotogramas clave anclados a eventos
+
+Los 8 fotogramas del resultado y del Word ya no se eligen en una ventana fija (`biomecanica/momentos.py`):
+
+- Se toman en los instantes que midió la serie: carga, despegue, vuelo y caída del salto; despegues y caídas de cada salto en un pie; apoyos de la marcha y la carrera; inicio, 1 s, 5 s y fin del apoyo en un pie; armado y suelta del lanzamiento; armado e impacto del pateo; contacto del atrape. Los cuadros que faltan se reparten en la ventana de acción.
+- Solo se rotulan si el gesto ocurrió (las mismas comprobaciones que los criterios). Si no, los 8 cuadros se reparten en todo el video con la leyenda «No se detectó el gesto característico».
+- El resumen ya no menciona la mano o el pie que ejecuta si no hubo gesto.
+- El resultado y el Word muestran el desempeño esperado del MEN (Documento 15) para el ciclo del grado: 1.º a 3.º, «Exploro posibilidades de movimiento en mi cuerpo a nivel global y segmentario»; 4.º y 5.º, «Controlo de forma global y segmentaria la realización de movimientos técnicos».
 
 ## 6. Cómo validar con videos reales
 
