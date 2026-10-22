@@ -153,6 +153,61 @@ def _limpiar(texto: str) -> str:
     return (texto or "").replace("**", "")
 
 
+def _fila_sin_cortes(fila) -> None:
+    """Evita que Word parta la fila entre dos páginas (una foto no queda cortada)."""
+    tr_pr = fila._tr.get_or_add_trPr()
+    no_cortar = OxmlElement("w:cantSplit")
+    no_cortar.set(qn("w:val"), "true")
+    tr_pr.append(no_cortar)
+
+
+def _foto(celda, imagen: bytes, ancho_cm: float, leyenda: Sequence[tuple]) -> None:
+    """Foto centrada en la celda con una leyenda debajo (trozos ``(texto, negrita)``)."""
+    p = celda.paragraphs[0]
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p.add_run().add_picture(io.BytesIO(imagen), width=Cm(ancho_cm))
+    pie = celda.add_paragraph()
+    pie.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    for texto, negrita in leyenda:
+        r = pie.add_run(texto)
+        r.bold, r.font.size, r.font.color.rgb = negrita, Pt(8.5), RGBColor.from_string("334155")
+
+
+def _montaje_3d(doc: Document, numero: int, completo: Optional[bytes], pasos: Sequence[tuple]) -> None:
+    """Fotos del montaje 3D de una sesión: el montaje completo y/o la secuencia de armado paso a paso."""
+    if not completo and not pasos:
+        return
+    cols = 2
+    filas_pasos = (len(pasos) + cols - 1) // cols if len(pasos) > 1 else len(pasos)
+    total_filas = 1 + (1 if completo else 0) + filas_pasos
+    t = _tabla(doc, total_filas, cols, (8.9, 8.9))
+    _encabezado(_fila_unida(t, 0), f"Montaje 3D · Sesión {numero}: cómo armar el espacio")
+    _fila_unida(t, 0).paragraphs[0].paragraph_format.keep_with_next = True
+    fila = 1
+    if completo:
+        _fila_sin_cortes(t.rows[fila])
+        celda = _fila_unida(t, fila)
+        _sombrear(celda, GRIS_SUAVE)
+        _foto(celda, completo, 13.5, [("Montaje 3D completo ", True), ("(vista con medidas y distribución en metros)", False)])
+        fila += 1
+    if len(pasos) == 1:
+        _fila_sin_cortes(t.rows[fila])
+        celda = _fila_unida(t, fila)
+        _foto(celda, pasos[0][1], 11.5, [("Paso 1. ", True), (pasos[0][0], False)])
+    elif len(pasos) > 1:
+        for k, (texto, imagen) in enumerate(pasos):
+            f_idx = fila + k // cols
+            c_idx = k % cols
+            if c_idx == 0:
+                _fila_sin_cortes(t.rows[f_idx])
+            celda = t.cell(f_idx, c_idx)
+            _foto(celda, imagen, 8.2, [(f"Paso {k + 1}. ", True), (texto, False)])
+        if len(pasos) % cols != 0:
+            sobrante = t.cell(fila + (len(pasos) // cols), cols - 1)
+            _sombrear(sobrante, GRIS_SUAVE)
+            sobrante.paragraphs[0].text = ""
+
+
 # --------------------------------------------------------------------------------------
 # Reporte del estudiante
 # --------------------------------------------------------------------------------------
@@ -283,12 +338,16 @@ def reporte_estudiante(d: Mapping[str, Any], estudiante: str = "", grupo: str = 
 # Unidad didáctica
 # --------------------------------------------------------------------------------------
 def unidad_didactica(u: Mapping[str, Any], sesiones: Optional[Sequence[Mapping[str, Any]]] = None,
-                     institucion: str = "", docente: str = "") -> bytes:
+                     institucion: str = "", docente: str = "",
+                     montajes: Optional[Mapping[int, Mapping[str, Any]]] = None) -> bytes:
     """Planeación del período con todas sus sesiones (equivalente a ``exportToWord``).
 
     ``sesiones`` permite pasar las sesiones editadas por el docente; si no, se usan las de ``u``.
+    ``montajes`` trae las fotos del montaje 3D por número de sesión:
+    ``{número: {"completo": bytes | None, "pasos": [(texto del paso, bytes), ...]}}``.
     """
     sesiones = list(sesiones if sesiones is not None else u["clases_secuencia"])
+    montajes = montajes or {}
     doc = _documento()
 
     # 1. Encabezado institucional
@@ -357,6 +416,10 @@ def unidad_didactica(u: Mapping[str, Any], sesiones: Optional[Sequence[Mapping[s
         _escribir(t.cell(4, 1), s["actividad_final"])
         _subencabezado(t.cell(5, 0), "INDICADOR DE EVALUACIÓN")
         _escribir(t.cell(5, 1), s.get("criterio_eval", ""), etiqueta="Criterio de logro:")
+        fotos = montajes.get(s["numero"])
+        if fotos and (fotos.get("completo") or fotos.get("pasos")):
+            _espacio(doc, 2)
+            _montaje_3d(doc, s["numero"], fotos.get("completo"), fotos.get("pasos") or [])
         _espacio(doc, 4)
 
     # 4. Complementos

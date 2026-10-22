@@ -148,7 +148,7 @@ def test_guardar_el_plan_de_la_vista_previa(client, catalogo, docente, evaluacio
         datos.setdefault(nombre, []).append(valor)
     r = client.post(form.group(1), {**datos, "descargar": "1"})
     ud = UnidadDidactica.objects.get()
-    assert r["Location"] == reverse("unidad_docx", args=[ud.pk])          # «Descargar plan de clase en Word», como en la web
+    assert r["Location"] == reverse("unidad", args=[ud.pk]) + "?descargar=1"   # la página arma el Word con las fotos 3D
     client.post(form.group(1), datos)
     assert UnidadDidactica.objects.count() == 1                            # mismas preferencias: no se duplica
     assert ud.total_clases == 4 and ud.formato == "Cuento Motor" and ud.materiales == ["Conos", "Cuerdas"]

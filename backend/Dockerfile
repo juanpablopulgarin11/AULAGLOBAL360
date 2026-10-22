@@ -18,15 +18,15 @@ COPY requirements/ requirements/
 RUN pip install -r requirements/prod.txt -c requirements/lock.txt
 
 COPY . .
-# Los datos de referencia (plantillas) viven en docs/datos del repositorio
-COPY --from=datos . /app/datos
+# Los datos de referencia (plantillas)
+COPY datos/ /app/datos/
 ENV AULA360_DATOS_DIR=/app/datos
 
-RUN useradd --create-home aula && mkdir -p /app/privado /app/modelos /app/staticfiles && chown -R aula /app
+RUN sed -i 's/\r$//' /app/docker-entrypoint.sh && chmod +x /app/docker-entrypoint.sh && useradd --create-home aula && mkdir -p /app/privado /app/modelos /app/staticfiles && chown -R aula /app
 USER aula
 
 RUN DJANGO_SECRET_KEY=solo-para-compilar DJANGO_ALLOWED_HOSTS=localhost python manage.py collectstatic --noinput
 
 EXPOSE 8000
-ENTRYPOINT ["./docker-entrypoint.sh"]
-CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3", "--timeout", "120"]
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
+CMD ["sh", "-c", "exec gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 3 --timeout 120"]

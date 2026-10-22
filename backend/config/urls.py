@@ -40,6 +40,7 @@ urlpatterns = [
     path("unidades/<int:pk>/sesiones/<int:numero>/", planeacion.editar_sesion, name="sesion_editar"),
     path("unidades/<int:pk>/sesiones/<int:numero>/montaje/", planeacion.montaje, name="sesion_montaje"),
     path("unidades/<int:pk>/plan.docx", planeacion.documento, name="unidad_docx"),
+    path("unidades/<int:pk>/escenas.json", planeacion.escenas, name="unidad_escenas"),
     path("unidades/<int:pk>/eliminar/", planeacion.eliminar, name="unidad_eliminar"),
 
     path("grupos/", estudiantes.grupos, name="grupos"),

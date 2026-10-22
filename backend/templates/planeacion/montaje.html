@@ -10,6 +10,7 @@
         {% if anterior %}<a class="btn btn-secundario btn-chico" href="{% url 'sesion_montaje' u.pk anterior %}">← Sesión {{ anterior }}</a>{% endif %}
         {% if siguiente %}<a class="btn btn-secundario btn-chico" href="{% url 'sesion_montaje' u.pk siguiente %}">Sesión {{ siguiente }} →</a>{% endif %}
         <a class="btn btn-secundario btn-chico" href="{% url 'sesion_editar' u.pk sesion.numero %}">Editar montaje</a>
+        <a class="btn btn-chico" href="{% url 'unidad' u.pk %}?abrir_word=1">Descargar en Word (.docx)</a>
     </div>
 </div>
 
@@ -78,12 +79,6 @@
     </aside>
 </div>
 {{ escena|json_script:"escena-datos" }}
-<script type="importmap">
-{"imports": {
-    "three": "{% static 'vendor/three/three.module.min.js' %}",
-    "three/addons/controls/OrbitControls.js": "{% static 'vendor/three/OrbitControls.js' %}",
-    "three/addons/renderers/CSS2DRenderer.js": "{% static 'vendor/three/CSS2DRenderer.js' %}"
-}}
-</script>
+{% include "parciales/importmap_three.html" %}
 <script type="module" src="{% static 'js/montaje3d.js' %}"></script>
 {% endblock %}

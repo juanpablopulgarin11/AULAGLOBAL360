@@ -93,6 +93,8 @@ LOGOUT_REDIRECT_URL = "inicio"
 PRIVATE_MEDIA_ROOT = Path(env("AULA360_PRIVATE_MEDIA_ROOT", default=str(BASE_DIR / "privado")))
 AULA360_DIAS_RETENCION_VIDEO = env.int("AULA360_DIAS_RETENCION_VIDEO", default=30)
 AULA360_MAX_SUBIDA_MB = env.int("AULA360_MAX_SUBIDA_MB", default=60)
+# El Word de la unidad recibe una foto 3D por paso de cada sesión (el valor por defecto de Django es 100)
+DATA_UPLOAD_MAX_NUMBER_FILES = 400
 
 # Detección de pose (MediaPipe). En macOS solo funciona con GPU (Metal); en Linux, CPU.
 AULA360_MODELO_POSE = Path(env("AULA360_MODELO_POSE", default=str(BASE_DIR / "modelos" / "pose_landmarker_lite.task")))

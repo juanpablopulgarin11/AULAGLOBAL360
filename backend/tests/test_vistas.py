@@ -97,6 +97,46 @@ def test_flujo_completo_individual(cliente, catalogo, docente, tmp_path, django_
     assert cliente.get(reverse("unidades")).status_code == 200
     assert cliente.get(reverse("evaluaciones") + "?estadio=Inicial").status_code == 200
     assert cliente.get(reverse("panel")).status_code == 200
+    comprobar_word_con_fotos_3d(cliente, ud)
+
+
+def comprobar_word_con_fotos_3d(cliente, ud):
+    """El navegador toma las fotos del montaje 3D (capturas3d.js) y el Word las pone bajo cada sesión."""
+    import io
+
+    from docx import Document
+
+    escenas = cliente.get(reverse("unidad_escenas", args=[ud.pk])).json()["sesiones"]
+    assert [s["numero"] for s in escenas] == [1, 2, 3, 4]
+    assert all(s["escena"]["pasos"] and s["escena"]["elementos"] for s in escenas)
+
+    ok, jpg = cv2.imencode(".jpg", np.full((75, 120, 3), 200, np.uint8))
+    foto = lambda nombre: SimpleUploadedFile(nombre, jpg.tobytes(), content_type="image/jpeg")  # noqa: E731
+    s1 = escenas[0]
+    datos = {f"montaje-1-{k}": foto(f"s1_{k}.jpg") for k in range(len(s1["escena"]["pasos"]) + 1)}
+    datos["montaje-3-0"] = foto("s3_0.jpg")
+    datos["montaje-99-0"] = foto("sesion_inexistente.jpg")                       # se ignora
+    datos["montaje-1-50"] = foto("paso_inexistente.jpg")                         # se ignora
+    datos["montaje-2-0"] = SimpleUploadedFile("no_es_imagen.jpg", b"<script>", content_type="image/jpeg")  # se ignora
+    r = cliente.post(reverse("unidad_docx", args=[ud.pk]), datos)
+    assert r.status_code == 200 and r["Content-Type"] == DOCX
+    word = Document(io.BytesIO(r.content))
+    assert len(word.inline_shapes) == len(s1["escena"]["pasos"]) + 1 + 1            # sesión 1 completa + sesión 3
+    texto = "\n".join(c.text for t in word.tables for fila in t.rows for c in fila.cells)
+    texto_u = texto.upper()
+    assert "MONTAJE 3D · SESIÓN 1" in texto_u and "MONTAJE 3D · SESIÓN 3" in texto_u and "SESIÓN 2: CÓMO" not in texto_u
+    assert f"Paso 1. {s1['escena']['pasos'][0]}" in texto
+
+    # Filtrar solo sesiones 1 y 2 que el docente elija
+    datos_filtro = {"sesiones_elegidas": "1,2", "montaje-1-0": foto("s1_0.jpg"), "montaje-2-0": foto("s2_0.jpg")}
+    r_filtro = cliente.post(reverse("unidad_docx", args=[ud.pk]), datos_filtro)
+    assert r_filtro.status_code == 200 and r_filtro["Content-Type"] == DOCX
+    doc_filtro = Document(io.BytesIO(r_filtro.content))
+    txt_filtro = "\n".join(c.text for t in doc_filtro.tables for fila in t.rows for c in fila.cells).upper()
+    assert "SESIÓN 1 DE 2" in txt_filtro and "SESIÓN 2 DE 2" in txt_filtro
+    assert "SESIÓN 3 DE" not in txt_filtro and "SESIÓN 4 DE" not in txt_filtro
+    assert "MONTAJE 3D · SESIÓN 1" in txt_filtro and "MONTAJE 3D · SESIÓN 2" in txt_filtro
+
 
 
 @pytest.mark.django_db

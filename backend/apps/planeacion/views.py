@@ -1,8 +1,12 @@
+import re
+from typing import Any, Dict, List
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.views.decorators.http import require_POST
+from django.urls import reverse
+from django.views.decorators.http import require_http_methods, require_POST
 
 from apps.evaluaciones.models import Evaluacion
 from apps.reportes.servicios import documento_de_unidad
@@ -14,6 +18,9 @@ from .servicios import unidad_para_evaluacion
 
 DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 ESTUDIANTES_POR_DEFECTO = 24
+MAX_BYTES_FOTO = 3 * 1024 * 1024                 # una foto JPEG de 1200×750 pesa ~150 KB
+FIRMAS_IMAGEN = (b"\xff\xd8\xff", b"\x89PNG\r\n\x1a\n")
+CAMPO_FOTO = re.compile(r"montaje-(\d+)-(\d+)")
 
 
 @login_required
@@ -29,7 +36,10 @@ def crear_desde_evaluacion(request, evaluacion_pk):
     ud = ev.unidades.filter(formato=d["formato"], metodologia=d["metodologia"], periodo=d["periodo"],
                             duracion_min=d["duracion_min"], total_clases=d["total_clases"],
                             materiales=d["materiales"]).first() or unidad_para_evaluacion(ev, request.user, form.preferencias())
-    return redirect("unidad_docx" if request.POST.get("descargar") else "unidad", pk=ud.pk)
+    if request.POST.get("descargar"):
+        # La página de la unidad arma el Word con las fotos del montaje 3D (capturas3d.js)
+        return redirect(f"{reverse('unidad', args=[ud.pk])}?descargar=1")
+    return redirect("unidad", pk=ud.pk)
 
 
 @login_required
@@ -67,6 +77,12 @@ def _estudiantes_del_salon(ud: UnidadDidactica) -> int:
     return cantidad if cantidad >= 6 else ud.docente.configuracion_clase.get("estudiantes", ESTUDIANTES_POR_DEFECTO)
 
 
+def _escena_de(ud: UnidadDidactica, sesion: Sesion, estudiantes: int) -> Dict[str, Any]:
+    central = (ud.contenido.get("duraciones", {}).get("central") or "").split(" ")[0]
+    return construir_escena(sesion.distribucion, estudiantes=estudiantes, materiales=ud.materiales,
+                            minutos_central=int(central) if central.isdigit() else None)
+
+
 @login_required
 def montaje(request, pk, numero):
     sesion = get_object_or_404(Sesion.objects.select_related("unidad"), unidad__pk=pk, unidad__docente=request.user,
@@ -76,9 +92,7 @@ def montaje(request, pk, numero):
         estudiantes = max(6, min(45, int(request.GET["estudiantes"])))
     except (KeyError, ValueError):
         estudiantes = _estudiantes_del_salon(ud)
-    central = (ud.contenido.get("duraciones", {}).get("central") or "").split(" ")[0]
-    escena = construir_escena(sesion.distribucion, estudiantes=estudiantes, materiales=ud.materiales,
-                              minutos_central=int(central) if central.isdigit() else None)
+    escena = _escena_de(ud, sesion, estudiantes)
     numeros = list(ud.sesiones.values_list("numero", flat=True))
     i = numeros.index(sesion.numero)
     return render(request, "planeacion/montaje.html", {
@@ -88,9 +102,62 @@ def montaje(request, pk, numero):
 
 
 @login_required
-def documento(request, pk):
+def escenas(request, pk):
+    """Escenas 3D de todas las sesiones, para que el navegador tome las fotos del Word."""
     ud = get_object_or_404(UnidadDidactica, pk=pk, docente=request.user)
-    contenido, nombre = documento_de_unidad(ud)
+    estudiantes = _estudiantes_del_salon(ud)
+    return JsonResponse({"sesiones": [{"numero": s.numero, "titulo": s.titulo, "escena": _escena_de(ud, s, estudiantes)}
+                                      for s in ud.sesiones.all()]})
+
+
+def _fotos_de_montaje(request, ud: UnidadDidactica) -> Dict[int, Dict[str, Any]]:
+    """Fotos enviadas como ``montaje-<sesión>-<k>`` (k=0: montaje completo; k≥1: paso k).
+
+    Devuelve ``{número: {"completo": bytes | None, "pasos": [(texto del paso, bytes), ...]}}``.
+    Se ignora lo que no corresponda a una sesión o paso real, lo que pese demasiado o no sea JPEG/PNG.
+    """
+    recibidas: Dict[int, Dict[int, bytes]] = {}
+    for campo, archivo in request.FILES.items():
+        m = CAMPO_FOTO.fullmatch(campo)
+        if not m or archivo.size > MAX_BYTES_FOTO:
+            continue
+        datos = archivo.read()
+        if datos.startswith(FIRMAS_IMAGEN):
+            recibidas.setdefault(int(m.group(1)), {})[int(m.group(2))] = datos
+    if not recibidas:
+        return {}
+    estudiantes = _estudiantes_del_salon(ud)
+    montajes: Dict[int, Dict[str, Any]] = {}
+    for sesion in ud.sesiones.filter(numero__in=recibidas):
+        fotos = recibidas[sesion.numero]
+        pasos: List[str] = _escena_de(ud, sesion, estudiantes)["pasos"]
+        montajes[sesion.numero] = {
+            "completo": fotos.get(0),
+            "pasos": [(texto, fotos[k]) for k, texto in enumerate(pasos, start=1) if k in fotos],
+        }
+    return montajes
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def documento(request, pk):
+    """Word de la unidad. Por POST llegan las fotos del montaje 3D de cada sesión (capturas3d.js)."""
+    ud = get_object_or_404(UnidadDidactica, pk=pk, docente=request.user)
+    montajes = _fotos_de_montaje(request, ud) if request.method == "POST" else None
+
+    sesiones_filtro = None
+    if request.method == "POST":
+        raw = request.POST.get("sesiones_elegidas") or request.POST.get("sesiones")
+    else:
+        raw = request.GET.get("sesiones_elegidas") or request.GET.get("sesiones")
+
+    if raw:
+        try:
+            sesiones_filtro = [int(x.strip()) for x in str(raw).split(",") if x.strip().isdigit()]
+        except (ValueError, TypeError):
+            sesiones_filtro = None
+
+    contenido, nombre = documento_de_unidad(ud, montajes=montajes, sesiones_filtro=sesiones_filtro)
     respuesta = HttpResponse(contenido, content_type=DOCX)
     respuesta["Content-Disposition"] = f'attachment; filename="{nombre}"'
     return respuesta
