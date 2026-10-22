@@ -15,6 +15,7 @@ from apps.estudiantes.models import Grupo
 from apps.planeacion.forms import PreferenciasForm
 from apps.planeacion.servicios import unidad_para_grupo, vista_previa_para_evaluacion
 from apps.reportes.servicios import reporte_de_evaluacion
+from biomecanica.habilidades import grado_y_ciclo
 
 from .forms import EvaluarForm
 from .models import Evaluacion, EvaluacionGrupal, Fotograma
@@ -126,6 +127,7 @@ def detalle(request, pk):
             "form_unidad": PreferenciasForm(initial=request.user.preferencias_unidad or None),
             "unidades": ev.unidades.all(),
             "t": ev.telemetria,
+            "desempeno_men": grado_y_ciclo(ev.grado)["desempeno_men"],
         })
     return render(request, "evaluaciones/detalle.html", contexto)
 

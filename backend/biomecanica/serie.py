@@ -295,6 +295,8 @@ class _Calculo:
             sinc_ater = all(v is not None for v in prim.values()) and abs(s.t[prim["i"]] - s.t[prim["d"]]) <= SINCRONIA_S
             vuelos.append({
                 "ini": ini, "fin": fin, "t": float(s.t[ini]), "duracion": float(s.t[fin] - s.t[ini] + np.median(self.dt)),
+                "t_despegue": float(max(s.t[k] for k in ult.values() if k is not None)) if any(k is not None for k in ult.values()) else float(s.t[ini - 1]),
+                "t_aterrizaje": float(min(s.t[k] for k in prim.values() if k is not None)) if any(k is not None for k in prim.values()) else float(s.t[fin + 1]),
                 "antes": antes, "despues": despues, "despegue_bipodal": bool(sinc_desp), "aterrizaje_bipodal": bool(sinc_ater),
                 "avance": float(self.adelante(self.cadera[fin + 1:fin + 2], self.cadera[ini - 1:ini])[0])
                 if not np.isnan(self.cadera[[ini - 1, fin + 1], 0]).any() else 0.0,
@@ -436,6 +438,10 @@ class _Calculo:
         r["rodilla_apoyo_min"] = _r(np.nanmin(apoyo)) if apoyo.size else None
         r["oposicion_brazos"] = self._oposicion(moviendo)
 
+        r["eventos_vuelo"] = [{"despegue": _r(v["t_despegue"], 3), "apice": _r((v["t_despegue"] + v["t_aterrizaje"]) / 2, 3),
+                               "aterrizaje": _r(v["t_aterrizaje"], 3), "bipodal": v["despegue_bipodal"]} for v in vuelos]
+        r["apoyos"] = sorted(({"t": _r(float(s.t[i]), 3), "pie": LADOS[l]} for l, idxs in contactos.items() for i in idxs),
+                             key=lambda a: a["t"])
         r.update(self._salto(vuelos, rod, cod))
         r.update(self._sosten(uni, rod, cod, tronco, incl))
         r.update(self._pata_sola(vuelos, rod, fcad, hops))
@@ -482,6 +488,9 @@ class _Calculo:
         manos_suelo = bool(np.nanmax(munecas[tras, 1] - self.suelo[tras] + 0.15 * self.L, initial=-1) > 0) \
             if tras.stop > tras.start else False
         return {"salto": {
+            "t_preparacion": _r(float(s.t[prep.start + int(np.nanargmin(rodillas[prep]))]), 3)
+            if prep.stop > prep.start and (~np.isnan(rodillas[prep])).any() else None,
+            "t_despegue": _r(v["t_despegue"], 3), "t_aterrizaje": _r(v["t_aterrizaje"], 3),
             "duracion_s": _r(v["duracion"]), "avance_piernas": _r(v["avance"]),
             "despegue_bipodal": v["despegue_bipodal"], "aterrizaje_bipodal": v["aterrizaje_bipodal"],
             "rodilla_preparacion": _r(np.nanmin(rodillas[prep])) if prep.stop > prep.start else None,
@@ -512,6 +521,7 @@ class _Calculo:
         rodilla_libre_arriba = (s.p(f"rodilla_{a}")[tramo, 1] - s.p(f"rodilla_{l}")[tramo, 1]) / self.L
         return {"sosten": {
             "segundos": _r(uni["segundos"]), "pie_apoyo": LADOS[a],
+            "t_ini": _r(float(s.t[uni["ini"]]), 3), "t_fin": _r(float(s.t[uni["fin"]]), 3),
             "brazos_costados_frac": _r(brazos),
             "tronco_max": _r(np.nanmax(np.abs(tronco[tramo]))),
             "inclinacion_hombros_max": _r(np.nanpercentile(incl[tramo], 90)) if (~np.isnan(incl[tramo])).any() else None,
@@ -564,8 +574,11 @@ class _Calculo:
         ancho = np.linalg.norm(s.p("hombro_i") - s.p("hombro_d"), axis=1) / self.L
         ventana = slice(max(0, k - int(0.6 * s.fps)), min(s.n, k + int(0.3 * s.fps) + 1))
         rot = float(np.nanmax(ancho[ventana]) - np.nanmin(ancho[ventana])) if (~np.isnan(ancho[ventana])).any() else 0.0
+        codo_armado = cod[brazo][antes]
+        t_armado = float(s.t[antes.start + int(np.nanargmin(codo_armado))]) if (~np.isnan(codo_armado)).any() else float(s.t[k])
         return {"lanzamiento": {
             "brazo": LADOS[brazo], "velocidad_muneca": _r(picos[brazo]), "t_suelta": _r(float(s.t[k])),
+            "t_armado": _r(min(t_armado, float(s.t[k])), 3),
             "muneca_sobre_hombro": sobre_hombro,
             "codo_suelta": _r(np.nanmax(cod[brazo][alrededor])),
             "pie_contrario_adelante": adelantado,
@@ -584,8 +597,12 @@ class _Calculo:
         tob = self.adelante(s.p(f"tobillo_{pierna}"), self.cadera)
         despues = slice(k, min(s.n, k + int(0.25 * s.fps) + 1))
         retorno = slice(k, min(s.n, k + int(1.2 * s.fps) + 1))
+        atras = slice(max(0, k - int(0.6 * s.fps)), k + 1)
+        muslo = self.muslo_adelante(pierna)[atras]
+        t_armado = float(s.t[atras.start + int(np.nanargmin(muslo))]) if (~np.isnan(muslo)).any() else float(s.t[k])
         return {"pateo": {
             "pierna": LADOS[pierna], "velocidad_tobillo": _r(picos[pierna]), "t_impacto": _r(float(s.t[k])),
+            "t_armado": _r(t_armado, 3),
             "apoyo_firme": bool(self.contacto[apoyo][k]),
             "rango_cadera": _r(float(np.nanmax(fcad[pierna][ventana]) - np.nanmin(fcad[pierna][ventana])))
             if (~np.isnan(fcad[pierna][ventana])).any() else None,

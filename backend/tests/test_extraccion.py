@@ -207,7 +207,9 @@ def test_tarea_procesa_y_guarda_imagenes(catalogo, docente, tmp_path, detector_d
     assert ev.tipo_archivo == "video"
     assert ev.habilidad_detectada.codigo == "salto" and ev.resultados.count() == 5
     fotos = list(ev.fotogramas.all())
-    assert len(fotos) == 8 and fotos[0].es_gatillo
+    # Una sentadilla sin despegue no es un salto: ningún fotograma se rotula como hito del gesto
+    assert len(fotos) == 8 and not any(f.hito_badge for f in fotos)
+    assert all("No se detectó el gesto" in f.hito_desc for f in fotos)
     assert all(Path(f.imagen.path).exists() and Path(f.imagen_esqueleto.path).exists() for f in fotos)
 
     # Reprocesar no deja imágenes huérfanas

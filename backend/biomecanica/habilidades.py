@@ -90,6 +90,15 @@ GRADOS: Dict[str, Dict[str, str]] = {
 }
 GRADO_POR_DEFECTO = GRADOS["8_anos"]
 
+# Desempeño de la competencia motriz (desarrollo motor) en las Orientaciones Pedagógicas del MEN
+# (Documento 15). El documento empieza en primero, así que transición no tiene uno propio.
+DESEMPENO_MEN = {
+    "Básica Primaria (Ciclo 1)": "Exploro posibilidades de movimiento en mi cuerpo a nivel global y segmentario.",
+    "Básica Primaria (Ciclo 2)": "Controlo de forma global y segmentaria la realización de movimientos técnicos.",
+}
+
 
 def grado_y_ciclo(codigo: Optional[str]) -> Dict[str, str]:
-    return dict(GRADOS.get(codigo or "", GRADO_POR_DEFECTO))
+    info = dict(GRADOS.get(codigo or "", GRADO_POR_DEFECTO))
+    info["desempeno_men"] = DESEMPENO_MEN.get(info["ciclo"], "")
+    return info

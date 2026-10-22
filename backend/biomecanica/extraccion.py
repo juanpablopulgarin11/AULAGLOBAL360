@@ -37,6 +37,7 @@ from .hitos import assign_keyframe_milestones
 from .jsutil import js_round
 
 ANCHO, ALTO = 640, 360
+LADO_DETECCION = 1280            # resolución máxima de la imagen que recibe MediaPipe
 CALIDAD_JPEG = 85
 DURACION_MAX_S = 20.0
 DURACION_MIN_S = 0.6
@@ -141,24 +142,33 @@ def detector_mediapipe(modelo: Union[str, Path], usar_gpu: bool = False) -> Dete
 @dataclass
 class Lienzo:
     """Imagen ajustada a 640×360 sin deformar y la región que ocupa el contenido real."""
-    imagen: np.ndarray            # 640×360 con bandas negras
-    contenido: np.ndarray         # el contenido sin bandas (donde se detecta la pose)
+    imagen: np.ndarray            # 640×360 con bandas negras (fotos del resultado y de Gemini)
+    contenido: np.ndarray         # el contenido sin bandas, a la escala del lienzo
     x0: int
     y0: int
+    fuente: Optional[np.ndarray] = None   # el mismo contenido en alta resolución: aquí se detecta la pose
 
 
 def a_lienzo(bgr: np.ndarray) -> Lienzo:
-    """Ajusta la imagen a 640×360 sin deformarla (bandas negras donde sobra espacio)."""
+    """Ajusta la imagen a 640×360 sin deformarla (bandas negras donde sobra espacio).
+
+    La pose se detecta sobre ``fuente`` (el cuadro original reducido a lo sumo a 1280 px de lado):
+    en un video vertical el contenido del lienzo mide solo 202×360 y el niño queda pequeño para el
+    modelo de puntos. Como ``fuente`` y ``contenido`` tienen la misma proporción, los puntos
+    normalizados son los mismos y se llevan al lienzo igual que antes (umbrales sin cambios)."""
     h, w = bgr.shape[:2]
     escala = min(ANCHO / w, ALTO / h)
     nw, nh = max(1, js_round(w * escala)), max(1, js_round(h * escala))   # igual que Math.round del JS
     contenido = cv2.resize(bgr, (nw, nh), interpolation=cv2.INTER_AREA)
+    reduccion = min(1.0, LADO_DETECCION / max(w, h))
+    fuente = bgr if reduccion == 1.0 else cv2.resize(bgr, (max(1, round(w * reduccion)), max(1, round(h * reduccion))),
+                                                      interpolation=cv2.INTER_AREA)
     if (nw, nh) == (ANCHO, ALTO):
-        return Lienzo(contenido, contenido, 0, 0)
+        return Lienzo(contenido, contenido, 0, 0, fuente)
     imagen = np.zeros((ALTO, ANCHO, 3), dtype=np.uint8)
     x0, y0 = (ANCHO - nw) // 2, (ALTO - nh) // 2
     imagen[y0:y0 + nh, x0:x0 + nw] = contenido
-    return Lienzo(imagen, contenido, x0, y0)
+    return Lienzo(imagen, contenido, x0, y0, fuente)
 
 
 def visibilidad_nucleo(landmarks: Optional[Landmarks]) -> float:
@@ -245,7 +255,8 @@ def _armar_fotograma(lienzo: Lienzo, landmarks: Optional[Landmarks], t: float, f
 def _detectar(detector: Detector, lienzo: Lienzo) -> Optional[Landmarks]:
     """Detecta sobre el contenido sin bandas (la persona se ve más grande) y expresa los
     landmarks en coordenadas del lienzo 16:9, el espacio en que se calibraron los umbrales."""
-    lm = detector(cv2.cvtColor(lienzo.contenido, cv2.COLOR_BGR2RGB))
+    origen = lienzo.fuente if lienzo.fuente is not None else lienzo.contenido
+    lm = detector(cv2.cvtColor(origen, cv2.COLOR_BGR2RGB))
     if not lm or (lienzo.x0 == 0 and lienzo.y0 == 0):
         return lm
     nh, nw = lienzo.contenido.shape[:2]
@@ -416,8 +427,14 @@ def _advertencias(lector: Optional[LectorVideo], frames: List[Dict[str, Any]], d
 
 
 def extraer_video(ruta: Union[str, Path], detector: Detector, n: int = 8,
-                  habilidad: Optional[str] = None) -> ResultadoExtraccion:
-    """Escanea el video, localiza el ángulo inicial y extrae ``n`` fotogramas equiespaciados."""
+                  habilidad: Optional[str] = None,
+                  momentos: Optional[Callable[[List[Tuple[float, Optional[Landmarks]]], float], List[Dict[str, Any]]]] = None
+                  ) -> ResultadoExtraccion:
+    """Escanea el video y extrae ``n`` fotogramas.
+
+    Con ``momentos`` (motor v2) los fotogramas se toman en los instantes que devuelve a partir de la
+    serie de pose (despegue, vuelo, suelta, impacto…) y se etiquetan después en ``servicios``. Sin
+    él se usa la ventana anclada al ángulo inicial del v1, con ``n`` fotogramas equiespaciados."""
     if n < 2:
         raise ValueError("Se necesitan al menos 2 fotogramas")
     lector = LectorVideo(ruta)
@@ -425,12 +442,19 @@ def extraer_video(ruta: Union[str, Path], detector: Detector, n: int = 8,
         dur = max(DURACION_MIN_S, min(lector.duracion, DURACION_MAX_S))
         escaneo, primer, info, serie = _escanear(lector, detector, dur)
         inicio, fin = ventana_de_accion(escaneo, dur, primer)
-        tiempos = [inicio + (fin - inicio) * k / (n - 1) for k in range(n)]
+        elegidos = momentos(serie, dur) if momentos else None
+        if elegidos:
+            tiempos = [m["t"] for m in elegidos]
+            inicio, fin = tiempos[0], tiempos[-1]
+        else:
+            tiempos = [inicio + (fin - inicio) * k / (n - 1) for k in range(n)]
 
-        pista = info["skillHint"] if info and info["skillHint"] in FASES else None
+        rotulo = None if elegidos else info      # con el v2 los hitos los pone el motor, no el gatillo del v1
+        pista = rotulo["skillHint"] if rotulo and rotulo["skillHint"] in FASES else None
         fases = list(FASES[pista])
-        if info:
+        if rotulo:
             fases[0] = f"Fase 1: Ángulo Inicial ({info['reason']})"
+        fases += [f"Fase {k + 1}" for k in range(len(fases), len(tiempos))]
 
         frames = []
         for k, t in enumerate(tiempos):
@@ -439,8 +463,8 @@ def extraer_video(ruta: Union[str, Path], detector: Detector, n: int = 8,
             lienzos = {i: a_lienzo(lector.leer(i)) for i in vecinos}
             landmarks = mediana_landmarks([_detectar(detector, lz) for lz in lienzos.values()])
             f = _armar_fotograma(lienzos[centro], landmarks, t, fases[k] if k < len(fases) else f"Fase {k + 1}")
-            if k == 0 and info:
-                f["isInitialTrigger"], f["triggerInfo"] = True, info
+            if k == 0 and rotulo:
+                f["isInitialTrigger"], f["triggerInfo"] = True, rotulo
             frames.append(f)
         avisos = _advertencias(lector, frames, lector.duracion)
         meta = {"ancho": lector.ancho, "alto": lector.alto, "fps": round(lector.fps, 2),
@@ -448,7 +472,8 @@ def extraer_video(ruta: Union[str, Path], detector: Detector, n: int = 8,
     finally:
         lector.close()
 
-    assign_keyframe_milestones(frames, habilidad)
+    if not elegidos:
+        assign_keyframe_milestones(frames, habilidad)
     return ResultadoExtraccion(frames=frames, duracion=dur, ventana=(inicio, fin), gatillo=info,
                                muestras_escaneo=len(escaneo), con_persona=sum(1 for f in frames if f["angles"]),
                                advertencias=avisos, meta=meta, serie=serie)

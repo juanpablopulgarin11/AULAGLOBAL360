@@ -14,6 +14,7 @@ from django.db import transaction
 
 from apps.catalogo.models import CriterioHMB, Habilidad
 from biomecanica import SinPersonaDetectada, assign_keyframe_milestones, compute_joint_angles
+from biomecanica.momentos import etiquetar_fotogramas, momentos_clave
 from biomecanica.motor_v2 import VERSION_MOTOR_V2, run_motor_v2, totales
 from biomecanica.reglas_v2 import errores_de
 
@@ -111,10 +112,10 @@ def diagnosticar_y_guardar(evaluacion: Evaluacion, muestras: Sequence[Dict[str, 
         return evaluacion
 
     if evaluacion.motor == Motor.GEMINI:
-        assign_keyframe_milestones(frames, diag["habilidad_detectada"])   # Gemini recibe la etiqueta de cada fotograma
+        _etiquetar(frames, diag, serie)        # Gemini recibe la etiqueta de cada fotograma
         diag = _intentar_gemini(evaluacion, frames, diag)
 
-    assign_keyframe_milestones(frames, diag["habilidad_detectada"])
+    _etiquetar(frames, diag, serie)
     habilidad = Habilidad.objects.get(nombre=diag["habilidad_detectada"])
     criterios = {c.orden: c for c in CriterioHMB.objects.filter(habilidad=habilidad)}
 
@@ -166,6 +167,16 @@ def diagnosticar_y_guardar(evaluacion: Evaluacion, muestras: Sequence[Dict[str, 
             foto.imagen_esqueleto.save(f"ev{evaluacion.pk}_{i}_esq.jpg", ContentFile(f["imagen_esqueleto_jpeg"]), save=False)
         foto.save()
     return evaluacion
+
+
+def _etiquetar(frames: List[Dict[str, Any]], diag: Dict[str, Any], serie: Optional[Sequence[Any]]) -> None:
+    """Hitos de los fotogramas: con video, los eventos medidos (v2); con una foto, la heurística del v1."""
+    cin = diag["telemetria_medida"].get("cinematica") or {}
+    if serie and cin.get("suficiente"):
+        momentos = momentos_clave(cin, diag["habilidad_detectada"], float(cin.get("duracion_s") or 0) + 0.1, len(frames))
+        etiquetar_fotogramas(frames, momentos, diag.get("gesto_detectado", False))
+    else:
+        assign_keyframe_milestones(frames, diag["habilidad_detectada"])
 
 
 def _fuente(c: Dict[str, Any]) -> str:

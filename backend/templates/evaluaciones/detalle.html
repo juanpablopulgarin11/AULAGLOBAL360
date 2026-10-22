@@ -61,6 +61,8 @@
                 </div>
             </div>
 
+            {% if desempeno_men %}<p style="font-size:12px; color:var(--text-muted); margin:0 0 12px; line-height:1.45;"><strong>Desempeño esperado (MEN, Documento 15):</strong> «{{ desempeno_men }}»</p>{% endif %}
+
             {% if ev.advertencias %}<div class="aviso-video"><strong>Sobre la grabación:</strong><ul>{% for a in ev.advertencias %}<li>{{ a }}</li>{% endfor %}</ul></div>{% endif %}
 
             <!-- RESUMEN BREVE -->
