@@ -71,7 +71,9 @@ class Evaluacion(models.Model):
     habilidad_detectada = models.ForeignKey("catalogo.Habilidad", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     es_deteccion_automatica = models.BooleanField(default=False)
     puntaje = models.PositiveSmallIntegerField(null=True, blank=True)
-    puntaje_maximo = models.PositiveSmallIntegerField(null=True, blank=True)
+    puntaje_maximo = models.PositiveSmallIntegerField(null=True, blank=True, help_text="Criterios ya calificados")
+    criterios_pendientes = models.PositiveSmallIntegerField(default=0, help_text="Criterios por confirmar (IA o docente)")
+    deteccion = models.JSONField(default=dict, blank=True, help_text="Habilidad detectada, confianza y motivo (motor v2)")
     porcentaje_madurez = models.PositiveSmallIntegerField(null=True, blank=True)
     estadio_gallahue = models.CharField(max_length=10, choices=Estadio.choices, blank=True)
     resumen = models.TextField(blank=True)
@@ -102,13 +104,15 @@ class Evaluacion(models.Model):
             "es_deteccion_automatica": self.es_deteccion_automatica,
             "componente_hmb": h.componente_etiqueta if h else "",
             "prueba_nro": h.prueba_nro if h else None,
-            "puntaje_obtenido": f"{self.puntaje}/{self.puntaje_maximo}",
+            "puntaje_obtenido": f"{self.puntaje}/{self.puntaje_maximo}"
+                                + (f" · {self.criterios_pendientes} por confirmar" if self.criterios_pendientes else ""),
             "edad_calibrada": grado_y_ciclo(self.grado)["grado"],
             "estadio_gallahue": self.estadio_gallahue,
             "porcentaje_madurez": self.porcentaje_madurez,
             "resumen_biomecanico": self.resumen,
             "criterios": [{"criterio": r.texto, "fase": r.fase, "puntaje": r.puntaje, "medido": r.medido,
-                           "umbral": r.umbral, "observacion": r.observacion} for r in self.resultados.all()],
+                           "umbral": r.umbral, "observacion": r.observacion, "fuente": r.fuente,
+                           "fuente_texto": r.get_fuente_display()} for r in self.resultados.all()],
             "analisis_articular": self.analisis_articular,
             "errores_criticos": self.errores_criticos,
             "frases_profe": self.frases_profe,
@@ -154,13 +158,23 @@ class Fotograma(models.Model):
 
 
 class ResultadoCriterio(models.Model):
+    class Fuente(models.TextChoices):
+        POSE = "pose", "Medido con la pose"
+        IA = "ia", "Calificado por la IA"
+        DOCENTE = "docente", "Confirmado por el docente"
+        VISUAL = "visual", "Por confirmar (observación visual)"
+
     evaluacion = models.ForeignKey(Evaluacion, on_delete=models.CASCADE, related_name="resultados")
     criterio = models.ForeignKey("catalogo.CriterioHMB", null=True, blank=True, on_delete=models.PROTECT,
                                  help_text="Vacío si el criterio vino como texto libre de la IA")
     orden = models.PositiveSmallIntegerField()
     texto = models.TextField()
     fase = models.CharField(max_length=40, blank=True)
-    puntaje = models.PositiveSmallIntegerField(validators=[MaxValueValidator(1)])
+    puntaje = models.PositiveSmallIntegerField(validators=[MaxValueValidator(1)], null=True, blank=True,
+                                               help_text="Vacío = por confirmar (la pose no lo puede medir)")
+    fuente = models.CharField(max_length=10, choices=Fuente.choices, default=Fuente.POSE)
+    pregunta = models.CharField("qué observar", max_length=200, blank=True,
+                                help_text="Lo que debe mirar el docente o la IA en los criterios por confirmar")
     medido = models.CharField(max_length=200, blank=True)
     umbral = models.CharField(max_length=120, blank=True)
     observacion = models.TextField(blank=True)
@@ -171,4 +185,9 @@ class ResultadoCriterio(models.Model):
         ordering = ["evaluacion", "orden"]
 
     def __str__(self) -> str:
-        return f"{'✓' if self.puntaje else '✗'} {self.texto[:60]}"
+        marca = "?" if self.puntaje is None else ("✓" if self.puntaje else "✗")
+        return f"{marca} {self.texto[:60]}"
+
+    @property
+    def pendiente(self) -> bool:
+        return self.puntaje is None

@@ -10,7 +10,7 @@ Documentación completa de la versión actual (HTML + JavaScript estático en Gi
 
 ## Estado
 
-La migración está implementada en [`backend/`](../backend/README.md): aplicación Django completa (evaluación por video en el servidor, salones, historial, planeaciones editables, Word, Gemini opcional) con 1.541 pruebas, incluida la paridad con `script.js`. Esta carpeta documenta el sistema original y el plan que se siguió.
+La migración está implementada en [`backend/`](../backend/README.md): aplicación Django completa (evaluación por video en el servidor, salones, historial, planeaciones editables, Word, Gemini opcional) con más de 1.600 pruebas, incluida la paridad del motor v1 con `script.js`; el servidor usa el motor v2 (doc 08). Esta carpeta documenta el sistema original y el plan que se siguió.
 
 ## Índice
 
@@ -23,6 +23,7 @@ La migración está implementada en [`backend/`](../backend/README.md): aplicaci
 | [05 · Integración Gemini](05_INTEGRACION_GEMINI.md) | Listado y elección de modelos, prompt, formato de petición/respuesta, respaldo local, recomendación con SDK oficial y Pydantic |
 | [06 · Plan de migración a Django](06_PLAN_MIGRACION_DJANGO.md) | Decisión de arquitectura, estructura de proyecto, dependencias, **modelos de datos**, correspondencia JS → Python, URLs, tarea Celery, estrategia de paridad, fases |
 | [07 · Hallazgos y deuda técnica](07_HALLAZGOS_Y_DEUDA_TECNICA.md) | Errores encontrados, inconsistencias, riesgos de seguridad/privacidad y limitaciones del método |
+| [08 · Motor v2](08_MOTOR_V2.md) | Evaluación sobre el video completo: eventos, detección con confianza, criterios por confirmar (IA o docente), verificación y cómo validar con videos reales |
 
 ## Datos extraídos (listos para fixtures de Django)
 

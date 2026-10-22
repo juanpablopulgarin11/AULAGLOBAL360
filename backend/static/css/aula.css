@@ -63,6 +63,26 @@ a.btn-finish-group { text-decoration: none; display: inline-flex; align-items: c
     background: var(--accent-soft); border: 1px solid var(--accent-subtle); color: var(--accent); font-size: 11px;
     font-weight: 700; padding: 4px 8px; border-radius: 4px; margin-bottom: 10px; display: inline-flex; align-items: center; gap: 6px;
 }
+.auto-badge.confianza-baja { background: #FFFBEB; border-color: #FDE68A; color: #B45309; }
+.stage-pendiente { background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A; }
+.texto-pendiente { color: #B45309; }
+.aviso-pendientes {
+    background: #FFFBEB; border: 1px solid #FDE68A; color: #92400E; border-radius: var(--r-sm);
+    padding: 10px 12px; margin: 12px 0 0; font-size: 12px; line-height: 1.5;
+}
+.fila-pendiente td { background: #FFFDF5; }
+.fuente {
+    display: inline-block; margin-top: 4px; font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em;
+    padding: 1px 6px; border-radius: 4px; background: var(--border-soft); color: var(--text-subtle);
+}
+.fuente-ia { background: #EFF6FF; color: #1D4ED8; }
+.fuente-docente { background: var(--accent-soft); color: var(--accent); }
+.fuente-visual { background: #FEF3C7; color: #B45309; }
+.confirmar { display: flex; flex-direction: column; gap: 4px; align-items: center; }
+.confirmar form, .corregir { display: block; margin: 0; }
+.boton-badge { cursor: pointer; font-family: var(--font-body); }
+.boton-badge:hover { filter: brightness(.97); transform: translateY(-1px); }
+.corregir .btn-enlace { font-size: 10.5px; color: var(--text-subtle); margin-top: 4px; }
 .aviso-video {
     background: var(--warning-soft); border: 1px solid #FDE68A; color: #92400E; border-radius: var(--r-sm);
     padding: 10px 12px; margin-bottom: 12px; font-size: 12px; line-height: 1.5;

@@ -50,7 +50,7 @@ def procesar_evaluacion(evaluacion_id: int) -> str:
     ev.meta_video = {**resultado.meta, "ventana_s": [round(x, 3) for x in resultado.ventana],
                      "gatillo": resultado.gatillo and {k: resultado.gatillo[k] for k in ("reason", "skillHint", "t")},
                      "fotogramas_con_persona": resultado.con_persona}
-    diagnosticar_y_guardar(ev, resultado.frames)
+    diagnosticar_y_guardar(ev, resultado.frames, serie=resultado.serie or None)
     log.info("Evaluación %s: %s (%s/8 fotogramas con persona)", ev.pk, ev.estado, resultado.con_persona)
     return ev.estado
 

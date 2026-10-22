@@ -13,9 +13,9 @@ from django.core.files.base import ContentFile
 from django.db import transaction
 
 from apps.catalogo.models import CriterioHMB, Habilidad
-from biomecanica import (
-    VERSION_MOTOR, SinPersonaDetectada, assign_keyframe_milestones, compute_joint_angles, run_local_engine,
-)
+from biomecanica import SinPersonaDetectada, assign_keyframe_milestones, compute_joint_angles
+from biomecanica.motor_v2 import VERSION_MOTOR_V2, run_motor_v2, totales
+from biomecanica.reglas_v2 import errores_de
 
 from .models import Evaluacion, EvaluacionGrupal, Fotograma, Motor, ResultadoCriterio
 
@@ -89,17 +89,21 @@ def _tipo_hito(f: Dict[str, Any]) -> str:
 
 
 @transaction.atomic
-def diagnosticar_y_guardar(evaluacion: Evaluacion, muestras: Sequence[Dict[str, Any]]) -> Evaluacion:
-    """Ejecuta el motor local sobre los fotogramas y persiste el resultado en ``evaluacion``."""
+def diagnosticar_y_guardar(evaluacion: Evaluacion, muestras: Sequence[Dict[str, Any]],
+                           serie: Optional[Sequence[Any]] = None) -> Evaluacion:
+    """Ejecuta el motor v2 y persiste el resultado en ``evaluacion``.
+
+    ``muestras``: fotogramas clave (imágenes del resultado y de Gemini). ``serie``: (t, landmarks)
+    de todo el video; sin ella (foto) los criterios quedan por confirmar."""
     frames = preparar_frames(muestras)
     codigo = evaluacion.habilidad_solicitada.codigo if evaluacion.habilidad_solicitada else "auto"
 
     borrar_fotogramas(evaluacion)
     evaluacion.resultados.all().delete()
-    evaluacion.version_motor = VERSION_MOTOR
+    evaluacion.version_motor = VERSION_MOTOR_V2
 
     try:
-        diag = run_local_engine(codigo, evaluacion.grado, evaluacion.observaciones_docente, frames, origen="servidor")
+        diag = run_motor_v2(codigo, evaluacion.grado, evaluacion.observaciones_docente, frames, serie)
     except SinPersonaDetectada as exc:
         evaluacion.estado = Evaluacion.Estado.ERROR
         evaluacion.mensaje_error = str(exc)
@@ -114,14 +118,16 @@ def diagnosticar_y_guardar(evaluacion: Evaluacion, muestras: Sequence[Dict[str, 
     habilidad = Habilidad.objects.get(nombre=diag["habilidad_detectada"])
     criterios = {c.orden: c for c in CriterioHMB.objects.filter(habilidad=habilidad)}
 
-    aprobados, total = (int(x) for x in diag["puntaje_obtenido"].split("/"))
+    tot = diag["totales"]
     telemetria = dict(diag["telemetria_medida"])
 
     evaluacion.estado = Evaluacion.Estado.LISTA
     evaluacion.mensaje_error = ""
     evaluacion.habilidad_detectada = habilidad
     evaluacion.es_deteccion_automatica = diag["es_deteccion_automatica"]
-    evaluacion.puntaje, evaluacion.puntaje_maximo = aprobados, total
+    evaluacion.deteccion = diag.get("deteccion") or {}
+    evaluacion.puntaje, evaluacion.puntaje_maximo = tot["aprobados"], tot["calificados"]
+    evaluacion.criterios_pendientes = tot["pendientes"]
     evaluacion.porcentaje_madurez = diag["porcentaje_madurez"]
     evaluacion.estadio_gallahue = diag["estadio_gallahue"]
     evaluacion.resumen = diag["resumen_biomecanico"]
@@ -132,14 +138,20 @@ def diagnosticar_y_guardar(evaluacion: Evaluacion, muestras: Sequence[Dict[str, 
     evaluacion.telemetria = telemetria
     evaluacion.modelo_ia = diag.get("modelo_utilizado", "")
     if evaluacion.modelo_ia:
-        evaluacion.version_motor = f"{VERSION_MOTOR}+gemini:{diag.get('version_prompt', '')}"
+        evaluacion.version_motor = f"{VERSION_MOTOR_V2}+gemini:{diag.get('version_prompt', '')}"
+    evaluacion.advertencias = [*evaluacion.advertencias, *diag.get("avisos_ia", [])]
+    if diag["es_deteccion_automatica"] and (diag.get("deteccion") or {}).get("confianza") == "baja":
+        evaluacion.advertencias = [*evaluacion.advertencias,
+                                   "La detección automática no es segura: " + diag["deteccion"]["motivo"]
+                                   + " Vuelve a evaluar eligiendo la habilidad para un resultado confiable."]
     evaluacion.save()
 
     ResultadoCriterio.objects.bulk_create([
         ResultadoCriterio(evaluacion=evaluacion, criterio=_criterio_del_catalogo(criterios, i, c["criterio"]), orden=i,
                           texto=c["criterio"],
-                          fase=c["fase"], puntaje=c["puntaje"], medido=c.get("medido", ""),
-                          umbral=c.get("umbral", ""), observacion=c.get("observacion", ""))
+                          fase=c["fase"], puntaje=c["puntaje"], fuente=_fuente(c), pregunta=(c.get("mira") or "")[:200],
+                          medido=(c.get("medido") or "")[:200], umbral=(c.get("umbral") or "")[:120],
+                          observacion=c.get("observacion", ""))
         for i, c in enumerate(diag["criterios"], start=1)
     ])
     for i, f in enumerate(frames, start=1):
@@ -154,6 +166,42 @@ def diagnosticar_y_guardar(evaluacion: Evaluacion, muestras: Sequence[Dict[str, 
             foto.imagen_esqueleto.save(f"ev{evaluacion.pk}_{i}_esq.jpg", ContentFile(f["imagen_esqueleto_jpeg"]), save=False)
         foto.save()
     return evaluacion
+
+
+def _fuente(c: Dict[str, Any]) -> str:
+    if c.get("puntaje") is None:
+        return ResultadoCriterio.Fuente.VISUAL
+    return ResultadoCriterio.Fuente.IA if c.get("fuente") == "ia" else ResultadoCriterio.Fuente.POSE
+
+
+def recalcular(evaluacion: Evaluacion) -> Evaluacion:
+    """Puntaje, estadio y errores a partir de los criterios guardados (tras confirmar el docente)."""
+    resultados = list(evaluacion.resultados.order_by("orden"))
+    criterios = [{"puntaje": r.puntaje} for r in resultados]
+    tot = totales(criterios)
+    evaluacion.puntaje, evaluacion.puntaje_maximo = tot["aprobados"], tot["calificados"]
+    evaluacion.criterios_pendientes = tot["pendientes"]
+    evaluacion.porcentaje_madurez = tot["porcentaje"]
+    evaluacion.estadio_gallahue = tot["estadio"]
+    if evaluacion.habilidad_detectada:
+        errores = errores_de(evaluacion.habilidad_detectada.nombre, criterios, evaluacion.telemetria)
+        evaluacion.errores_criticos = errores or ([{"error": "Sin fallos biomecánicos críticos",
+                                                   "impacto_biomecanico": "Cumple los criterios de la batería."}]
+                                                 if not tot["pendientes"] else [])
+    evaluacion.save(update_fields=["puntaje", "puntaje_maximo", "criterios_pendientes", "porcentaje_madurez",
+                                   "estadio_gallahue", "errores_criticos", "actualizado"])
+    return evaluacion
+
+
+@transaction.atomic
+def confirmar_criterio(evaluacion: Evaluacion, orden: int, logrado: bool) -> Evaluacion:
+    """El docente califica (o corrige) un criterio; el estadio se recalcula."""
+    r = evaluacion.resultados.get(orden=orden)
+    r.puntaje = 1 if logrado else 0
+    r.fuente = ResultadoCriterio.Fuente.DOCENTE
+    r.observacion = "Confirmado por el docente: " + ("lo logra." if logrado else "aún en proceso.")
+    r.save(update_fields=["puntaje", "fuente", "observacion"])
+    return recalcular(evaluacion)
 
 
 def consolidar_grupo(grupal: EvaluacionGrupal, habilidad: Optional[Habilidad] = None) -> Dict[str, Any]:

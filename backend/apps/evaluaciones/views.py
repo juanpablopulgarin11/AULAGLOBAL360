@@ -18,7 +18,7 @@ from apps.reportes.servicios import reporte_de_evaluacion
 
 from .forms import EvaluarForm
 from .models import Evaluacion, EvaluacionGrupal, Fotograma
-from .servicios import borrar_fotogramas, consolidar_grupo, habilidad_mas_debil
+from .servicios import borrar_fotogramas, confirmar_criterio, consolidar_grupo, habilidad_mas_debil
 from .tasks import procesar_evaluacion
 
 DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
@@ -128,6 +128,17 @@ def detalle(request, pk):
             "t": ev.telemetria,
         })
     return render(request, "evaluaciones/detalle.html", contexto)
+
+
+@login_required
+@require_POST
+def criterio(request, pk, orden):
+    """El docente confirma o corrige un criterio (los visuales quedan por confirmar sin IA)."""
+    ev = get_object_or_404(Evaluacion, pk=pk, docente=request.user, estado=Evaluacion.Estado.LISTA)
+    if request.POST.get("logrado") not in ("1", "0") or not ev.resultados.filter(orden=orden).exists():
+        raise Http404
+    confirmar_criterio(ev, orden, request.POST["logrado"] == "1")
+    return redirect(f"{reverse('evaluacion', args=[ev.pk])}#criterios")
 
 
 @login_required

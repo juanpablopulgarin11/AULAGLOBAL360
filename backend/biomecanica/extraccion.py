@@ -13,7 +13,8 @@ Mejoras respecto al navegador (la lógica de gatillo, ventana y fases es la mism
   no se estiran los ángulos. Los landmarks quedan en coordenadas del lienzo 16:9, que es el
   espacio en el que se calibraron los umbrales.
 - **Tiempos exactos por fotograma** (videos de celular con frecuencia variable).
-- **Escaneo denso** (15 muestras/s) con gatillo confirmado en 2 muestras seguidas.
+- **Escaneo denso** (30 muestras/s) con gatillo confirmado durante 0,13 s; la pose de todo el
+  recorrido se devuelve como ``serie`` para el motor v2.
 - **Suavizado**: cada fotograma final es la mediana de 3 fotogramas contiguos.
 - **Control de calidad**: se descartan las poses con el cuerpo casi invisible y se generan
   advertencias para el docente.
@@ -39,10 +40,10 @@ ANCHO, ALTO = 640, 360
 CALIDAD_JPEG = 85
 DURACION_MAX_S = 20.0
 DURACION_MIN_S = 0.6
-PASO_ESCANEO_S = 1 / 15          # el JS usaba ~0.19 s (12–24 muestras en total)
+PASO_ESCANEO_S = 1 / 30          # serie del motor v2 (el JS usaba ~0.19 s: 12–24 muestras en total)
 LAG_DELTA_S = 0.1875             # referencia del gatillo por cambio angular (equivale al paso del JS)
-CONFIRMACION_GATILLO = 2         # muestras seguidas que deben cumplir el gatillo
-MAX_MUESTRAS_ESCANEO = 300
+CONFIRMACION_GATILLO_S = 0.13    # tiempo que el gatillo debe sostenerse para confirmarse
+MAX_MUESTRAS_ESCANEO = 450       # 15 s a 30 muestras/s; videos más largos se muestrean más espaciado
 VECINOS_SUAVIZADO = 1            # fotogramas a cada lado para la mediana (3 en total)
 VISIBILIDAD_MIN_CUERPO = 0.35    # misma referencia que el dibujo del esqueleto en el JS
 ARTICULACIONES_NUCLEO = [11, 12, 23, 24, 25, 26, 27, 28]
@@ -332,6 +333,7 @@ class ResultadoExtraccion:
     con_persona: int = 0
     advertencias: List[str] = field(default_factory=list)
     meta: Dict[str, Any] = field(default_factory=dict)
+    serie: List[Tuple[float, Optional[Landmarks]]] = field(default_factory=list)   # pose de todo el video (motor v2)
 
 
 def ventana_de_accion(escaneo: Sequence[Tuple[float, Optional[Dict[str, Any]], Dict[str, Any]]], dur: float,
@@ -355,14 +357,17 @@ def ventana_de_accion(escaneo: Sequence[Tuple[float, Optional[Dict[str, Any]], D
 
 
 def _escanear(lector: LectorVideo, detector: Detector, dur: float):
-    """Muestrea el video y devuelve (escaneo, índice del primer gatillo confirmado, info)."""
+    """Muestrea el video y devuelve (escaneo, índice del primer gatillo confirmado, info, serie de poses)."""
     pasos = max(12, min(MAX_MUESTRAS_ESCANEO, math.floor(dur / PASO_ESCANEO_S)))
     dt = dur / (pasos + 1)
     lag = max(1, round(LAG_DELTA_S / dt))
+    confirmacion = max(2, round(CONFIRMACION_GATILLO_S / dt))
     escaneo: List[Tuple[float, Optional[Dict[str, Any]], Dict[str, Any]]] = []
+    serie: List[Tuple[float, Optional[Landmarks]]] = []
     for i in range(pasos + 1):
         t = i * dt
         landmarks = _detectar(detector, a_lienzo(lector.leer(lector.indice_en(min(t, dur - 0.05)))))
+        serie.append((t, landmarks))
         angles = angulos_si_visible(landmarks)
         trig: Dict[str, Any] = {"triggered": False}
         if angles:
@@ -372,14 +377,14 @@ def _escanear(lector: LectorVideo, detector: Detector, dur: float):
         escaneo.append((t, angles, trig))
 
     for i in range(len(escaneo)):
-        racha = escaneo[i:i + CONFIRMACION_GATILLO]
-        if len(racha) == CONFIRMACION_GATILLO and all(r[2].get("triggered") for r in racha):
-            return escaneo, i, {**escaneo[i][2], "t": escaneo[i][0]}
+        racha = escaneo[i:i + confirmacion]
+        if len(racha) == confirmacion and all(r[2].get("triggered") for r in racha):
+            return escaneo, i, {**escaneo[i][2], "t": escaneo[i][0]}, serie
     # Video muy corto o gesto muy breve: se acepta un gatillo aislado
     for i, (t, _, trig) in enumerate(escaneo):
         if trig.get("triggered"):
-            return escaneo, i, {**trig, "t": t}
-    return escaneo, -1, None
+            return escaneo, i, {**trig, "t": t}, serie
+    return escaneo, -1, None, serie
 
 
 def _advertencias(lector: Optional[LectorVideo], frames: List[Dict[str, Any]], duracion_real: float) -> List[str]:
@@ -418,7 +423,7 @@ def extraer_video(ruta: Union[str, Path], detector: Detector, n: int = 8,
     lector = LectorVideo(ruta)
     try:
         dur = max(DURACION_MIN_S, min(lector.duracion, DURACION_MAX_S))
-        escaneo, primer, info = _escanear(lector, detector, dur)
+        escaneo, primer, info, serie = _escanear(lector, detector, dur)
         inicio, fin = ventana_de_accion(escaneo, dur, primer)
         tiempos = [inicio + (fin - inicio) * k / (n - 1) for k in range(n)]
 
@@ -446,7 +451,7 @@ def extraer_video(ruta: Union[str, Path], detector: Detector, n: int = 8,
     assign_keyframe_milestones(frames, habilidad)
     return ResultadoExtraccion(frames=frames, duracion=dur, ventana=(inicio, fin), gatillo=info,
                                muestras_escaneo=len(escaneo), con_persona=sum(1 for f in frames if f["angles"]),
-                               advertencias=avisos, meta=meta)
+                               advertencias=avisos, meta=meta, serie=serie)
 
 
 def extraer_imagen(origen: Union[str, Path, bytes], detector: Detector, habilidad: Optional[str] = None) -> ResultadoExtraccion:

@@ -19,11 +19,10 @@ from django.conf import settings
 from django.core.cache import cache
 from pydantic import ValidationError
 
-from biomecanica.motor_local import estadio_gallahue
 from biomecanica.reglas import REGLAS
 
 from .esquema import DiagnosticoIA
-from .prompt import VERSION_PROMPT, construir_prompt
+from .prompt import VERSION_PROMPT, construir_prompt_v2
 
 log = logging.getLogger(__name__)
 
@@ -130,42 +129,63 @@ def _limpiar_json(texto: str) -> str:
     return re.sub(r"```$", "", t).strip()
 
 
-def _a_contrato(ia: DiagnosticoIA, telemetria: Dict[str, Any], es_auto: bool, grado: str, modelo: str) -> Dict[str, Any]:
-    """Convierte la respuesta validada en el contrato ``Diagnostico`` con números consistentes."""
-    regla = REGLAS[ia.habilidad_detectada]
-    referencia = [c.evaluar(telemetria) for c in regla.criterios]
-    criterios = []
-    for i, c in enumerate(ia.criterios):
-        ref = referencia[i] if i < len(referencia) else {}
-        criterios.append({"criterio": c.criterio, "fase": c.fase, "puntaje": c.puntaje, "observacion": c.observacion,
-                          "medido": ref.get("medido", ""), "umbral": ref.get("umbral", "")})
-    aprobados = sum(c["puntaje"] for c in criterios)
-    porcentaje = round(aprobados / len(criterios) * 100)
+def fusionar(ia: DiagnosticoIA, diag: Dict[str, Any], dirigida: Optional[str], modelo: str) -> Dict[str, Any]:
+    """Une la respuesta de Gemini con el motor v2: lo medido con la pose se conserva y la IA solo
+    califica los criterios por confirmar. En detección automática, la IA puede corregir la
+    habilidad únicamente si el motor no estaba seguro."""
+    from biomecanica.motor_v2 import totales
+    from biomecanica.reglas_v2 import errores_de, evaluar_criterios
+
+    t = diag["telemetria_medida"]
+    habilidad = diag["habilidad_detectada"]
+    avisos = []
+    if not dirigida and ia.habilidad_detectada != habilidad:
+        if (diag.get("deteccion") or {}).get("confianza") == "alta":
+            avisos.append(f"Gemini sugirió «{ia.habilidad_detectada}», pero la medición del video indica «{habilidad}» "
+                          "con seguridad; se conserva la medición.")
+        else:
+            habilidad = ia.habilidad_detectada
+    if habilidad == diag["habilidad_detectada"]:
+        criterios = [dict(c) for c in diag["criterios"]]
+    else:
+        criterios = evaluar_criterios(habilidad, t.get("cinematica") or {}, t)
+    for i, c in enumerate(criterios):
+        if c.get("puntaje") is None and i < len(ia.criterios):
+            c.update(puntaje=ia.criterios[i].puntaje, fuente="ia", pendiente=False,
+                     observacion=ia.criterios[i].observacion or c.get("observacion", ""))
+    tot = totales(criterios)
+    regla = REGLAS[habilidad]
+    deteccion = diag.get("deteccion")
+    if deteccion and habilidad != diag["habilidad_detectada"]:
+        deteccion = {**deteccion, "habilidad": habilidad, "confianza": "ia",
+                     "motivo": f"Corregida por Gemini (el motor sugería {diag['habilidad_detectada']})."}
     return {
-        "habilidad_detectada": ia.habilidad_detectada,
-        "es_deteccion_automatica": es_auto,
+        **diag,
+        "habilidad_detectada": habilidad,
+        "deteccion": deteccion,
         "componente_hmb": regla.componente,
         "prueba_nro": regla.prueba_nro,
-        "puntaje_obtenido": f"{aprobados}/{len(criterios)}",
-        "edad_calibrada": grado,
-        "estadio_gallahue": estadio_gallahue(porcentaje),
-        "porcentaje_madurez": porcentaje,
+        "puntaje_obtenido": f"{tot['aprobados']}/{tot['calificados']}",
+        "totales": tot,
+        "estadio_gallahue": tot["estadio"],
+        "porcentaje_madurez": tot["porcentaje"],
         "resumen_biomecanico": ia.resumen_biomecanico,
         "criterios": criterios,
         "analisis_articular": ia.analisis_articular.model_dump(),
-        "errores_criticos": [e.model_dump() for e in ia.errores_criticos] or [
+        "errores_criticos": errores_de(habilidad, criterios, t) or [
             {"error": "Sin fallos biomecánicos críticos",
-             "impacto_biomecanico": "El estudiante demuestra adecuada coordinación articular según la IA."}],
+             "impacto_biomecanico": "El estudiante demuestra adecuada coordinación articular según la batería."}],
         "frases_profe": ia.frases_profe or list(regla.frases),
-        "telemetria_medida": telemetria,
         "modelo_utilizado": modelo,
         "version_prompt": VERSION_PROMPT,
+        "avisos_ia": avisos,
     }
 
 
 def diagnosticar(frames: Sequence[Dict[str, Any]], diag_local: Dict[str, Any], habilidad: Optional[str],
                  grado: str, cliente=None, docente=None) -> Dict[str, Any]:
-    """Diagnóstico con Gemini. ``diag_local`` aporta la telemetría y la sugerencia del clasificador.
+    """Diagnóstico con Gemini sobre el resultado del motor v2 (``diag_local``): la IA califica los
+    criterios visuales y redacta el resumen; lo medido con la pose se conserva.
 
     Lanza ``GeminiNoDisponible`` (configuración) o la última excepción si ningún modelo respondió bien.
     """
@@ -175,8 +195,7 @@ def diagnosticar(frames: Sequence[Dict[str, Any]], diag_local: Dict[str, Any], h
     if not con_imagen:
         raise GeminiNoDisponible("No hay imágenes de fotogramas para enviar")
     cliente = cliente or crear_cliente(clave_para(docente))
-    telemetria = diag_local["telemetria_medida"]
-    prompt = construir_prompt(telemetria, habilidad, diag_local["habilidad_detectada"], grado, len(con_imagen))
+    prompt = construir_prompt_v2(diag_local, habilidad, grado, len(con_imagen))
     config = types.GenerateContentConfig(system_instruction=prompt, temperature=0.1, response_mime_type="application/json")
     contenido = _contenido(con_imagen)
 
@@ -188,7 +207,7 @@ def diagnosticar(frames: Sequence[Dict[str, Any]], diag_local: Dict[str, Any], h
             if habilidad and ia.habilidad_detectada != habilidad:
                 log.info("Gemini cambió la habilidad dirigida %s → %s; se respeta la del docente", habilidad, ia.habilidad_detectada)
                 ia = ia.model_copy(update={"habilidad_detectada": habilidad})
-            return _a_contrato(ia, telemetria, habilidad is None, grado, modelo)
+            return fusionar(ia, diag_local, habilidad, modelo)
         except errors.ClientError as exc:
             if getattr(exc, "code", None) in (401, 403):
                 raise GeminiNoDisponible(f"Gemini rechazó la clave o el proyecto: {exc}") from exc

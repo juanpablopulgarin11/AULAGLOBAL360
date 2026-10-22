@@ -59,12 +59,13 @@ def escribir_video(ruta: Path, segundos: float = 3.0, sin_persona: bool = False)
 def test_video_ancla_la_ventana_en_el_angulo_inicial(tmp_path):
     r = extraer_video(escribir_video(tmp_path / "salto.mp4"), detector_falso)
 
-    # 3 s → 45 pasos (dt = 3/46 s). La primera muestra en sentadilla es i=13 (t≈0.848) y se confirma
-    # en i=14; la ventana empieza 0.1 s antes. Al volver a estar de pie, el gatillo por cambio
-    # angular (referencia ~0.19 s antes) sigue activo 3 muestras más: termina en i=28 (t≈1.826).
-    dt = 3 / 46
-    assert r.muestras_escaneo == 46
-    assert r.ventana == pytest.approx((13 * dt - 0.1, 28 * dt))
+    # 3 s → 90 pasos a 30 muestras/s (dt = 3/91 s). La primera muestra en sentadilla es i=25
+    # (t≈0.824) y se confirma tras 0,13 s; la ventana empieza 0.1 s antes. La última muestra en
+    # sentadilla es i=48; el gatillo por cambio angular (referencia ~0.19 s = 6 muestras antes)
+    # sigue activo hasta i=54 y la ventana cierra en la muestra siguiente (t≈1.813).
+    dt = 3 / 91
+    assert r.muestras_escaneo == 91 and len(r.serie) == 91
+    assert r.ventana == pytest.approx((25 * dt - 0.1, 55 * dt))
     assert r.gatillo["skillHint"] == "Salto Horizontal"
 
     assert len(r.frames) == 8 and r.con_persona == 8

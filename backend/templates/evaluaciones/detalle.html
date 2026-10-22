@@ -34,28 +34,28 @@
     {% else %}
         <!-- TARJETA: DIAGNÓSTICO DEL ESTUDIANTE -->
         <div class="diag-card">
-            {% if ev.es_deteccion_automatica %}<div class="auto-badge"><span>🔍 Detección automática:</span> <strong>{{ ev.habilidad_detectada.nombre }}</strong></div>{% endif %}
+            {% if ev.es_deteccion_automatica %}<div class="auto-badge confianza-{{ ev.deteccion.confianza|default:'media' }}"><span>🔍 Detección automática:</span> <strong>{{ ev.habilidad_detectada.nombre }}</strong>{% if ev.deteccion.confianza %} · confianza {{ ev.deteccion.confianza }}{% endif %}</div>{% endif %}
             <div class="diag-header-bar">
                 <div style="display:flex; align-items:center; gap:12px;">
                     <span style="font-size:32px; line-height:1;">{{ ev.habilidad_detectada|icono }}</span>
                     <div>
                         <div class="diag-title">{% if ev.evaluacion_grupal and ev.estudiante %}{{ ev.estudiante }} · {% endif %}Diagnóstico biomecánico</div>
-                        <div class="diag-meta">Habilidad: <strong>{{ ev.habilidad_detectada.nombre }}</strong> · Componente: <strong>{{ ev.habilidad_detectada.componente_etiqueta }}</strong> · Puntaje: <strong>{{ ev.puntaje }}/{{ ev.puntaje_maximo }}</strong></div>
+                        <div class="diag-meta">Habilidad: <strong>{{ ev.habilidad_detectada.nombre }}</strong> · Componente: <strong>{{ ev.habilidad_detectada.componente_etiqueta }}</strong> · Puntaje: <strong>{{ ev.puntaje }}/{{ ev.puntaje_maximo }}</strong>{% if ev.criterios_pendientes %} · <strong class="texto-pendiente">{{ ev.criterios_pendientes }} por confirmar</strong>{% endif %}</div>
                         <div style="font-size:11px; color:var(--text-subtle); margin-top:2px;">
                             Batería Validada de Habilidades Motrices Básicas (5 a 11 años) · {{ ev.get_grado_display }} · Motor: {% if ev.modelo_ia %}Gemini ({{ ev.modelo_ia }}){% else %}local{% endif %}
                         </div>
                     </div>
                 </div>
-                <span class="stage-badge stage-{{ ev.estadio_gallahue|lower }}">Estadio {{ ev.estadio_gallahue }}</span>
+                {% if ev.estadio_gallahue %}<span class="stage-badge stage-{{ ev.estadio_gallahue|lower }}">Estadio {{ ev.estadio_gallahue }}{% if ev.criterios_pendientes %} (provisional){% endif %}</span>{% else %}<span class="stage-badge stage-pendiente">Por confirmar</span>{% endif %}
             </div>
 
             <!-- MEDIDOR DE MADUREZ -->
             <div class="maturity-gauge-row">
-                <div class="gauge-circle">{{ ev.porcentaje_madurez }}%</div>
+                <div class="gauge-circle">{% if ev.puntaje_maximo %}{{ ev.porcentaje_madurez }}%{% else %}—{% endif %}</div>
                 <div class="gauge-details">
                     <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:700; color:var(--text);">
                         <span>Índice de madurez motriz</span>
-                        <span style="color:var(--accent);">{{ ev.porcentaje_madurez }} / 100 pts</span>
+                        <span style="color:var(--accent);">{% if ev.puntaje_maximo %}{{ ev.porcentaje_madurez }} / 100 pts{% else %}por confirmar{% endif %}</span>
                     </div>
                     <div class="gauge-bar-track"><div class="gauge-bar-fill" style="width: {{ ev.porcentaje_madurez }}%;"></div></div>
                 </div>
@@ -78,17 +78,29 @@
             <a class="btn-export-doc" href="{% url 'reporte' ev.pk %}">Descargar reporte del estudiante (.docx)</a>
 
             <!-- SECCIONES DESPLEGABLES -->
-            <details style="margin-top:14px; border-top:1px solid var(--border); padding-top:10px;">
+            {% if ev.criterios_pendientes %}<div class="aviso-pendientes">🖐️ <strong>{{ ev.criterios_pendientes }} criterio{{ ev.criterios_pendientes|pluralize }} por confirmar:</strong> la cámara no puede ver la pelota, el agarre, las manos o la mirada. Revisa el video y marca cada uno; el estadio se actualiza al instante.</div>{% endif %}
+            <details id="criterios" style="margin-top:14px; border-top:1px solid var(--border); padding-top:10px;" {% if ev.criterios_pendientes %}open{% endif %}>
                 <summary style="font-size:12px; font-weight:600; color:var(--text-muted); cursor:pointer; padding:6px 0;">
-                    Ver criterios evaluados ({{ ev.puntaje }}/{{ ev.puntaje_maximo }})
+                    Ver criterios evaluados ({{ ev.puntaje }}/{{ ev.puntaje_maximo }}{% if ev.criterios_pendientes %} · {{ ev.criterios_pendientes }} por confirmar{% endif %})
                 </summary>
                 <div style="margin-top:10px;">
                     <table class="diag-table">
                         <thead><tr><th>Criterio biomecánico y fase</th><th style="text-align:center;">Estado</th></tr></thead>
                         <tbody>
-                        {% for r in resultados %}<tr>
-                            <td><strong>{{ r.texto }}</strong><br>{% if r.medido %}<span style="font-family:var(--font-mono); color:var(--accent); font-size:11px;">[Medido: {{ r.medido }} | Umbral: {{ r.umbral|default:'--' }}]</span><br>{% endif %}<span style="color:var(--text-subtle); font-size:11px;">Fase: {{ r.fase|default:'Ejecución' }} · {{ r.observacion }}</span></td>
-                            <td style="text-align:center; vertical-align:middle;">{% if r.puntaje %}<span class="badge-1">✓ Logrado</span>{% else %}<span class="badge-0">✗ En Proceso</span>{% endif %}</td>
+                        {% for r in resultados %}<tr class="{% if r.pendiente %}fila-pendiente{% endif %}">
+                            <td><strong>{{ r.texto }}</strong><br>{% if r.medido and not r.pendiente %}<span style="font-family:var(--font-mono); color:var(--accent); font-size:11px;">[Medido: {{ r.medido }} | Umbral: {{ r.umbral|default:'--' }}]</span><br>{% endif %}<span style="color:var(--text-subtle); font-size:11px;">Fase: {{ r.fase|default:'Ejecución' }} · {{ r.observacion }}</span>
+                                <span class="fuente fuente-{{ r.fuente }}">{{ r.get_fuente_display }}</span></td>
+                            <td style="text-align:center; vertical-align:middle;">
+                                {% if r.pendiente %}
+                                <div class="confirmar">
+                                    <form method="post" action="{% url 'evaluacion_criterio' ev.pk r.orden %}">{% csrf_token %}<button class="badge-1 boton-badge" name="logrado" value="1">✓ Lo logra</button></form>
+                                    <form method="post" action="{% url 'evaluacion_criterio' ev.pk r.orden %}">{% csrf_token %}<button class="badge-0 boton-badge" name="logrado" value="0">✗ Aún no</button></form>
+                                </div>
+                                {% else %}
+                                {% if r.puntaje %}<span class="badge-1">✓ Logrado</span>{% else %}<span class="badge-0">✗ En Proceso</span>{% endif %}
+                                <form method="post" action="{% url 'evaluacion_criterio' ev.pk r.orden %}" class="corregir">{% csrf_token %}<button class="btn-enlace" name="logrado" value="{% if r.puntaje %}0{% else %}1{% endif %}" title="Corregir este criterio">corregir</button></form>
+                                {% endif %}
+                            </td>
                         </tr>{% endfor %}
                         </tbody>
                     </table>

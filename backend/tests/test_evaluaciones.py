@@ -5,7 +5,7 @@ from apps.cuentas.models import Institucion
 from apps.estudiantes.models import Estudiante, Grupo
 from apps.evaluaciones.models import Evaluacion, EvaluacionGrupal
 from apps.evaluaciones.servicios import consolidar_grupo, diagnosticar_y_guardar, habilidad_mas_debil
-from biomecanica import VERSION_MOTOR
+from biomecanica.motor_v2 import VERSION_MOTOR_V2
 
 
 def pose(levantar_pie=False):
@@ -38,9 +38,11 @@ def test_evaluacion_dirigida_se_guarda_completa(catalogo, docente, estudiante):
     assert ev.estado == Evaluacion.Estado.LISTA
     assert ev.habilidad_detectada.codigo == "equilibrio_estatico"
     assert ev.es_deteccion_automatica is False
-    assert ev.puntaje_maximo == 5 and ev.puntaje == sum(r.puntaje for r in ev.resultados.all())
+    calificados = [r for r in ev.resultados.all() if r.puntaje is not None]
+    assert ev.puntaje_maximo == len(calificados) == 5 - ev.criterios_pendientes
+    assert ev.puntaje == sum(r.puntaje for r in calificados)
     assert ev.estadio_gallahue in {"Inicial", "Elemental", "Maduro"}
-    assert ev.version_motor == VERSION_MOTOR
+    assert ev.version_motor == VERSION_MOTOR_V2
     assert ev.resultados.count() == 5 and all(r.criterio_id for r in ev.resultados.all())
     assert ev.fotogramas.count() == 8
     assert ev.fotogramas.get(orden=1).hito_tipo == "inicial"

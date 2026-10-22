@@ -28,6 +28,7 @@ urlpatterns = [
     path("evaluaciones/", evaluaciones.lista, name="evaluaciones"),
     path("evaluaciones/<int:pk>/", evaluaciones.detalle, name="evaluacion"),
     path("evaluaciones/<int:pk>/estado/", evaluaciones.estado, name="evaluacion_estado"),
+    path("evaluaciones/<int:pk>/criterios/<int:orden>/", evaluaciones.criterio, name="evaluacion_criterio"),
     path("evaluaciones/<int:pk>/fotogramas/<int:orden>/<str:tipo>.jpg", evaluaciones.imagen_fotograma, name="fotograma"),
     path("evaluaciones/<int:pk>/reporte.docx", evaluaciones.reporte, name="reporte"),
     path("evaluaciones/<int:pk>/eliminar/", evaluaciones.eliminar, name="evaluacion_eliminar"),

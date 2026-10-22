@@ -230,9 +230,16 @@ def reporte_estudiante(d: Mapping[str, Any], estudiante: str = "", grupo: str = 
         for linea in detalles:
             r = celda.add_paragraph().add_run(linea)
             r.font.size, r.font.color.rgb = Pt(8.5), RGBColor.from_string("475569")
+        if c.get("puntaje") is None:
+            _sombrear(t.cell(i, 1), "FFFBEB")
+            _escribir(t.cell(i, 1), "? POR CONFIRMAR", negrita=True, color="B45309", centrado=True)
+            continue
         logrado = c.get("puntaje") == 1
         _sombrear(t.cell(i, 1), "ECFDF5" if logrado else "FEF2F2")
         _escribir(t.cell(i, 1), "✓ LOGRADO" if logrado else "✗ EN PROCESO", negrita=True, color=VERDE if logrado else ROJO, centrado=True)
+        if c.get("fuente_texto"):
+            r = t.cell(i, 1).add_paragraph().add_run(c["fuente_texto"])
+            r.font.size, r.font.color.rgb = Pt(7.5), RGBColor.from_string("64748B")
     _espacio(doc)
 
     # 4. Síntesis

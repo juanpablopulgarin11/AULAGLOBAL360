@@ -11,7 +11,7 @@ from apps.estudiantes.models import Estudiante, Grupo
 from apps.evaluaciones.models import Evaluacion, Motor
 from apps.evaluaciones.servicios import diagnosticar_y_guardar
 from apps.ia import cliente as ia
-from apps.ia.prompt import construir_prompt
+from apps.ia.prompt import construir_prompt_v2
 from biomecanica.reglas import REGLAS
 
 
@@ -90,9 +90,15 @@ def test_gemini_ok_recalcula_puntaje(con_gemini, evaluacion_gemini):
     ev.refresh_from_db()
     assert ev.estado == "lista" and ev.habilidad_detectada.codigo == "marcha"
     assert ev.modelo_ia == "gemini-9.0-flash" and "+gemini:" in ev.version_motor
-    assert (ev.puntaje, ev.porcentaje_madurez, ev.estadio_gallahue) == (4, 80, "Maduro")
-    assert all(r.criterio_id for r in ev.resultados.all())               # textos exactos → enlazados al catálogo
-    assert ev.resultados.first().medido                                    # medición instrumental añadida
+    # El motor no estaba seguro (persona quieta) y acepta la habilidad de la IA, pero los criterios
+    # que mide la pose siguen en 0: no hubo desplazamiento. La IA solo califica el criterio visual.
+    resultados = list(ev.resultados.order_by("orden"))
+    assert [r.fuente for r in resultados] == ["pose", "pose", "pose", "pose", "ia"]
+    assert [r.puntaje for r in resultados] == [0, 0, 0, 0, 1]
+    assert (ev.puntaje, ev.puntaje_maximo, ev.porcentaje_madurez, ev.estadio_gallahue) == (1, 5, 20, "Inicial")
+    assert ev.deteccion["confianza"] == "ia" and "Corregida por Gemini" in ev.deteccion["motivo"]
+    assert all(r.criterio_id for r in resultados)                          # textos exactos → enlazados al catálogo
+    assert resultados[0].medido                                            # medición instrumental añadida
     modelo, contenido, config = cli.llamadas[0]
     assert "CRITERIOS OFICIALES" in config.system_instruction and config.temperature == 0.1
     assert sum(1 for p in contenido if getattr(p, "inline_data", None)) == 8
@@ -149,14 +155,20 @@ def test_dirigida_respeta_la_habilidad_del_docente(con_gemini, evaluacion_gemini
     assert ev.habilidad_detectada.codigo == "marcha"
 
 
-def test_prompt_dirigido_solo_lista_sus_criterios():
-    t = {"fsmPhases": [], "unipodalHoldFrames": 0, "hipDisplacement": 0.01, "minKneeAngle": 100, "avgElbowAngle": 90,
-         "avgTrunkAngle": 5, "maxHipAngle": 20, "transientKickPeak": False, "maxWristAboveShoulder": False,
-         "minWristDist": 0.3, "maxAnkleYDiff": 0.01, "maxKneeDiff": 3, "symmetryScore": 90, "avgShoulderTilt": 1.0}
-    p = construir_prompt(t, "Patear", "Carrera", "Grado 1º", 8)
-    assert '"Patear"' in p and '"Carrera" (prueba' not in p and "descartar salto" in p
-    auto = construir_prompt(t, None, "Carrera", "Grado 1º", 8)
-    assert "MODO DETECCIÓN AUTOMÁTICA" in auto and auto.count("(prueba ") == 9
+def test_prompt_v2_separa_lo_medido_de_lo_visual():
+    from biomecanica.motor_v2 import run_motor_v2
+    from tests import sinteticos
+
+    serie = sinteticos.lanzar("d")
+    frames = [{"timestampNum": t, "landmarks": lm, "angles": None} for t, lm in serie[::8]]
+    from apps.evaluaciones.servicios import preparar_frames
+    diag = run_motor_v2("auto", "7_anos", "", preparar_frames(frames), serie)
+    p = construir_prompt_v2(diag, None, "Grado 2º", 8)
+    assert '"Lanzamiento Sobre Hombro"' in p and "confianza alta" in p and "no la cambies" in p
+    assert p.count("MEDIDO CON LA POSE") == 3 and p.count("POR CONFIRMAR CON LAS IMÁGENES") == 2
+    assert "Fases aéreas (ambos pies en el aire): 0" in p
+    dirigido = construir_prompt_v2(diag, "Lanzamiento Sobre Hombro", "Grado 2º", 8)
+    assert "Habilidad Específica Seleccionada por el Docente" in dirigido
 
 
 @pytest.mark.django_db
@@ -175,3 +187,24 @@ def test_clave_propia_del_docente(settings, monkeypatch, evaluacion_gemini):
     monkeypatch.setattr(ia, "crear_cliente", lambda clave=None: usadas.append(clave) or cli)
     ev = diagnosticar_y_guardar(evaluacion_gemini, MUESTRAS)
     assert usadas == ["AIzaSy-clave-del-docente-1234"] and ev.modelo_ia == "gemini-2.5-flash"
+
+
+
+@pytest.mark.django_db
+def test_gemini_califica_solo_lo_visual_y_no_cambia_una_deteccion_segura(con_gemini, evaluacion_gemini):
+    """Lanzamiento medido con la pose: la IA califica agarre y trayectoria, no los criterios medidos."""
+    from tests import sinteticos
+
+    regla = REGLAS["Lanzamiento Sobre Hombro"]
+    respuesta = {**respuesta_marcha(), "habilidad_detectada": "Patear",
+                 "criterios": [{"criterio": c.texto, "fase": c.fase, "puntaje": 0, "observacion": "obs"} for c in regla.criterios]}
+    respuesta["criterios"][3]["puntaje"] = 1                 # agarre firme
+    con_gemini(ClienteFalso([respuesta]))
+    serie = sinteticos.lanzar("d")
+    muestras = [{"timestampNum": t, "landmarks": lm, "imagen_jpeg": b"\xff\xd8jpeg"} for t, lm in serie[::8]]
+    ev = diagnosticar_y_guardar(evaluacion_gemini, muestras, serie=serie)
+    resultados = list(ev.resultados.order_by("orden"))
+    assert ev.habilidad_detectada.nombre == "Lanzamiento Sobre Hombro"          # detección segura: no la cambia
+    assert any("Gemini sugirió «Patear»" in a for a in ev.advertencias), ev.advertencias
+    assert [r.fuente for r in resultados] == ["pose", "pose", "pose", "ia", "ia"]
+    assert [r.puntaje for r in resultados] == [1, 1, 1, 1, 0]                 # la IA no pudo bajar lo medido

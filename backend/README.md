@@ -14,7 +14,7 @@ Plan y decisiones: [docs/06](../docs/06_PLAN_MIGRACION_DJANGO.md) · Hallazgos: 
 | 5 · Interfaz web del docente | ✅ |
 | 6 · Salones, estudiantes, evaluación grupal e historial | ✅ |
 | 7 · Gemini Vision en el servidor con respaldo local | ✅ |
-| 8 · Mejoras del método (ver docs/07) | parcial |
+| 8 · Mejoras del método: motor v2 sobre el video completo (ver docs/08) | ✅ (falta validar con videos reales) |
 
 ## Puesta en marcha local (macOS / Linux)
 
@@ -33,7 +33,7 @@ python3.12 -m venv .venv
 
 Abre http://127.0.0.1:8000 → *Acceder al Dashboard*. Sin `.env` se usa SQLite y Celery **síncrono** (el video se analiza dentro de la misma petición, unos 2 s con GPU en Mac). Para Gemini, define `GEMINI_API_KEY` en `.env`.
 
-Pruebas: `.venv/bin/python -m pytest -q` (1.541; la de MediaPipe real se activa con `AULA360_IMAGEN_PRUEBA=/ruta/foto.jpg`).
+Pruebas: `.venv/bin/python -m pytest -q` (más de 1.600; la de MediaPipe real se activa con `AULA360_IMAGEN_PRUEBA=/ruta/foto.jpg`).
 
 ## Producción (Docker)
 
@@ -83,7 +83,7 @@ backend/
 │   ├── reglas (45 criterios) · motor_local · didactica (unidad) · habilidades
 │   └── extraccion.py       # video/foto → 8 fotogramas (OpenCV + MediaPipe)
 ├── templates/ · static/    # interfaz (sin dependencias JS externas)
-├── tests/                  # 1.541 pruebas; golden/ = paridad con script.js
+├── tests/                  # pruebas; golden/ = paridad del motor v1 con script.js; sinteticos.py = movimientos para el v2
 ├── Dockerfile · docker-compose.yml · docker-entrypoint.sh
 └── requirements/           # base, dev, prod y lock.txt (versiones probadas)
 ```
