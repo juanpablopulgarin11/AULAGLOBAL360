@@ -87,6 +87,8 @@ STORAGES = {
 LOGIN_URL = "ingresar"
 LOGIN_REDIRECT_URL = "evaluar"   # como la web: se entra directo al asistente
 LOGOUT_REDIRECT_URL = "inicio"
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 90   # 90 días: mantiene la sesión activa sin pedir clave en cada visita
+SESSION_SAVE_EVERY_REQUEST = True
 
 # Videos y fotogramas de menores: almacenamiento privado, nunca bajo MEDIA_URL público.
 # Se sirven solo mediante vistas autenticadas.
