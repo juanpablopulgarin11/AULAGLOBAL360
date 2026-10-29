@@ -25,7 +25,8 @@ ENV AULA360_DATOS_DIR=/app/datos
 RUN sed -i 's/\r$//' /app/docker-entrypoint.sh && chmod +x /app/docker-entrypoint.sh && useradd --create-home aula && mkdir -p /app/privado /app/modelos /app/staticfiles && chown -R aula /app
 USER aula
 
-RUN DJANGO_SECRET_KEY=solo-para-compilar DJANGO_ALLOWED_HOSTS=localhost python manage.py collectstatic --noinput
+RUN DJANGO_SECRET_KEY=solo-para-compilar DJANGO_ALLOWED_HOSTS=localhost python manage.py collectstatic --noinput \
+    && DJANGO_SECRET_KEY=solo-para-compilar DJANGO_ALLOWED_HOSTS=localhost python manage.py descargar_modelo_pose
 
 EXPOSE 8000
 ENTRYPOINT ["/app/docker-entrypoint.sh"]

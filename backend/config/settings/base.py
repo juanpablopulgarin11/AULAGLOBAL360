@@ -93,7 +93,7 @@ SESSION_SAVE_EVERY_REQUEST = True
 # Videos y fotogramas de menores: almacenamiento privado, nunca bajo MEDIA_URL público.
 # Se sirven solo mediante vistas autenticadas.
 PRIVATE_MEDIA_ROOT = Path(env("AULA360_PRIVATE_MEDIA_ROOT", default=str(BASE_DIR / "privado")))
-AULA360_DIAS_RETENCION_VIDEO = env.int("AULA360_DIAS_RETENCION_VIDEO", default=30)
+AULA360_DIAS_RETENCION_VIDEO = env.int("AULA360_DIAS_RETENCION_VIDEO", default=3650)
 AULA360_MAX_SUBIDA_MB = env.int("AULA360_MAX_SUBIDA_MB", default=60)
 # El Word de la unidad recibe una foto 3D por paso de cada sesión (el valor por defecto de Django es 100)
 DATA_UPLOAD_MAX_NUMBER_FILES = 400
