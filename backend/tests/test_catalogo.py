@@ -51,6 +51,7 @@ def test_plantillas_ordenadas_por_fase(catalogo):
 
 @pytest.mark.django_db
 def test_admin_carga(admin_client, catalogo):
-    for url in ["/admin/", "/admin/catalogo/habilidad/", "/admin/catalogo/habilidad/1/change/",
+    primera = Habilidad.objects.order_by("pk").first().pk          # en MySQL el autoincremento no se reinicia entre pruebas
+    for url in ["/admin/", "/admin/catalogo/habilidad/", f"/admin/catalogo/habilidad/{primera}/change/",
                 "/admin/evaluaciones/evaluacion/", "/admin/catalogo/plantillasesion/"]:
         assert admin_client.get(url).status_code == 200, url
