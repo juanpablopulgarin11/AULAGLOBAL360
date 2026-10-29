@@ -23,6 +23,7 @@ from .didactica import (
     tiempos_sesion,
 )
 from .habilidades import CARRERA, grado_y_ciclo
+from .materiales import adaptar_texto, nota_de_montaje
 from .reglas import REGLAS
 
 MAX_REFUERZOS = 3
@@ -192,6 +193,16 @@ def generar_unidad(diagnostico: Mapping[str, Any], prefs: Optional[Mapping[str, 
               "consigna", "criterio_eval")
     plantillas = [{**p, **{k: sustituir(p[k], materiales, formato, metodologia) for k in campos}}
                   for p in plantillas_para(banco, skill)]
+    # el material que el docente marcó en «Configurar clase» se usa en las tres partes de cada sesión
+    lista = prefs.get("_materiales_lista")
+    if lista is None:
+        lista = [m.strip() for m in str(prefs.get("materials") or "").split(",") if m.strip() and prefs.get("materials")]
+    for p in plantillas:
+        for parte in ("inicial", "central", "final"):
+            p[f"actividad_{parte}"] = adaptar_texto(p[f"actividad_{parte}"], parte, lista, skill)
+        nota = nota_de_montaje(p["distribucion"], lista)
+        if nota:
+            p["actividad_central"] = f"{p['actividad_central']} {nota}"
     estado = estado_criterios(diagnostico, base)
     por_mejorar = estado["por_mejorar"] if priorizar else []
     propia = bool(banco.get(skill))

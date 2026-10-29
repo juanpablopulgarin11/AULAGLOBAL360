@@ -5,10 +5,11 @@
 <div class="migas"><a href="{% url 'unidades' %}">Planeaciones</a> · <a href="{% url 'unidad' u.pk %}#sesion-{{ sesion.numero }}">{{ u.habilidad|icono }} Unidad · Período {{ u.periodo }}</a></div>
 <div class="cabecera-pagina">
     <div><h1>Montaje 3D · Sesión {{ sesion.numero }}</h1>
-    <p class="muted">{{ sesion.titulo }}<br>{{ escena.resumen }} · área de {{ escena.area.texto }} · {{ estudiantes }} estudiantes</p></div>
+    <p class="muted">{{ sesion.titulo }}<br>{{ escena.resumen }} · área de {{ escena.area.texto }} · {{ estudiantes }} estudiantes</p>
+    <nav class="segmentado partes-sesion" aria-label="Parte de la sesión">{% for p in partes %}<a href="?parte={{ p }}&amp;estudiantes={{ estudiantes }}" class="{% if p == parte %}activo{% endif %}"{% if p == parte %} aria-current="page"{% endif %}>Parte {{ p }}</a>{% endfor %}</nav></div>
     <div class="acciones">
-        {% if anterior %}<a class="btn btn-secundario btn-chico" href="{% url 'sesion_montaje' u.pk anterior %}">← Sesión {{ anterior }}</a>{% endif %}
-        {% if siguiente %}<a class="btn btn-secundario btn-chico" href="{% url 'sesion_montaje' u.pk siguiente %}">Sesión {{ siguiente }} →</a>{% endif %}
+        {% if anterior %}<a class="btn btn-secundario btn-chico" href="{% url 'sesion_montaje' u.pk anterior %}?parte={{ parte }}">← Sesión {{ anterior }}</a>{% endif %}
+        {% if siguiente %}<a class="btn btn-secundario btn-chico" href="{% url 'sesion_montaje' u.pk siguiente %}?parte={{ parte }}">Sesión {{ siguiente }} →</a>{% endif %}
         <a class="btn btn-secundario btn-chico" href="{% url 'sesion_editar' u.pk sesion.numero %}">Editar montaje</a>
         <a class="btn btn-chico" href="{% url 'unidad' u.pk %}?abrir_word=1">Descargar en Word (.docx)</a>
     </div>
@@ -61,10 +62,12 @@
             </ul>
         </section>
         <section class="tarjeta">
-            <h2>Texto del montaje</h2>
-            <p class="muted">{{ sesion.distribucion }}</p>
+            {% if parte == "central" %}<h2>Texto del montaje</h2>
+            <p class="muted">{{ sesion.distribucion }}</p>{% else %}<h2>Actividad de la parte {{ parte }}</h2>
+            <p class="muted">{{ escena.actividad }}</p>{% endif %}
             {% for a in escena.avisos %}<div class="aviso aviso-info">{{ a }}</div>{% endfor %}
             <form method="get" class="fila-estudiantes">
+                <input type="hidden" name="parte" value="{{ parte }}">
                 <label for="estudiantes">Estudiantes en clase</label>
                 <input type="number" id="estudiantes" name="estudiantes" min="6" max="45" value="{{ estudiantes }}">
                 <button class="btn btn-secundario btn-chico">Actualizar</button>

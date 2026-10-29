@@ -113,6 +113,35 @@ Cada sesión nueva tiene un montaje distinto dentro de su habilidad: no se repit
 
 **Sin configuración** (lista vacía), el montaje queda como lo describe el texto.
 
+## 4.2 La sesión completa con el material del docente y tres modelados
+
+**Textos de la sesión** (`biomecanica/materiales.py`, aplicado en `didactica_v2.generar_unidad`):
+- **Lo que el docente no marcó** se reemplaza por lo que sí tiene, con la misma regla que el 3D:
+  - conos, platillos y postes pasan a otra marca de suelo, en este orden: conos, platillos, aros;
+  - colchonetas → aros sobre césped;
+  - vallas → cuerdas en el piso;
+  - aros, cuerdas y bancos sin sustituto del docente → tiza;
+  - balones → pelotas de papel.
+
+  El reemplazo ajusta artículos y concordancia («sobre la colchoneta» → «dentro del aro», «balón quieto» → «pelota quieta»).
+- **Uso del material en las partes inicial y final:** se agrega cómo se usa lo que el docente marcó, según la mecánica del juego. Por ejemplo, con aros en un juego de señal: «a la señal de parar, cada estudiante frena dentro de un aro del color que nombre el docente…».
+- **Coherencia:** los balones solo entran en esas partes en lanzar, atrapar y patear; las colchonetas, en la vuelta a la calma.
+- **Nota en la parte central:** dice qué se reemplazó en el montaje.
+- **Sin materiales configurados**, los textos no cambian.
+
+**Biomecánica:** se corrigieron movilidades mal descritas:
+- La rodilla solo se flexiona y se extiende, no hace círculos.
+- Al lanzar, el codo va a la altura del hombro, no de la oreja.
+- El giro es del tronco con la cadera quieta, no «de la cintura».
+
+Una prueba revisa que no reaparezcan. La prueba de paridad del v1 usa una copia de las 36 sesiones de `script.js` (`tests/golden/plantillas_web.json`).
+
+**Tres modelados 3D por sesión** (`montaje.construir_escena_parte`):
+- **Parte inicial y parte final:** la formación que describe la actividad (espacio libre, círculo, parejas, filas o líneas), con el material que usa. Por ejemplo, en el semáforo motriz con aros, cada estudiante aparece dentro de un aro en el momento de la señal.
+- **Parte central:** el montaje de siempre.
+- **En el visor:** las pestañas «Parte inicial · Parte central · Parte final» del montaje 3D (`?parte=`).
+- **En el Word:** cada parte de la sesión lleva su descripción y, debajo, la foto de su modelado. La tabla aparte conserva la planta y el paso a paso.
+
 ## 5. Desplegar
 
 ```bash

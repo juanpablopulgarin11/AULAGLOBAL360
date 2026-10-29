@@ -14,10 +14,8 @@ import pytest
 
 from biomecanica.didactica import generar_unidad_v1 as generar_unidad, tiempos_sesion
 
-RAIZ = Path(__file__).resolve().parents[2]
-# La web (script.js) solo tiene bancos de estas tres habilidades; las demás usan las sesiones de Carrera
-BANCO = {k: v for k, v in json.loads((RAIZ / "docs" / "datos" / "plantillas_progresion.json").read_text(encoding="utf-8"))["plantillas"].items()
-         if k in ("Carrera", "Salto Horizontal", "Lanzamiento Sobre Hombro")}
+# Las 36 sesiones de script.js tal cual (el banco de Django corrige textos); las demás habilidades usan Carrera
+BANCO = json.loads((Path(__file__).parent / "golden" / "plantillas_web.json").read_text(encoding="utf-8"))["plantillas"]
 DORADOS = json.loads((Path(__file__).parent / "golden" / "dorados.json").read_text(encoding="utf-8"))
 
 PLANES = [(c["nombre"], m, p) for c in DORADOS["casos"] for m in c["salida"]["motor"] for p in m.get("planes", [])]
