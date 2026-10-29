@@ -1,2 +1,13 @@
 dist/
 node_modules/
+
+# Python & temporales
+__pycache__/
+*.pyc
+*.bak
+
+# Credenciales y variables de entorno
+*.env
+.env*
+credenciales*
+secrets/

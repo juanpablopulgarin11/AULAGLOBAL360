@@ -1,0 +1,11 @@
+# Archivos de credenciales y variables de entorno
+*.env
+.env*
+credenciales*
+secrets/
+
+# Scripts temporales y de pruebas con datos sensibles
+scratch/
+*.bak
+__pycache__/
+*.pyc
