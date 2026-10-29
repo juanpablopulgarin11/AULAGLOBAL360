@@ -236,7 +236,8 @@ def _montaje_3d(doc: Document, numero: int, completo: Optional[bytes], pasos: Se
 def reporte_estudiante(d: Mapping[str, Any], estudiante: str = "", grupo: str = "", docente: str = "",
                        institucion: str = "", fecha: Optional[dt.date] = None,
                        imagenes: Sequence[bytes] = (), advertencias: Sequence[str] = (),
-                       fotogramas_detalle: Sequence[Mapping[str, Any]] = ()) -> bytes:
+                       fotogramas_detalle: Sequence[Mapping[str, Any]] = (),
+                       dictamen_evaluador: Optional[str] = None) -> bytes:
     """Informe biomecánico para el acudiente y el historial (equivalente a ``exportDiagnosticoToWord``)."""
     fecha = fecha or dt.date.today()
     doc = _documento()
@@ -456,12 +457,23 @@ def reporte_estudiante(d: Mapping[str, Any], estudiante: str = "", grupo: str = 
         c_sc = t_sint.cell(1, 0)
         _sombrear(c_sc, GRIS_SUAVE)
         p_sc = c_sc.paragraphs[0]
-        r_sct = p_sc.add_run(
-            "Conclusión de la auditoría cuadro a cuadro: La inspección visual y cinemática valida de forma concluyente la asignación del "
-            "Estadio Maduro (80% de madurez motriz). Se constata un patrón preparatorio maduro (108°), extensión potente en el despegue (162°) "
-            "y parábola aérea simétrica. El Fotograma #7 aporta la prueba fehaciente de la rigidez de aterrizaje (142°), permitiendo vincular "
-            "el diagnóstico cuantitativo del software con la prescripción pedagógica del Anexo E.2 sin sesgos de observación humana."
-        )
+        texto_dictamen = dictamen_evaluador or d.get("dictamen_evaluador")
+        if not texto_dictamen:
+            hab = d.get("habilidad_detectada", "la habilidad evaluada")
+            est = d.get("estadio_gallahue") or "Evaluado"
+            mad = d.get("porcentaje_madurez")
+            mad_txt = f" ({mad}% de madurez motriz)" if mad is not None else ""
+            errores_txt = ", ".join(e.get("error", "") for e in (d.get("errores_criticos") or []) if e.get("error"))
+            detalle_err = (f" Se identifican como prioridades de intervención: {errores_txt}, "
+                           "vinculando el diagnóstico cuantitativo con la prescripción pedagógica sin sesgos de observación humana."
+                           if errores_txt else
+                           " El estudiante cumple satisfactoriamente los criterios evaluados de la Batería HMB.")
+            texto_dictamen = (
+                f"Conclusión de la auditoría cuadro a cuadro ({hab}): La inspección visual y cinemática "
+                f"sustenta la asignación del Estadio {est}{mad_txt} con puntuación {d.get('puntaje_obtenido', '—')}."
+                f"{detalle_err}"
+            )
+        r_sct = p_sc.add_run(texto_dictamen)
         r_sct.font.size, r_sct.font.color.rgb = Pt(8.5), RGBColor.from_string("334155")
         r_sct.italic = True
 

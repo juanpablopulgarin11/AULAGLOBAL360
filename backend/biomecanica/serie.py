@@ -15,6 +15,7 @@ estatura. ``y`` crece hacia abajo. «Izquierdo/derecho» son los del estudiante 
 from __future__ import annotations
 
 import math
+import warnings
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
@@ -66,12 +67,13 @@ def _angulo(a: np.ndarray, b: np.ndarray, c: np.ndarray) -> np.ndarray:
 
 
 def _mediana_movil(x: np.ndarray, k: int = 3) -> np.ndarray:
-    if len(x) < k:
+    if len(x) < k or np.all(np.isnan(x)):
         return x
     r = k // 2
     pad = np.pad(x, [(r, r)] + [(0, 0)] * (x.ndim - 1), mode="edge")
     ventanas = np.stack([pad[i:i + len(x)] for i in range(k)])
-    with np.errstate(all="ignore"):
+    with warnings.catch_warnings(), np.errstate(all="ignore"):
+        warnings.simplefilter("ignore", RuntimeWarning)
         return np.nanmedian(ventanas, axis=0)
 
 

@@ -503,7 +503,7 @@ def generar_anexo_c3():
         ("AULA360_POSE_GPU", "false", "Deshabilita búsqueda de CUDA para evitar errores de enlace en entornos sin GPU física."),
         ("GEMINI_API_KEY", "Secret Manager: `gemini-api-key:latest`", "Clave criptográfica para invocar los modelos multimodales de Google AI Studio."),
         ("DJANGO_SECRET_KEY", "Secret Manager: `django-secret:latest`", "Semilla criptográfica para firma de cookies de sesión y tokens CSRF."),
-        ("CSRF_TRUSTED_ORIGINS", "https://*.run.app, https://aulaglobal360.com", "Evita ataques Cross-Site Request Forgery en peticiones POST de formularios y subida de videos.")
+        ("DJANGO_CSRF_TRUSTED_ORIGINS", "https://*.run.app, https://aulaglobal360.com", "Evita ataques Cross-Site Request Forgery en peticiones POST de formularios y subida de videos.")
     ]
     
     tbl_env = doc.add_table(rows=len(env_vars) + 1, cols=3)
@@ -787,6 +787,8 @@ def generar_anexo_e1():
     # Cargar bytes de imágenes para cada fotograma
     for f in fotogramas_detalle:
         p = f["img_path"]
+        if not os.path.exists(p):
+            p = os.path.join(OUTPUT_DIR, p)
         if os.path.exists(p):
             with open(p, "rb") as img_file:
                 f["imagen_bytes"] = img_file.read()
@@ -887,7 +889,13 @@ def generar_anexo_e1():
         fecha=dt.date(2026, 10, 15),
         imagenes=sample_images,
         advertencias=["Grabación realizada con iluminación óptima y plano sagital perpendicular a 90°."],
-        fotogramas_detalle=fotogramas_detalle
+        fotogramas_detalle=fotogramas_detalle,
+        dictamen_evaluador=(
+            "Conclusión de la auditoría cuadro a cuadro: La inspección visual y cinemática valida de forma concluyente la asignación del "
+            "Estadio Maduro (80% de madurez motriz). Se constata un patrón preparatorio maduro (108°), extensión potente en el despegue (162°) "
+            "y parábola aérea simétrica. El Fotograma #7 aporta la prueba fehaciente de la rigidez de aterrizaje (142°), permitiendo vincular "
+            "el diagnóstico cuantitativo del software con la prescripción pedagógica del Anexo E.2 sin sesgos de observación humana."
+        ),
     )
     
     path_out = os.path.join(OUTPUT_DIR, 'Anexo_E1_Modelo_Real_Informe_Biomecanico.docx')

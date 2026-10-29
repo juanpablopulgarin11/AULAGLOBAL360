@@ -1,7 +1,7 @@
 """Documentos Word a partir de los modelos."""
 from __future__ import annotations
 
-from typing import Any, Mapping, Optional, Tuple
+from typing import Any, Iterable, Mapping, Optional, Tuple
 
 from apps.evaluaciones.models import Evaluacion
 from apps.planeacion.models import UnidadDidactica

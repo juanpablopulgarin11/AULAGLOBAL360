@@ -10,7 +10,7 @@ from apps.evaluaciones.models import Evaluacion, EvaluacionGrupal
 from apps.evaluaciones.servicios import diagnosticar_y_guardar
 from apps.planeacion.servicios import preferencias, unidad_para_evaluacion, unidad_para_grupo
 from apps.reportes.servicios import documento_de_unidad, reporte_de_evaluacion
-from apps.reportes.word import nombre_archivo
+from apps.reportes.word import nombre_archivo, reporte_estudiante
 
 
 def _pose():
@@ -96,3 +96,16 @@ def test_word_de_la_unidad_refleja_ediciones(evaluacion, docente):
 
 def test_nombre_de_archivo_seguro():
     assert nombre_archivo("Reporte", "Ñandú José/../x", "Salto Horizontal") == "Reporte_Nandu_Jose_x_Salto_Horizontal.docx"
+
+
+@pytest.mark.django_db
+def test_reporte_word_dictamen_dinamico_y_parametrizado(evaluacion):
+    diag = evaluacion.como_diagnostico()
+    detalle = [{"numero": 1, "tiempo": "0.20s", "fase": "Propulsión", "hito": "Apoyo", "logrado": False,
+                "criterio_hmb": "Criterio 1", "variables": [("Rodilla", "110°")], "explicacion_evaluador": "Prueba"}]
+    doc_dinamico = _texto(reporte_estudiante(diag, fotogramas_detalle=detalle))
+    assert "Conclusión de la auditoría cuadro a cuadro (Carrera):" in doc_dinamico
+    assert "rigidez de aterrizaje (142°)" not in doc_dinamico
+
+    doc_custom = _texto(reporte_estudiante(diag, fotogramas_detalle=detalle, dictamen_evaluador="Dictamen personalizado de prueba."))
+    assert "Dictamen personalizado de prueba." in doc_custom

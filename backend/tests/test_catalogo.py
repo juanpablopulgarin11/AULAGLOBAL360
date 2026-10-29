@@ -1,10 +1,20 @@
 from io import StringIO
+from pathlib import Path
 
 import pytest
+from django.conf import settings
 from django.core.management import call_command
 
 from apps.catalogo.models import CriterioHMB, Habilidad, PlantillaSesion
 from biomecanica.reglas import REGLAS
+
+
+def test_datos_docker_sincronizados():
+    """El directorio ``backend/datos/`` copiado por el Dockerfile debe coincidir con ``docs/datos/``."""
+    datos_docker = Path(settings.BASE_DIR) / "datos"
+    datos_docs = Path(settings.REPO_DIR) / "docs" / "datos"
+    for nombre in ("plantillas_progresion.json", "bateria_hmb_reglas.json"):
+        assert (datos_docker / nombre).read_text(encoding="utf-8") == (datos_docs / nombre).read_text(encoding="utf-8"), nombre
 
 
 @pytest.mark.django_db
