@@ -492,7 +492,27 @@ const CONSTRUCTORES = {
     balon(e) {
         const g = new THREE.Group();
         const y = e.y ?? 0.11;
-        const bola = malla(new THREE.SphereGeometry(0.11, 32, 20), material(0xFFFFFF, { roughness: 0.42, map: texBalon(color(e.color, COLORES.rojo)) }));
+        let bola;
+        if (e.papel) {
+            // pelota de papel periódico arrugado con dos vueltas de cinta (sustituto del balón)
+            const geo = new THREE.IcosahedronGeometry(0.1, 2);
+            const pos = geo.attributes.position;
+            const r = azar(Math.round(Math.abs(e.x * 97 + e.z * 31)) + 5);
+            for (let i = 0; i < pos.count; i++) {
+                const v = new THREE.Vector3().fromBufferAttribute(pos, i);
+                v.multiplyScalar(0.9 + r() * 0.18);
+                pos.setXYZ(i, v.x, v.y, v.z);
+            }
+            geo.computeVertexNormals();
+            bola = malla(geo, material(0xE6E1D3, { roughness: 0.95, flatShading: true }));
+            for (const giro of [0, Math.PI / 2]) {
+                const cinta = malla(new THREE.TorusGeometry(0.1, 0.012, 6, 24), material(0xC9B98F, { roughness: 0.6 }), false);
+                cinta.rotation.set(Math.PI / 2, giro, 0);
+                bola.add(cinta);
+            }
+        } else {
+            bola = malla(new THREE.SphereGeometry(0.11, 32, 20), material(0xFFFFFF, { roughness: 0.42, map: texBalon(color(e.color, COLORES.rojo)) }));
+        }
         bola.position.set(e.x, y, e.z);
         bola.rotation.set(0.4, e.x * 3, 0.2);
         g.add(bola);

@@ -16,6 +16,8 @@ import re
 import unicodedata
 from typing import Any, Callable, Dict, Iterable, List, Optional, Sequence, Tuple
 
+from .models import MATERIALES as CONFIGURABLES
+
 NUM = r"\d+(?:[.,]\d+)?"
 PALABRAS = {"dos": 2, "tres": 3, "cuatro": 4, "cinco": 5, "seis": 6, "siete": 7, "ocho": 8, "nueve": 9,
             "diez": 10, "once": 11, "doce": 12}
@@ -23,25 +25,26 @@ MATERIALES_BASE = ["Conos", "Aros", "Cuerdas", "Balones", "Colchonetas"]
 COLORES_FILA = ["azul", "rojo", "verde", "amarillo", "morado", "naranja", "rosa", "celeste"]
 SEPARACION_FILA = 0.8
 
-# Elemento de la escena → material que el docente debe alistar (unidades por elemento)
+# Elemento de la escena → material que el docente debe alistar (unidades por elemento). Los nombres
+# coinciden con los de «Configurar clase» (``planeacion.models.MATERIALES``) cuando son configurables.
 MATERIAL_DE = {"cono": ("Conos", 1), "castillo": ("Conos", 6), "aro": ("Aros", 1), "cuerda": ("Cuerdas", 1),
-               "balon": ("Balones", 1), "colchoneta": ("Colchonetas", 1), "valla": ("Mini-vallas u obstáculos bajos", 1),
-               "poste": ("Postes o conos altos", 1), "diana": ("Dianas", 1), "cinta": ("Cinta elástica o lana", 1),
-               "banco": ("Bancos suecos o tablones", 1), "porteria": ("Mini-porterías", 1),
-               "platillo": ("Platillos (conos planos)", 1), "bolo": ("Bolos", 1)}
+               "balon": ("Balones", 1), "colchoneta": ("Colchonetas", 1), "valla": ("Vallas bajas", 1),
+               "poste": ("Picas o postes", 1), "diana": ("Dianas", 1), "cinta": ("Cinta elástica o lana", 1),
+               "banco": ("Bancos suecos", 1), "porteria": ("Mini-porterías", 1),
+               "platillo": ("Platillos", 1), "bolo": ("Bolos", 1)}
 SUSTITUTOS = {
     "Conos": "botellas plásticas con un poco de arena",
     "Aros": "círculos dibujados con tiza",
     "Cuerdas": "líneas de tiza o cinta de enmascarar",
     "Balones": "pelotas de papel periódico y cinta",
     "Colchonetas": "zona de césped blando o colchonetas viejas dobladas",
-    "Mini-vallas u obstáculos bajos": "una cuerda apoyada sobre dos conos o botellas acostadas",
-    "Postes o conos altos": "sillas o palos de escoba sobre un cono",
+    "Vallas bajas": "una cuerda apoyada sobre dos conos o botellas acostadas",
+    "Picas o postes": "sillas o palos de escoba sobre un cono",
     "Dianas": "círculos de papel de colores pegados con cinta",
     "Cinta elástica o lana": "una cuerda o lana amarrada entre dos postes",
-    "Bancos suecos o tablones": "una línea doble de tiza de 20 cm de ancho o un tablón firme sobre el piso",
+    "Bancos suecos": "una línea doble de tiza de 20 cm de ancho o un tablón firme sobre el piso",
     "Mini-porterías": "dos conos o dos maletas separados 1,5 m",
-    "Platillos (conos planos)": "tapas de cartón o círculos de tiza",
+    "Platillos": "tapas de cartón o círculos de tiza",
     "Bolos": "botellas plásticas con un poco de agua o arena",
 }
 
@@ -278,7 +281,9 @@ class Escena:
         cuenta: Dict[str, int] = {}
         metros_linea = 0.0
         for e in self.elementos:
-            if e["tipo"] in MATERIAL_DE:
+            if e["tipo"] == "balon" and e.get("papel"):
+                cuenta["Pelotas de papel periódico"] = cuenta.get("Pelotas de papel periódico", 0) + 1
+            elif e["tipo"] in MATERIAL_DE:
                 nombre, unidades = MATERIAL_DE[e["tipo"]]
                 cuenta[nombre] = cuenta.get(nombre, 0) + unidades
             if e["tipo"] == "cinta":
@@ -290,8 +295,8 @@ class Escena:
         salida = []
         for nombre, cantidad in cuenta.items():
             item = {"nombre": nombre, "cantidad": cantidad}
-            base = nombre in MATERIALES_BASE
-            if (base and elegidos and _norm(nombre) not in elegidos) or not base:
+            base = nombre in CONFIGURABLES
+            if (base and elegidos and _norm(nombre) not in elegidos) or (not base and nombre in SUSTITUTOS):
                 item["sustituto"] = SUSTITUTOS.get(nombre, "")
                 item["elegido"] = False if base else None
             salida.append(item)
@@ -444,6 +449,10 @@ def _carriles(esc: Escena, t: str, o: str, ctx: Dict[str, Any]) -> None:
         esc.cota(pc, (centros[0] - w / 2 - 0.6, 0, zl), (centros[0] - w / 2 - 0.6, 0, zl - distancia_castillo))
         _docente_costado(esc, zl - distancia_castillo / 2, "Párate al costado, a la altura de los castillos: ves los "
                                                            "lanzamientos y evitas que alguien cruce mientras se lanza.")
+    if ctx.get("habilidad") in MANIPULATIVAS and not (lanz or castillo):
+        pb = esc.paso("Deja un balón en la salida de cada carril.")
+        for cx in centros:
+            esc.add("balon", pb, x=cx + 0.35, z=z0 + 0.3, color="blanco" if ctx["habilidad"] == "Patear" else "amarillo")
     if relevos:
         esc.organizar = "equipos en hilera detrás de la salida"
     if esc.docente is None:
@@ -458,12 +467,17 @@ def _slalom(esc: Escena, t: str, o: str, ctx: Dict[str, Any]) -> None:
     largo = sep * (postes - 1) + 3
     p = esc.paso(f"Arma {n} recorridos de slalom paralelos separados 3 m, cada uno de {_m(largo)}.")
     centros, z0, z1 = _pistas(esc, p, n, 3.0, largo, llegada="Llegada")
-    pp = esc.paso(f"En cada recorrido pon {postes} postes en zigzag cada {_m(sep)} a lo largo, alternando "
-                  f"60 cm a la izquierda y a la derecha del centro.")
+    # postes altos solo si el texto los pide; para marchar o conducir un balón bastan los conos
+    con_postes = "poste" in t
+    pp = esc.paso(f"En cada recorrido pon {postes} {'postes' if con_postes else 'conos'} en zigzag cada {_m(sep)} a lo "
+                  f"largo, alternando 60 cm a la izquierda y a la derecha del centro.")
     for cx in centros:
         for k in range(postes):
             z = z0 - 1.5 - k * sep
-            esc.add("poste", pp, x=cx + (0.6 if k % 2 else -0.6), z=z, alto=1.0)
+            if con_postes:
+                esc.add("poste", pp, x=cx + (0.6 if k % 2 else -0.6), z=z, alto=1.0)
+            else:
+                esc.cono(pp, cx + (0.6 if k % 2 else -0.6), z, "amarillo")
     esc.cota(pp, (centros[0] - 1.4, 0, z0 - 1.5), (centros[0] - 1.4, 0, z0 - 1.5 - sep))
     esc.cota(pp, (centros[0] - 0.6, 0, z0 - 1.5 + 0.4), (centros[0] + 0.6, 0, z0 - 1.5 + 0.4))
     if "transversal" in t or "marca" in t:
@@ -472,7 +486,11 @@ def _slalom(esc: Escena, t: str, o: str, ctx: Dict[str, Any]) -> None:
             for k in range(postes):
                 z = z0 - 1.5 - k * sep
                 esc.linea(pm, [(cx - 1.1, z), (cx + 1.1, z)], "amarillo", 0.05)
-    esc.resumen = f"{n} slaloms de {postes} postes cada {_m(sep)}"
+    if _con_pelota(t):
+        pb = esc.paso("Deja un balón en la salida de cada recorrido: se conduce entre los conos sin perderlo.")
+        for cx in centros:
+            esc.add("balon", pb, x=cx + 0.35, z=z0 + 0.3, color="blanco")
+    esc.resumen = f"{n} slaloms de {postes} {'postes' if con_postes else 'conos'} cada {_m(sep)}"
     _docente_costado(esc, (z0 + z1) / 2, "Ubícate al costado, frente al tercer poste: ahí ves la mayoría de cambios "
                                          "de dirección y puedes corregir la flexión de rodillas.")
 
@@ -638,6 +656,11 @@ def _perimetral(esc: Escena, t: str, o: str, ctx: Dict[str, Any]) -> None:
                    "mira": [0.0, 1.0]}
 
 
+def _pelotas(esc: Escena, p: int, cx: float, z: float, s: float, n: int = 3) -> None:
+    for k in range(n):
+        esc.add("balon", p, x=cx + (k - (n - 1) / 2) * 0.4 * s, z=z, color=["amarillo", "rojo", "azul"][k % 3])
+
+
 def _estacion(esc: Escena, p: int, cx: float, cz: float, nombre: str, i: int, s: float) -> None:
     """Contenido de una estación de ~3 × 3 m centrada en (cx, cz); la actividad avanza hacia -z."""
     n = _norm(nombre)
@@ -661,13 +684,13 @@ def _estacion(esc: Escena, p: int, cx: float, cz: float, nombre: str, i: int, s:
     elif re.search(r"linea|sendero|cuerda floja", n):
         esc.linea(p, [(cx, z(1.4)), (cx, z(-1.4))], "blanco", 0.05)
         esc.cono(p, cx, z(-1.6), "naranja")
-    elif re.search(r"pareja|recepcion|atrape", n):
+    elif re.search(r"pareja|recepcion|atrape|rebote", n):
         esc.linea(p, [(x(-1), z(1.1)), (x(1), z(1.1))], "blanco", 0.06)
         esc.linea(p, [(x(-1), z(-1.1)), (x(1), z(-1.1))], "blanco", 0.06)
         esc.add("balon", p, x=cx, z=z(1.3), color="amarillo")
     elif re.search(r"estatua|un pie|unipodal|equilibrio", n):
         for dx, dz in ((-0.8, -0.8), (0.8, -0.8), (-0.8, 0.8), (0.8, 0.8)):
-            esc.add("colchoneta", p, x=x(dx), z=z(dz), ancho=0.9 * s, largo=0.9 * s)
+            esc.aro(p, x(dx), z(dz), "verde")
     elif re.search(r"cruz|diagonal", n):
         for dx, dz in ((0, 0), (-0.75, -0.75), (0.75, -0.75), (-0.75, 0.75), (0.75, 0.75)):
             esc.aro(p, x(dx), z(dz), "verde")
@@ -691,18 +714,22 @@ def _estacion(esc: Escena, p: int, cx: float, cz: float, nombre: str, i: int, s:
     elif re.search(r"precision|diana", n):
         esc.linea(p, [(x(-1), z(1.2)), (x(1), z(1.2))], "amarillo", 0.06)
         esc.add("diana", p, x=cx, y=1.0, z=z(-1.4), radio=0.35, soporte=True)
+        _pelotas(esc, p, cx, z(1.45), s)
     elif re.search(r"distancia", n):
         esc.linea(p, [(x(-1), z(1.3)), (x(1), z(1.3))], "blanco", 0.06)
         for k, color in enumerate(("amarillo", "naranja", "rojo")):
             esc.linea(p, [(x(-1), z(0.3 - k)), (x(1), z(0.3 - k))], color, 0.05)
+        _pelotas(esc, p, cx, z(1.55), s)
     elif re.search(r"movimiento", n):
         for k in range(3):
             esc.cono(p, x(-1.1 + k * 1.1), z(1.2), "verde")
         esc.add("diana", p, x=cx, y=1.0, z=z(-1.4), radio=0.3, soporte=True)
+        _pelotas(esc, p, cx, z(1.5), s)
     elif re.search(r"estrateg", n):
         esc.add("diana", p, x=x(-0.8), y=1.0, z=z(-1.4), radio=0.25, soporte=True)
         esc.add("diana", p, x=x(0.8), y=1.0, z=z(-1.4), radio=0.25, soporte=True)
         esc.cono(p, cx, z(0), "azul")
+        _pelotas(esc, p, cx, z(1.2), s)
     elif re.search(r"tenis|espuma|saquito|voley|pelota|balon", n):
         for k in range(3):
             esc.add("balon", p, x=x(-0.4 + k * 0.4), z=z(1.2), color=["amarillo", "rojo", "azul"][k])
@@ -797,6 +824,7 @@ def _postes(esc: Escena, t: str, o: str, ctx: Dict[str, Any]) -> None:
     for x in xs:
         esc.add("diana", pd, x=x, y=2.0, z=zp, radio=0.25, pared=True)
     for x in xs:
+        esc.add("balon", pd, x=x + 0.4, z=zl + 0.5, color="rojo")
         esc.fila(x + 0.4, zl + 1.0)
     esc.resumen = f"{n} postes con marca de codo frente a la pared"
     _docente_costado(esc, zl, "Ubícate al costado de la línea de postes: de perfil se ve mejor si el codo sube "
@@ -816,12 +844,13 @@ def _serpiente(esc: Escena, t: str, o: str, ctx: Dict[str, Any]) -> None:
         esc.cono(p, cx + 1.6, zc, "azul")
         esc.linea(p, [(cx - 0.8, z0), (cx + 0.8, z0)], "blanco", 0.08)
     esc.cota(p, (centros[0] - 1.5, 0, z0 - 2.6), (centros[0] + 1.5, 0, z0 - 2.6), "~4 m de cuerda")
-    pr = esc.paso("Detrás de cada serpiente, un pasillo de salto rítmico: 4 aros seguidos cada 80 cm.")
-    for cx in centros:
-        for k in range(4):
-            esc.aro(pr, cx, z0 - 3.5 - k * 0.8)
-    esc.cota(pr, (centros[-1] + 0.6, 0, z0 - 3.5), (centros[-1] + 0.6, 0, z0 - 4.3))
-    esc.resumen = f"{n} serpientes + pasillo rítmico"
+    if re.search(r"pasillo|aro", t):
+        pr = esc.paso("Detrás de cada serpiente, un pasillo de salto rítmico: 4 aros seguidos cada 80 cm.")
+        for cx in centros:
+            for k in range(4):
+                esc.aro(pr, cx, z0 - 3.5 - k * 0.8)
+        esc.cota(pr, (centros[-1] + 0.6, 0, z0 - 3.5), (centros[-1] + 0.6, 0, z0 - 4.3))
+    esc.resumen = f"{n} serpientes" + (" + pasillo rítmico" if re.search(r"pasillo|aro", t) else "")
     _docente_costado(esc, z0 - 2, "Ubícate al costado, a la altura de las cuerdas: marcas el ritmo de la serpiente "
                                   "y ves si caen con los dos pies.")
 
@@ -851,8 +880,13 @@ def _rayuela(esc: Escena, t: str, o: str, ctx: Dict[str, Any]) -> None:
     islas = max(6, min(18, _cantidad(t, "islas") or 12))
     cols = 3
     filas = math.ceil(islas / cols)
-    p = esc.paso(f"Arma una cuadrícula de {cols} × {filas} «islas» alternando colchonetas y aros numerados del 1 al "
-                 f"{islas}; deja entre 1 y 1,5 m de «agua» entre islas.")
+    # la rayuela tradicional es de tiza; colchonetas solo si el montaje las pide (islas blandas para caer)
+    blanda = "colchoneta" if "colchoneta" in t else "tiza"
+    otra = "aro" if "aro" in t else "tiza"
+    nombres = {"colchoneta": "colchonetas", "aro": "aros numerados", "tiza": "casillas de tiza de 1 m"}
+    p = esc.paso(f"Arma una cuadrícula de {cols} × {filas} «islas» "
+                 + (f"alternando {nombres[blanda]} y {nombres[otra]}" if blanda != otra else f"con {nombres[blanda]}")
+                 + f" numeradas del 1 al {islas}; deja entre 1 y 1,5 m de «agua» entre islas.")
     alto = filas * 2.6
     esc.ajustar(10.0, alto + 3.6)
     arriba = alto / 2 - 1.2
@@ -864,11 +898,16 @@ def _rayuela(esc: Escena, t: str, o: str, ctx: Dict[str, Any]) -> None:
             x = (c - 1) * 2.6
             z = arriba - r * 2.6 - (0.3 if c == 1 else 0)
             k += 1
-            if (r + c) % 2 == 0:
+            tipo = blanda if (r + c) % 2 == 0 else otra
+            if tipo == "colchoneta":
                 esc.add("colchoneta", p, x=x, z=z, ancho=1.2, largo=1.2)
                 esc.etiqueta(p, x, z, str(k), y=0.3)
-            else:
+            elif tipo == "aro":
                 esc.aro(p, x, z, "amarillo", str(k))
+            else:
+                esc.linea(p, [(x - 0.5, z - 0.5), (x + 0.5, z - 0.5), (x + 0.5, z + 0.5), (x - 0.5, z + 0.5), (x - 0.5, z - 0.5)],
+                          "blanco", 0.06)
+                esc.etiqueta(p, x, z, str(k), y=0.15)
     esc.cota(p, (-2.6 + 0.6, 0.1, arriba), (-0.6, 0.1, arriba - 0.3), None)
     esc.cota(p, (-2.6, 0.1, arriba - 0.6), (-2.6, 0.1, arriba - 2.6 + 0.6))
     pa = esc.paso("Pinta de azul el «agua» y marca la orilla de salida con una línea; la isla final con conos verdes.")
@@ -924,15 +963,17 @@ def _hileras(esc: Escena, t: str, o: str, ctx: Dict[str, Any]) -> None:
     for cx in centros:
         for k in range(aros):
             esc.aro(p, cx, z0 - 0.35 - k * 0.65, ["amarillo", "rojo"][k % 2])
-    pv = esc.paso(f"Al final de cada hilera, deja 1,5 m y pon 4 mini-vallas de espuma separadas {_m(sep_vallas)}.")
-    for cx in centros:
+    esc.cota(p, (centros[0] - 0.6, 0, z0 - 0.05), (centros[0] - 0.6, 0, z0 - 0.05 - aros * 0.65))
+    if "valla" in t:
+        pv = esc.paso(f"Al final de cada hilera, deja 1,5 m y pon 4 mini-vallas de espuma separadas {_m(sep_vallas)}.")
+        for cx in centros:
+            zv = z0 - aros * 0.65 - 1.5
+            for k in range(4):
+                esc.add("valla", pv, x=cx, z=zv - k * sep_vallas, ancho=0.6, alto=0.2)
         zv = z0 - aros * 0.65 - 1.5
-        for k in range(4):
-            esc.add("valla", pv, x=cx, z=zv - k * sep_vallas, ancho=0.6, alto=0.2)
-    zv = z0 - aros * 0.65 - 1.5
-    esc.cota(pv, (centros[0] - 0.6, 0.2, zv), (centros[0] - 0.6, 0.2, zv - sep_vallas))
-    esc.cota(pv, (centros[0] + 0.6, 0, z0 - aros * 0.65), (centros[0] + 0.6, 0, zv))
-    esc.resumen = f"{n} hileras de {aros} aros + vallas a {_m(sep_vallas)}"
+        esc.cota(pv, (centros[0] - 0.6, 0.2, zv), (centros[0] - 0.6, 0.2, zv - sep_vallas))
+        esc.cota(pv, (centros[0] + 0.6, 0, z0 - aros * 0.65), (centros[0] + 0.6, 0, zv))
+    esc.resumen = f"{n} hileras de {aros} aros" + (f" + vallas a {_m(sep_vallas)}" if "valla" in t else "")
     _docente_costado(esc, z0 - aros * 0.65, "Ubícate al costado, entre aros y vallas: escuchas si caen suave y "
                                             "ves el rebote al siguiente aro.")
 
@@ -1000,6 +1041,7 @@ def _huellas(esc: Escena, t: str, o: str, ctx: Dict[str, Any]) -> None:
         esc.cono(pd, x, z0 - 5, "azul")
     esc.cota(pd, (xs[-1] + 0.8, 0, z0), (xs[-1] + 0.8, 0, z0 - 5))
     for x in xs:
+        esc.add("balon", pd, x=x + 0.45, z=z0 + 0.4, color="amarillo")
         esc.fila(x, z0 + 1.2)
     esc.resumen = f"{n} puestos con huellas contralaterales"
     _docente_costado(esc, z0, "Ubícate al costado de la línea de huellas: así ves de perfil el paso con el pie "
@@ -1068,6 +1110,8 @@ def _refugios(esc: Escena, t: str, o: str, ctx: Dict[str, Any]) -> None:
         esc.zona(pr, x * (ancho / 2 - 3), z * (largo / 2 - 3), 2, 2, "verde", "Refugio")
     esc.zona(pr, 0, 0, 2, 2, "verde", "Refugio")
     esc.cota(pr, (-ancho / 2, 0, -largo / 2 + 3), (-ancho / 2 + 2, 0, -largo / 2 + 3))
+    if _con_pelota(t):
+        esc.add("balon", pr, x=1.6, z=0.0, color="amarillo")
     esc.disperso = True
     esc.organizar = "cazadores con peto rojo y guardianes en azul"
     esc.resumen = f"Espacio de {_m(ancho)} × {_m(largo)} con 5 refugios"
@@ -1109,6 +1153,7 @@ def _ataque(esc: Escena, t: str, o: str, ctx: Dict[str, Any]) -> None:
         esc.zona(pz, cx, cz - l / 4, w - 0.2, l / 2 - 0.1, "rojo", "Defensa")
         esc.add("diana", pz, x=cx - 1.2, y=1.0, z=cz - l / 2 + 0.3, radio=0.3, soporte=True)
         esc.add("diana", pz, x=cx + 1.2, y=1.0, z=cz - l / 2 + 0.3, radio=0.3, soporte=True)
+        esc.add("balon", pz, x=cx, z=cz + l / 4 + 1.0, color="amarillo")
         esc.fila(cx + w / 2 + 0.6, cz + l / 2, dx=0, dz=-1)
     esc.organizar = "tríos (2 atacantes + 1 defensor) por mini-cancha y el resto esperando turno al costado"
     esc.resumen = f"{n} mini-canchas de ataque y defensa"
@@ -1193,10 +1238,7 @@ def _bancos(esc: Escena, t: str, o: str, ctx: Dict[str, Any]) -> None:
         pc = esc.paso("Al final de cada recorrido pon una colchoneta para bajar con un salto controlado.")
         for cx in centros:
             esc.add("colchoneta", pc, x=cx, z=z0 - 0.5 - largo - 1.1, ancho=1.2, largo=1.6)
-    pa = esc.paso("Pon un ayudante a cada lado del primer banco (dar la mano solo si alguien la pide).")
-    for cx in centros:
-        esc.cono(pa, cx - 0.7, z0 - 1.0, "azul")
-        esc.cono(pa, cx + 0.7, z0 - 1.0, "azul")
+    esc.avisos.append("Ubica un compañero ayudante a cada lado del primer banco: da la mano solo si se la piden.")
     esc.resumen = f"{n} recorrido{'s' if n > 1 else ''} de {bancos} bancos suecos"
     _docente_costado(esc, z0 - 0.5 - largo / 2, "Ubícate al costado, a mitad de los bancos y a un paso de ellos: "
                                                 "puedes dar apoyo y ver si la mirada va al frente.")
@@ -1601,6 +1643,8 @@ def _objetos(esc: Escena, t: str, o: str, ctx: Dict[str, Any]) -> None:
     esc.cota(pl, (-2.4, 0, z0), (-2.4, 0, z0 - 1))
     for k in range(filas):
         esc.fila(-1.0 + 2.0 * k if filas > 1 else 0.0, z0 + 0.7)
+        if tipo != "balon" and _con_pelota(t):
+            esc.add("balon", pl, x=-1.0 + 2.0 * k + 0.4 if filas > 1 else 0.4, z=z0 + 0.3, color="amarillo")
     if esc.estudiantes / filas > 8:
         esc.avisos.append(f"Con {esc.estudiantes} estudiantes y un solo montaje, cada uno espera mucho su turno: "
                           f"considera armar 3 o 4 montajes iguales separados 3 m.")
@@ -1684,12 +1728,144 @@ RECETAS: List[Tuple[str, Callable[[str], bool], Receta]] = [
 ]
 
 
+# ---------------------------------------------------------------- coherencia con la habilidad
+
+# Objetos que solo tienen sentido en ciertas pruebas (Batería HMB y libros de Data). Fuera de ellas
+# se quitan, salvo que el texto del montaje los pida: no hay balones para marchar ni colchonetas
+# para correr. Las colchonetas quedan en los saltos (zonas de caída) y en el equilibrio estático
+# (la prueba 15 se hace descalzo sobre colchoneta); los bancos suecos en el equilibrio (Pérez Feito).
+MANIPULATIVAS = {"Lanzamiento Sobre Hombro", "Recepción y Atrape", "Patear"}
+PROPIOS_DE = {
+    "balon": ({"Lanzamiento Sobre Hombro", "Recepción y Atrape", "Patear"}, r"balon|pelota|pase|lanz|atrap|pate"),
+    "colchoneta": ({"Salto Horizontal", "Salto Unipodal", "Equilibrio Estático Unipodal"}, r"colchoneta"),
+    "diana": ({"Lanzamiento Sobre Hombro", "Patear"}, r"diana|tarjeta|blanco|objetivo|mural"),
+    "castillo": ({"Lanzamiento Sobre Hombro", "Patear"}, r"castillo"),
+    "porteria": ({"Patear"}, r"porteri|\barco"),
+    "bolo": ({"Patear"}, r"\bbolos?\b"),
+    "banco": ({"Equilibrio Dinámico", "Equilibrio Estático Unipodal"}, r"\bbancos?\b"),
+    "valla": ({"Carrera", "Salto Horizontal", "Salto Unipodal"}, r"valla|obstaculo"),
+    "poste": ({"Carrera", "Lanzamiento Sobre Hombro"}, r"poste|pica|conos altos"),
+    "cinta": ({"Salto Horizontal"}, r"cinta|goma|\bred\b"),
+}
+
+
+def _coherencia(esc: Escena, t: str, habilidad: Optional[str]) -> None:
+    if not habilidad:
+        return
+
+    def propio(e: Dict[str, Any]) -> bool:
+        regla = PROPIOS_DE.get(e["tipo"])
+        return not regla or habilidad in regla[0] or bool(re.search(regla[1], t))
+
+    esc.elementos = [e for e in esc.elementos if propio(e)]
+
+
+# ---------------------------------------------------------------- materiales del docente
+
+def _circulo(x: float, z: float, r: float, n: int = 20) -> List[Tuple[float, float]]:
+    return [(x + r * math.cos(2 * math.pi * k / n), z + r * math.sin(2 * math.pi * k / n)) for k in range(n + 1)]
+
+
+def adaptar_a_materiales(esc: Escena, elegidos: Sequence[str]) -> None:
+    """Usa solo lo que el docente marcó en «Configurar clase»; lo demás se reemplaza por su sustituto
+    real (tiza, botellas, césped, pelotas de papel), en la escena y en los pasos. Sin configuración
+    (lista vacía) la escena queda como la pide el texto."""
+    if not elegidos:
+        return
+    tiene = {_norm(m) for m in elegidos}
+    hay = lambda m: _norm(m) in tiene  # noqa: E731
+    marca = "platillo" if hay("Platillos") else "cono" if hay("Conos") else None
+    usados: Dict[str, str] = {}
+    salida: List[Dict[str, Any]] = []
+
+    def punto(e: Dict[str, Any], x: float, z: float, color: str = "naranja") -> None:
+        """Un cono (o platillo) si los hay; si no, una cruz de tiza."""
+        if marca:
+            salida.append({"tipo": marca, "paso": e["paso"], "x": x, "z": z, "color": color})
+        else:
+            for dx, dz in ((0.15, 0.15), (0.15, -0.15)):
+                salida.append({"tipo": "linea", "paso": e["paso"], "puntos": [[x - dx, z - dz], [x + dx, z + dz]],
+                               "color": "blanco", "grosor": 0.05})
+
+    for e in esc.elementos:
+        material = MATERIAL_DE.get(e["tipo"], ("",))[0]
+        if material not in CONFIGURABLES or hay(material):
+            salida.append(e)
+            continue
+        tipo, p = e["tipo"], e["paso"]
+        if tipo in ("cono", "platillo", "poste"):
+            punto(e, e["x"], e["z"], e.get("color", "naranja"))
+            usados[material] = "conos" if marca == "cono" else "platillos" if marca else "cruces de tiza"
+        elif tipo == "castillo":
+            for dx in (-0.12, 0.0, 0.12):
+                punto(e, e["x"] + dx, e["z"])
+            usados[material] = "conos sueltos" if marca else "cruces de tiza"
+        elif tipo == "aro":
+            if e.get("pared"):
+                salida.append({**e, "tipo": "diana", "radio": 0.3})
+                usados[material] = "círculos de papel pegados en la pared"
+            else:
+                salida.append({"tipo": "linea", "paso": p, "puntos": [list(q) for q in _circulo(e["x"], e["z"], 0.3)],
+                               "color": e.get("color", "amarillo"), "grosor": 0.05})
+                if e.get("etiqueta"):
+                    salida.append({"tipo": "etiqueta", "paso": p, "x": e["x"], "z": e["z"], "y": 0.15, "texto": e["etiqueta"]})
+                usados[material] = "círculos de tiza"
+        elif tipo == "cuerda":
+            salida.append({"tipo": "linea", "paso": p, "puntos": e["puntos"], "color": e.get("color", "amarillo"), "grosor": 0.06})
+            usados[material] = "líneas de tiza"
+        elif tipo == "balon":
+            salida.append({**e, "papel": True})
+            usados[material] = "pelotas de papel periódico y cinta"
+        elif tipo == "colchoneta":
+            salida.append({"tipo": "zona", "paso": p, "x": e["x"], "z": e["z"], "ancho": e["ancho"], "largo": e["largo"],
+                           "color": "verde", "etiqueta": "Zona blanda"})
+            usados[material] = "zonas de césped o de piso blando"
+        elif tipo == "banco":
+            largo, rot = e.get("largo", 3.0), e.get("rot", 0.0)
+            ux, uz = math.sin(rot), math.cos(rot)          # rot 0: el banco va a lo largo de z
+            for lado in (-0.1, 0.1):
+                ox, oz = uz * lado, -ux * lado
+                salida.append({"tipo": "linea", "paso": p, "grosor": 0.04, "color": "blanco", "puntos": [
+                    [e["x"] + ox - ux * largo / 2, e["z"] + oz - uz * largo / 2],
+                    [e["x"] + ox + ux * largo / 2, e["z"] + oz + uz * largo / 2]]})
+            usados[material] = "una línea doble de tiza de 20 cm de ancho"
+        elif tipo == "valla":
+            a = e.get("ancho", 0.6) / 2
+            if hay("Cuerdas") and marca:
+                punto(e, e["x"] - a, e["z"])
+                punto(e, e["x"] + a, e["z"])
+                salida.append({"tipo": "cuerda", "paso": p, "puntos": [[e["x"] - a, e["z"]], [e["x"] + a, e["z"]]],
+                               "color": "rojo", "ondulada": False})
+                usados[material] = "una cuerda en el piso entre dos " + ("conos" if marca == "cono" else "platillos")
+            else:
+                salida.append({"tipo": "linea", "paso": p, "puntos": [[e["x"] - a, e["z"]], [e["x"] + a, e["z"]]],
+                               "color": "rojo", "grosor": 0.08})
+                usados[material] = "una línea roja de tiza"
+        elif tipo == "porteria":
+            a = e.get("ancho", 1.5) / 2
+            punto(e, e["x"] - a, e["z"], "azul")
+            punto(e, e["x"] + a, e["z"], "azul")
+            usados[material] = "dos " + ("conos" if marca == "cono" else "platillos" if marca else "marcas de tiza") + " separados 1,5 m"
+        else:
+            salida.append(e)
+    esc.elementos = salida
+    for material, como in usados.items():
+        esc.avisos.append(f"No marcaste {material.lower()} en «Configurar clase»: el montaje usa {como}.")
+        palabra = _norm(material.split()[0])[:-1]            # «colchonetas» → «colchoneta»
+        for i, texto in enumerate(esc.pasos):
+            if palabra in _norm(texto) and f"(Sin {material.lower()}" not in texto:
+                esc.pasos[i] = f"{texto} (Sin {material.lower()}: {como}.)"
+
+
 def construir_escena(texto: str, *, estudiantes: int = 24, materiales: Sequence[str] = (),
-                     minutos_central: Optional[int] = None) -> Dict[str, Any]:
-    """Escena 3D (dict serializable a JSON) para el texto de montaje de una sesión."""
+                     minutos_central: Optional[int] = None, habilidad: Optional[str] = None) -> Dict[str, Any]:
+    """Escena 3D (dict serializable a JSON) para el texto de montaje de una sesión.
+
+    ``habilidad`` quita los objetos ajenos a la prueba; ``materiales`` (los de «Configurar clase»)
+    reemplaza lo que el docente no tiene por su sustituto."""
     t = _norm(texto)
     esc = Escena(max(6, min(45, estudiantes)))
-    ctx = {"materiales": list(materiales), "minutos_central": minutos_central}
+    ctx = {"materiales": list(materiales), "minutos_central": minutos_central, "habilidad": habilidad}
     for nombre, aplica, receta in RECETAS:
         if aplica(t):
             esc.receta = nombre
@@ -1698,4 +1874,6 @@ def construir_escena(texto: str, *, estudiantes: int = 24, materiales: Sequence[
     else:
         esc.receta = "generica"
         _area_generica(esc, t, texto or "", ctx)
+    _coherencia(esc, t, habilidad)
+    adaptar_a_materiales(esc, materiales)
     return esc.como_dict(materiales, minutos_central)

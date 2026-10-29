@@ -18,7 +18,10 @@ class Metodologia(models.TextChoices):
 
 DURACIONES = [(m, f"{m} min") for m in (45, 50, 55, 60, 90)]
 TOTAL_CLASES = [(n, f"{n} clase{'s' if n > 1 else ''}") for n in (1, 2, 3, 4, 6, 8, 10, 12)]
-MATERIALES = ["Conos", "Aros", "Cuerdas", "Balones", "Colchonetas"]
+# Lo que el docente marca en «Configurar clase». El montaje 3D solo usa lo marcado y reemplaza el
+# resto por su sustituto (tiza, botellas, césped…): ver ``montaje.adaptar_a_materiales``.
+MATERIALES = ["Conos", "Aros", "Cuerdas", "Balones", "Colchonetas",
+              "Platillos", "Bancos suecos", "Vallas bajas", "Picas o postes", "Mini-porterías"]
 
 
 class UnidadDidactica(models.Model):

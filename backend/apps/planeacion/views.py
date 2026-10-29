@@ -81,7 +81,7 @@ def _estudiantes_del_salon(ud: UnidadDidactica) -> int:
 def _escena_de(ud: UnidadDidactica, sesion: Sesion, estudiantes: int) -> Dict[str, Any]:
     central = (ud.contenido.get("duraciones", {}).get("central") or "").split(" ")[0]
     return construir_escena(sesion.distribucion, estudiantes=estudiantes, materiales=ud.materiales,
-                            minutos_central=int(central) if central.isdigit() else None)
+                            minutos_central=int(central) if central.isdigit() else None, habilidad=ud.habilidad.nombre)
 
 
 @login_required
