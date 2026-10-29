@@ -82,6 +82,37 @@ Cada sesión nueva tiene un montaje distinto dentro de su habilidad: no se repit
 
 **Compatibilidad:** las escenas de las 36 sesiones de la web no cambian, salvo una frase neutra en los cuadrantes de Lanzamiento.
 
+## 4.1 Objetos coherentes con la prueba y con el material del docente
+
+**Primer filtro, la habilidad** (`montaje.PROPIOS_DE`):
+- Cada objeto solo aparece en las pruebas donde tiene función, salvo que el texto del montaje lo pida.
+- No hay balones para marchar o correr, ni colchonetas en carrera, marcha o equilibrio dinámico.
+- Las colchonetas quedan en los saltos (zonas de caída) y en el equilibrio estático, porque la prueba 15 se hace descalzo sobre colchoneta.
+- Bancos suecos solo en equilibrio (Pérez Feito); porterías y bolos solo en pateo; dianas en lanzamiento y pateo.
+
+**Lo que no debe faltar:**
+- Las pruebas de manipulación (lanzar, atrapar, patear) siempre tienen su balón en cada carril, recorrido, mini-cancha o estación.
+- Las recetas ya no agregan por defecto vallas tras las hileras de aros, colchonetas en la rayuela (la tradicional es de tiza), postes altos en un slalom de conos ni conos junto a los bancos.
+
+**Segundo filtro, el material marcado** en «Configurar clase» (`adaptar_a_materiales`):
+- Los materiales configurables son: conos, aros, cuerdas, balones, colchonetas, platillos, bancos suecos, vallas bajas, picas o postes y mini-porterías.
+- Lo que el docente no marcó se dibuja con su sustituto real:
+
+| No marcado | Se dibuja |
+|---|---|
+| Aros | Círculos de tiza |
+| Cuerdas | Líneas de tiza |
+| Balones | Pelotas de papel periódico |
+| Colchonetas | Zona de césped o piso blando |
+| Bancos suecos | Línea doble de tiza de 20 cm |
+| Conos, postes o porterías | Platillos o conos si los hay; si no, cruces de tiza |
+| Vallas | Una cuerda entre dos conos, o una línea roja |
+
+- El montaje avisa cada sustitución, y los pasos que nombran el material llevan la nota.
+- La lista de material solo pide lo que el docente tiene, más los metros de tiza.
+
+**Sin configuración** (lista vacía), el montaje queda como lo describe el texto.
+
 ## 5. Desplegar
 
 ```bash

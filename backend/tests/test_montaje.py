@@ -58,10 +58,17 @@ def test_texto_editado_por_el_docente():
     assert e["receta"] == "generica" and e["avisos"]
 
 
-def test_material_no_elegido_sugiere_sustituto():
+def test_material_no_elegido_se_reemplaza_en_la_escena():
     e = construir_escena("Hileras de 6 aros consecutivos y mini-vallas de espuma distribuidas a 80 cm.", materiales=["Conos"])
-    aros = next(m for m in e["materiales"] if m["nombre"] == "Aros")
-    assert aros["elegido"] is False and "tiza" in aros["sustituto"]
+    tipos = {x["tipo"] for x in e["elementos"]}
+    assert not tipos & {"aro", "valla"}                                  # sin aros ni vallas: tiza y conos
+    assert any("aros" in a and "círculos de tiza" in a for a in e["avisos"])
+    assert any("vallas bajas" in a for a in e["avisos"])
+    assert not any(m["nombre"] in ("Aros", "Vallas bajas") for m in e["materiales"])
+    assert any(m["nombre"] == "Tiza o cinta de enmascarar" for m in e["materiales"])
+    # sin configuración el montaje queda como lo pide el texto
+    sin = construir_escena("Hileras de 6 aros consecutivos y mini-vallas de espuma distribuidas a 80 cm.")
+    assert {"aro", "valla"} <= {x["tipo"] for x in sin["elementos"]}
 
 
 @pytest.mark.django_db
