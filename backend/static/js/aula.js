@@ -368,4 +368,22 @@
             if (b) { b.disabled = true; b.textContent = b.dataset.enviando || 'Procesando…'; }
         });
     });
+
+    // Mostrar / ocultar contraseña en campos de clave (login, registro, cambio de clave)
+    $$('[data-ver-clave]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var contenedor = btn.closest('.campo-password');
+            var input = contenedor && contenedor.querySelector('input');
+            if (!input) return;
+            var mostrar = input.type === 'password';
+            input.type = mostrar ? 'text' : 'password';
+            btn.setAttribute('aria-label', mostrar ? 'Ocultar contraseña' : 'Mostrar contraseña');
+            btn.setAttribute('aria-pressed', mostrar ? 'true' : 'false');
+            var ojo = btn.querySelector('.icono-ojo');
+            var ojoOculto = btn.querySelector('.icono-ojo-oculto');
+            if (ojo) ojo.hidden = mostrar;
+            if (ojoOculto) ojoOculto.hidden = !mostrar;
+            input.focus();
+        });
+    });
 })();

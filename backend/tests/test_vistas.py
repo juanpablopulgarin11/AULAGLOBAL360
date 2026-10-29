@@ -44,7 +44,11 @@ def evaluar(cliente, tmp_path, django_capture_on_commit_callbacks, **datos):
 def test_paginas_publicas_y_login_requerido(client):
     assert client.get(reverse("inicio")).status_code == 200
     assert "9 Habilidades" in client.get(reverse("inicio")).content.decode()
+    login_html = client.get(reverse("ingresar")).content.decode()
     assert client.get(reverse("ingresar")).status_code == 200
+    assert 'data-ver-clave' in login_html and 'aula.js' in login_html
+    registro_html = client.get(reverse("registro")).content.decode()
+    assert registro_html.count('data-ver-clave') == 2
     for nombre in ("panel", "evaluar", "evaluaciones", "grupos", "unidades"):
         r = client.get(reverse(nombre))
         assert r.status_code == 302 and "/cuentas/ingresar/" in r["Location"], nombre
