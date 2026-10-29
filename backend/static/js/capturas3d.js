@@ -160,13 +160,28 @@ export class Fotografo {
         return aBlob(this.lienzo);
     }
 
-    /** Fotos de una sesión: fotos según el modo ('ambas', 'completo', 'pasos').
-     * Devuelve una lista de { k, blob } donde k=0 es el montaje completo y k>=1 es el paso k.
+    /** Fotos de una sesión: el modelado de las partes inicial y final y, según el modo ('ambas',
+     * 'completo', 'pasos'), el montaje central. Devuelve una lista de { k, blob }: k='inicial' o
+     * 'final', k=0 el montaje completo, k='planta' la vista de planta y k>=1 el paso k.
      */
-    async sesion({ numero, escena: datos }, modo = 'ambas', onAvance = null) {
+    async sesion({ numero, escena: datos, partes = {} }, modo = 'ambas', onAvance = null) {
+        const fotos = [];
+        // la parte inicial y la final son otro juego u otra tarea: cada una tiene su propio modelado
+        for (const parte of ['inicial', 'final']) {
+            if (!partes[parte]) continue;
+            if (onAvance) onAvance(`Sesión ${numero}: Modelado 3D de la parte ${parte}`);
+            const escenaParte = crearEscena(partes[parte], { renderer: this.renderer });
+            try {
+                this.encuadrar(escenaParte, '3d');
+                escenaParte.mostrarPaso(null);
+                fotos.push({ k: parte, blob: await this.foto(escenaParte, `Sesión ${numero} · Parte ${parte}`) });
+            } finally {
+                escenaParte.liberar();
+            }
+            await siguienteCuadro();
+        }
         const montaje = crearEscena(datos, { renderer: this.renderer });
         try {
-            const fotos = [];
             this.encuadrar(montaje, '3d');
 
             if (modo === 'ambas' || modo === 'completo') {

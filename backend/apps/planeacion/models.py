@@ -80,6 +80,25 @@ class Sesion(models.Model):
     def __str__(self) -> str:
         return f"Sesión {self.numero}: {self.titulo}"
 
+    def actividad_con_material(self, parte: str) -> str:
+        """Actividad de la parte (inicial, central o final) con el material de la unidad. Las sesiones
+        nuevas ya vienen adaptadas (no cambia nada); las guardadas antes del cambio se adaptan al mostrarlas."""
+        from biomecanica.materiales import adaptar_texto
+
+        return adaptar_texto(getattr(self, f"actividad_{parte}"), parte, self.unidad.materiales, self.unidad.habilidad.nombre)
+
+    @property
+    def inicial_con_material(self) -> str:
+        return self.actividad_con_material("inicial")
+
+    @property
+    def central_con_material(self) -> str:
+        return self.actividad_con_material("central")
+
+    @property
+    def final_con_material(self) -> str:
+        return self.actividad_con_material("final")
+
     @property
     def criterios_detalle(self) -> list:
         """Criterios de la batería que trabaja la sesión (``orden``, ``fase``, ``texto``, ``reforzado``)."""

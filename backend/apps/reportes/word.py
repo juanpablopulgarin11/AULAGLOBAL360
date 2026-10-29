@@ -173,6 +173,21 @@ def _foto(celda, imagen: bytes, ancho_cm: float, leyenda: Sequence[tuple]) -> No
         r.bold, r.font.size, r.font.color.rgb = negrita, Pt(8.5), RGBColor.from_string("334155")
 
 
+def _foto_al_final(celda, imagen: Optional[bytes], leyenda: Sequence[tuple], ancho_cm: float = 11.5) -> None:
+    """Foto del modelado 3D debajo del texto de una parte de la sesión."""
+    if not imagen:
+        return
+    p = celda.add_paragraph()
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p.paragraph_format.space_before = Pt(4)
+    p.add_run().add_picture(io.BytesIO(imagen), width=Cm(ancho_cm))
+    pie = celda.add_paragraph()
+    pie.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    for texto, negrita in leyenda:
+        r = pie.add_run(texto)
+        r.bold, r.font.size, r.font.color.rgb = negrita, Pt(8.5), RGBColor.from_string("334155")
+
+
 def _montaje_3d(doc: Document, numero: int, completo: Optional[bytes], pasos: Sequence[tuple],
                 planta: Optional[bytes] = None) -> None:
     """Fotos del montaje 3D de una sesión: el montaje completo (en 3D y en planta con medidas) y/o
@@ -566,13 +581,17 @@ def unidad_didactica(u: Mapping[str, Any], sesiones: Optional[Sequence[Mapping[s
             _parrafo(celda, [(s["actividad_inicial"], False, False)])
         else:
             _escribir(celda, s["actividad_inicial"])
+        fotos = montajes.get(s["numero"]) or {}
+        _foto_al_final(celda, fotos.get("inicial"), [("Modelado 3D · Parte inicial ", True), ("(organización del juego de activación)", False)])
         _subencabezado(t.cell(3, 0), f"PARTE CENTRAL ({s.get('minutos_central', '')} min)\nDesarrollo y tareas motrices")
         celda = t.cell(3, 1)
         _escribir(celda, s.get("distribucion", ""), etiqueta=f"1. Montaje ({u['formato']}):")
         _parrafo(celda, [("2. Desarrollo: ", True, False), (s["actividad_central"], False, False)])
         _parrafo(celda, [("3. Consigna clave: ", True, False), (f"“{s.get('consigna', '')}”", False, True)])
+        _foto_al_final(celda, fotos.get("completo"), [("Modelado 3D · Parte central ", True), ("(montaje completo con medidas)", False)])
         _subencabezado(t.cell(4, 0), f"PARTE FINAL ({s.get('minutos_final', '')} min)\nVuelta a la calma")
         _escribir(t.cell(4, 1), s["actividad_final"])
+        _foto_al_final(t.cell(4, 1), fotos.get("final"), [("Modelado 3D · Parte final ", True), ("(organización de la vuelta a la calma)", False)])
         _subencabezado(t.cell(5, 0), "INDICADOR DE EVALUACIÓN")
         _escribir(t.cell(5, 1), s.get("criterio_eval", ""), etiqueta="Criterio de logro:")
         fila = 6
@@ -584,10 +603,9 @@ def unidad_didactica(u: Mapping[str, Any], sesiones: Optional[Sequence[Mapping[s
         if s.get("fuente"):
             _subencabezado(t.cell(fila, 0), "REFERENTE")
             _escribir(t.cell(fila, 1), s["fuente"], tam=8.5, color="475569")
-        fotos = montajes.get(s["numero"])
-        if fotos and (fotos.get("completo") or fotos.get("pasos")):
+        if fotos.get("pasos") or fotos.get("planta"):          # el montaje completo ya va en la parte central
             _espacio(doc, 2)
-            _montaje_3d(doc, s["numero"], fotos.get("completo"), fotos.get("pasos") or [], fotos.get("planta"))
+            _montaje_3d(doc, s["numero"], None, fotos.get("pasos") or [], fotos.get("planta"))
         _espacio(doc, 4)
 
     # 4. Complementos

@@ -98,8 +98,8 @@ def unidad_como_dict(ud: UnidadDidactica) -> Dict[str, Any]:
     sesiones = [{
         "numero": s.numero, "titulo": s.titulo, "es_refuerzo": s.es_refuerzo, "error_reforzado": s.error_reforzado,
         "fase_pedagogica": s.fase_pedagogica, "objetivo": s.objetivo, "distribucion": s.distribucion,
-        "actividad_inicial": s.actividad_inicial, "actividad_central": s.actividad_central,
-        "actividad_final": s.actividad_final, "consigna": s.consigna, "criterio_eval": s.criterio_eval,
+        "actividad_inicial": s.inicial_con_material, "actividad_central": s.central_con_material,
+        "actividad_final": s.final_con_material, "consigna": s.consigna, "criterio_eval": s.criterio_eval,
         "criterios": s.criterios_detalle, "fuente": s.fuente,
         "minutos_inicial": ud.contenido.get("duraciones", {}).get("inicial", "").split(" ")[0],
         "minutos_central": ud.contenido.get("duraciones", {}).get("central", "").split(" ")[0],

@@ -40,10 +40,10 @@
     {% if s.es_refuerzo and s.error_reforzado %}<div class="aviso aviso-info">En la evaluación se identificó <em>«{{ s.error_reforzado }}»</em>. Esta sesión trabaja con énfasis prioritario esa falencia.</div>{% endif %}
     <dl>
         <dt>Objetivo</dt><dd>{{ s.objetivo }}</dd>
-        <dt>Inicial · {{ c.duraciones.inicial }}</dt><dd>{{ s.actividad_inicial }}</dd>
+        <dt>Inicial · {{ c.duraciones.inicial }}</dt><dd>{{ s.inicial_con_material }}</dd>
         <dt>Montaje</dt><dd>{{ s.distribucion }} <a href="{% url 'sesion_montaje' u.pk s.numero %}">Ver en 3D con medidas →</a></dd>
-        <dt>Central · {{ c.duraciones.central }}</dt><dd>{{ s.actividad_central }}</dd>
-        <dt>Final · {{ c.duraciones.final }}</dt><dd>{{ s.actividad_final }}</dd>
+        <dt>Central · {{ c.duraciones.central }}</dt><dd>{{ s.central_con_material }}</dd>
+        <dt>Final · {{ c.duraciones.final }}</dt><dd>{{ s.final_con_material }}</dd>
         <dt>Consigna</dt><dd><em>“{{ s.consigna }}”</em></dd>
         <dt>Indicador</dt><dd>{{ s.criterio_eval }}</dd>
         {% with crit=s.criterios_detalle %}{% if crit %}<dt>Criterios HMB</dt><dd class="criterios-sesion">{% for k in crit %}<span class="etiqueta-chip{% if k.reforzado %} chip-refuerzo{% endif %}" title="{{ k.texto }}">{{ k.orden }} · {{ k.fase }}</span>{% endfor %}</dd>{% endif %}{% endwith %}

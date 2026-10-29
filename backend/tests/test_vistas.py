@@ -109,6 +109,7 @@ def comprobar_word_con_fotos_3d(cliente, ud):
     escenas = cliente.get(reverse("unidad_escenas", args=[ud.pk])).json()["sesiones"]
     assert [s["numero"] for s in escenas] == [1, 2, 3, 4]
     assert all(s["escena"]["pasos"] and s["escena"]["elementos"] for s in escenas)
+    assert all(s["partes"][p]["pasos"] and s["partes"][p]["receta"].startswith(p) for s in escenas for p in ("inicial", "final"))
 
     ok, jpg = cv2.imencode(".jpg", np.full((75, 120, 3), 200, np.uint8))
     foto = lambda nombre: SimpleUploadedFile(nombre, jpg.tobytes(), content_type="image/jpeg")  # noqa: E731
@@ -116,16 +117,22 @@ def comprobar_word_con_fotos_3d(cliente, ud):
     datos = {f"montaje-1-{k}": foto(f"s1_{k}.jpg") for k in range(len(s1["escena"]["pasos"]) + 1)}
     datos["montaje-3-0"] = foto("s3_0.jpg")
     datos["montaje-1-planta"] = foto("s1_planta.jpg")
+    datos["montaje-1-inicial"] = foto("s1_inicial.jpg")
+    datos["montaje-1-final"] = foto("s1_final.jpg")
     datos["montaje-99-0"] = foto("sesion_inexistente.jpg")                       # se ignora
     datos["montaje-1-50"] = foto("paso_inexistente.jpg")                         # se ignora
     datos["montaje-2-0"] = SimpleUploadedFile("no_es_imagen.jpg", b"<script>", content_type="image/jpeg")  # se ignora
     r = cliente.post(reverse("unidad_docx", args=[ud.pk]), datos)
     assert r.status_code == 200 and r["Content-Type"] == DOCX
     word = Document(io.BytesIO(r.content))
-    assert len(word.inline_shapes) == len(s1["escena"]["pasos"]) + 1 + 1 + 1        # sesión 1 (3D, planta, pasos) + sesión 3
+    # sesión 1: partes inicial y final, montaje completo, planta y pasos; sesión 3: montaje completo
+    assert len(word.inline_shapes) == len(s1["escena"]["pasos"]) + 2 + 1 + 1 + 1
     texto = "\n".join(c.text for t in word.tables for fila in t.rows for c in fila.cells)
     texto_u = texto.upper()
-    assert "MONTAJE 3D · SESIÓN 1" in texto_u and "MONTAJE 3D · SESIÓN 3" in texto_u and "SESIÓN 2: CÓMO" not in texto_u
+    assert "MONTAJE 3D · SESIÓN 1" in texto_u and "SESIÓN 2: CÓMO" not in texto_u
+    assert "MONTAJE 3D · SESIÓN 3" not in texto_u                    # solo trae el completo: va dentro de la parte central
+    for parte in ("inicial", "central", "final"):
+        assert f"Modelado 3D · Parte {parte}" in texto
     assert f"Paso 1. {s1['escena']['pasos'][0]}" in texto
     assert "Vista de planta" in texto
 
@@ -137,7 +144,7 @@ def comprobar_word_con_fotos_3d(cliente, ud):
     txt_filtro = "\n".join(c.text for t in doc_filtro.tables for fila in t.rows for c in fila.cells).upper()
     assert "SESIÓN 1 DE 2" in txt_filtro and "SESIÓN 2 DE 2" in txt_filtro
     assert "SESIÓN 3 DE" not in txt_filtro and "SESIÓN 4 DE" not in txt_filtro
-    assert "MONTAJE 3D · SESIÓN 1" in txt_filtro and "MONTAJE 3D · SESIÓN 2" in txt_filtro
+    assert txt_filtro.count("MODELADO 3D · PARTE CENTRAL") == 2
 
 
 

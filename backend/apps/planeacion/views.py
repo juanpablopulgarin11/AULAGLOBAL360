@@ -13,14 +13,15 @@ from apps.reportes.servicios import documento_de_unidad
 
 from .forms import PreferenciasForm, SesionForm
 from .models import Sesion, UnidadDidactica
-from .montaje import construir_escena
+from .montaje import construir_escena, construir_escena_parte
 from .servicios import unidad_para_evaluacion
 
 DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 ESTUDIANTES_POR_DEFECTO = 24
 MAX_BYTES_FOTO = 3 * 1024 * 1024                 # una foto JPEG de 1200×750 pesa ~150 KB
 FIRMAS_IMAGEN = (b"\xff\xd8\xff", b"\x89PNG\r\n\x1a\n")
-CAMPO_FOTO = re.compile(r"montaje-(\d+)-(\d+|planta)")
+CAMPO_FOTO = re.compile(r"montaje-(\d+)-(\d+|planta|inicial|final)")
+PARTES = ("inicial", "central", "final")
 
 
 @login_required
@@ -78,7 +79,11 @@ def _estudiantes_del_salon(ud: UnidadDidactica) -> int:
     return cantidad if cantidad >= 6 else ud.docente.configuracion_clase.get("estudiantes", ESTUDIANTES_POR_DEFECTO)
 
 
-def _escena_de(ud: UnidadDidactica, sesion: Sesion, estudiantes: int) -> Dict[str, Any]:
+def _escena_de(ud: UnidadDidactica, sesion: Sesion, estudiantes: int, parte: str = "central") -> Dict[str, Any]:
+    """Modelado 3D de una parte de la sesión: la central es el montaje; la inicial y la final, su juego o tarea."""
+    if parte in ("inicial", "final"):
+        return construir_escena_parte(sesion.actividad_con_material(parte), parte, estudiantes=estudiantes,
+                                      materiales=ud.materiales, habilidad=ud.habilidad.nombre)
     central = (ud.contenido.get("duraciones", {}).get("central") or "").split(" ")[0]
     return construir_escena(sesion.distribucion, estudiantes=estudiantes, materiales=ud.materiales,
                             minutos_central=int(central) if central.isdigit() else None, habilidad=ud.habilidad.nombre)
@@ -93,11 +98,12 @@ def montaje(request, pk, numero):
         estudiantes = max(6, min(45, int(request.GET["estudiantes"])))
     except (KeyError, ValueError):
         estudiantes = _estudiantes_del_salon(ud)
-    escena = _escena_de(ud, sesion, estudiantes)
+    parte = request.GET.get("parte") if request.GET.get("parte") in PARTES else "central"
+    escena = _escena_de(ud, sesion, estudiantes, parte)
     numeros = list(ud.sesiones.values_list("numero", flat=True))
     i = numeros.index(sesion.numero)
     return render(request, "planeacion/montaje.html", {
-        "u": ud, "sesion": sesion, "escena": escena, "estudiantes": estudiantes,
+        "u": ud, "sesion": sesion, "escena": escena, "estudiantes": estudiantes, "parte": parte, "partes": PARTES,
         "anterior": numeros[i - 1] if i > 0 else None, "siguiente": numeros[i + 1] if i + 1 < len(numeros) else None,
     })
 
@@ -107,13 +113,14 @@ def escenas(request, pk):
     """Escenas 3D de todas las sesiones, para que el navegador tome las fotos del Word."""
     ud = get_object_or_404(UnidadDidactica, pk=pk, docente=request.user)
     estudiantes = _estudiantes_del_salon(ud)
-    return JsonResponse({"sesiones": [{"numero": s.numero, "titulo": s.titulo, "escena": _escena_de(ud, s, estudiantes)}
+    return JsonResponse({"sesiones": [{"numero": s.numero, "titulo": s.titulo, "escena": _escena_de(ud, s, estudiantes),
+                                       "partes": {p: _escena_de(ud, s, estudiantes, p) for p in ("inicial", "final")}}
                                       for s in ud.sesiones.all()]})
 
 
 def _fotos_de_montaje(request, ud: UnidadDidactica) -> Dict[int, Dict[str, Any]]:
     """Fotos enviadas como ``montaje-<sesión>-<k>`` (k=0: montaje completo en 3D; ``planta``: vista
-    desde arriba con medidas; k≥1: paso k).
+    desde arriba con medidas; ``inicial`` y ``final``: modelado de esas partes; k≥1: paso k).
 
     Devuelve ``{número: {"completo": bytes | None, "planta": bytes | None, "pasos": [(texto del paso, bytes), ...]}}``.
     Se ignora lo que no corresponda a una sesión o paso real, lo que pese demasiado o no sea JPEG/PNG.
@@ -126,7 +133,7 @@ def _fotos_de_montaje(request, ud: UnidadDidactica) -> Dict[int, Dict[str, Any]]
         datos = archivo.read()
         if datos.startswith(FIRMAS_IMAGEN):
             k = m.group(2)
-            recibidas.setdefault(int(m.group(1)), {})[k if k == "planta" else int(k)] = datos
+            recibidas.setdefault(int(m.group(1)), {})[int(k) if k.isdigit() else k] = datos
     if not recibidas:
         return {}
     estudiantes = _estudiantes_del_salon(ud)
@@ -137,6 +144,8 @@ def _fotos_de_montaje(request, ud: UnidadDidactica) -> Dict[int, Dict[str, Any]]
         montajes[sesion.numero] = {
             "completo": fotos.get(0),
             "planta": fotos.get("planta"),
+            "inicial": fotos.get("inicial"),
+            "final": fotos.get("final"),
             "pasos": [(texto, fotos[k]) for k, texto in enumerate(pasos, start=1) if k in fotos],
         }
     return montajes
